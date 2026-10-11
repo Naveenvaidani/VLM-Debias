@@ -1,0 +1,7 @@
+Metric,Baseline MLP,VLM-SHIELD
+In-Distribution Accuracy (Acc_ID),96.0%,100.0%
+Out-of-Distribution Accuracy (Acc_OOD),62.0%,100.0%
+OOD Accuracy Gap (Delta_OOD),34.0%,0.0%
+Relative Shortcut Reliance (RSR),0.3542,0.0000
+Shortcut Patch Attention Leakage (Attn_S),High (Global),0.0053
+Spatial Grounding Entropy (H_attn),N/A (No Attn),5.2765

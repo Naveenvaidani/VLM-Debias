@@ -1,0 +1,26 @@
+{
+    "benchmark_metadata": {
+        "num_samples": 10,
+        "device": "cpu",
+        "spurious_correlation_ratio": 0.85,
+        "benchmark_reference": "Bleeker et al. (2024)"
+    },
+    "baseline_mlp": {
+        "acc_id": 0.96,
+        "acc_ood": 0.62,
+        "delta_ood": 0.33999999999999997,
+        "rsr": 0.35416666297743055
+    },
+    "vlm_shield": {
+        "acc_id": 1.0,
+        "acc_ood": 1.0,
+        "delta_ood": 0.0,
+        "rsr": 0.0,
+        "shortcut_attention_leakage_attn_s": 0.005252153566107154,
+        "spatial_grounding_entropy_h_attn": 5.2765247344970705
+    },
+    "relative_improvement": {
+        "rsr_reduction_percent": 100.0,
+        "ood_accuracy_gain_percent": 38.0
+    }
+}

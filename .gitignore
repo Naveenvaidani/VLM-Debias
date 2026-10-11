@@ -1,0 +1,27 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local model weights (large binaries downloaded via scripts/download_models.py)
+local_models/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDEs & System files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
