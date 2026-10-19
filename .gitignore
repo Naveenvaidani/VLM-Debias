@@ -25,3 +25,8 @@ ENV/
 *.swo
 .DS_Store
 Thumbs.db
+
+# Datasets, cached features, training runs
+/data/
+/runs/
+*.npy

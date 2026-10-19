@@ -21,9 +21,10 @@ class LoRALinear(nn.Module):
         if self.original_linear.bias is not None:
             self.original_linear.bias.requires_grad = False
             
-        # Low-rank matrices A and B
-        self.lora_A = nn.Parameter(torch.zeros((rank, in_features)))
-        self.lora_B = nn.Parameter(torch.zeros((out_features, rank)))
+        # Low-rank matrices A and B, created on the wrapped layer's device
+        device = original_linear.weight.device
+        self.lora_A = nn.Parameter(torch.zeros((rank, in_features), device=device))
+        self.lora_B = nn.Parameter(torch.zeros((out_features, rank), device=device))
         
         self.reset_parameters()
 
@@ -34,18 +35,24 @@ class LoRALinear(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         result = self.original_linear(x)
-        lora_term = (x @ self.lora_A.T) @ self.lora_B.T
-        return result + (lora_term * self.scaling)
+        lora_term = (x.to(self.lora_A.dtype) @ self.lora_A.T) @ self.lora_B.T
+        return result + (lora_term * self.scaling).to(result.dtype)
 
 def apply_lora_to_llm(model: nn.Module, rank: int = 16, lora_alpha: float = 32.0, target_modules=("q_proj", "k_proj", "v_proj")):
     """
-    Applies LoRA adapters to specific linear projections in the LLM.
+    Freezes every parameter of the LLM, then applies trainable LoRA adapters to
+    specific linear projections. Returns the number of adapted layers.
     """
-    applied_count = 0
-    for name, module in model.named_modules():
-        for child_name, child in module.named_children():
-            if child_name in target_modules and isinstance(child, nn.Linear):
-                lora_layer = LoRALinear(child, rank=rank, lora_alpha=lora_alpha)
-                setattr(module, child_name, lora_layer)
-                applied_count += 1
-    return applied_count
+    for param in model.parameters():
+        param.requires_grad = False
+
+    # Collect targets first: replacing children while iterating named_modules() is unsafe
+    targets = [
+        (module, child_name, child)
+        for module in model.modules()
+        for child_name, child in module.named_children()
+        if child_name in target_modules and isinstance(child, nn.Linear)
+    ]
+    for module, child_name, child in targets:
+        setattr(module, child_name, LoRALinear(child, rank=rank, lora_alpha=lora_alpha))
+    return len(targets)
