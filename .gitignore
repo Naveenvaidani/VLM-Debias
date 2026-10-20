@@ -30,3 +30,5 @@ Thumbs.db
 /data/
 /runs/
 *.npy
+/runs_dev/
+/runs_study/
