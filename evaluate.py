@@ -7,10 +7,13 @@ All numbers come from model predictions on held-out data. ID = majority groups
 import argparse
 import json
 import os
+import subprocess
+import sys
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.ticker
 import numpy as np
 import pandas as pd
 import torch
@@ -89,6 +92,7 @@ def main():
     parser.add_argument("--features", default="./data/siglip_patch_features.npy")
     parser.add_argument("--metrics_dir", default="./metrics")
     parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--single", default=None, help=argparse.SUPPRESS)
     args = parser.parse_args()
 
     os.makedirs(args.metrics_dir, exist_ok=True)
@@ -98,9 +102,10 @@ def main():
     test_set = CachedFeatureDataset(args.features, meta, "test")
     test_loader = make_loader(test_set, args.batch_size, train=False)
 
-    runs = [r for r in args.runs if os.path.exists(os.path.join("runs", r, "best.pt"))]
-    results, histories = {}, {}
-    for run in runs:
+    if args.single:
+        # Evaluate one checkpoint and cache its test results (one process per model,
+        # since a 4-bit model's GPU memory is not fully released within a process).
+        run = args.single
         ckpt = torch.load(os.path.join("runs", run, "best.pt"), map_location="cpu")
         train_args = ckpt["args"]
         model = DebiasedVLM(llm_model_name_or_path=train_args["llm"], mode=train_args["mode"],
@@ -111,15 +116,24 @@ def main():
         res = evaluate(model, test_loader, device, keep_attention=len(test_set) if model.mode == "bottleneck" else 0)
         res["metrics"]["best_epoch"] = ckpt["epoch"]
         res["metrics"]["llm"] = train_args["llm"]
+        torch.save(res, os.path.join("runs", run, "test_results.pt"))
+        print(run, {k: round(v, 4) if isinstance(v, float) else v for k, v in res["metrics"].items()})
+        return
+
+    runs = [r for r in args.runs if os.path.exists(os.path.join("runs", r, "best.pt"))]
+    results, histories = {}, {}
+    for run in runs:
+        cached = os.path.join("runs", run, "test_results.pt")
+        if not os.path.exists(cached):
+            subprocess.run([sys.executable, __file__, "--single", run, "--data_dir", args.data_dir,
+                            "--features", args.features, "--batch_size", str(args.batch_size)], check=True)
+        res = torch.load(cached, weights_only=False)
         results[run] = res
         with open(os.path.join("runs", run, "history.json")) as f:
             histories[run] = json.load(f)
         if "attention" in res:
             attention_figure(res["attention"], test_set, meta, root,
                              os.path.join(args.metrics_dir, f"attention_{run}.png"))
-        print(run, {k: round(v, 4) if isinstance(v, float) else v for k, v in res["metrics"].items()})
-        del model
-        torch.cuda.empty_cache()
 
     # Tables
     rows = []
@@ -174,6 +188,7 @@ def main():
     for ax, title in ((ax1, "Validation average accuracy (%)"), (ax2, "Validation worst-group accuracy (%)")):
         ax.set_title(title, color=TEXT, fontsize=11, loc="left")
         ax.set_xlabel("Epoch", color=TEXT_2)
+        ax.xaxis.set_major_locator(matplotlib.ticker.MaxNLocator(integer=True))
         style_axes(ax)
     ax1.legend(frameon=False, fontsize=8)
     plt.tight_layout()
