@@ -101,6 +101,9 @@ def main():
     parser.add_argument("--export_dir", default=None)
     parser.add_argument("--gradient_checkpointing", action="store_true")
     parser.add_argument("--skip_smoke", action="store_true")
+    parser.add_argument("--resume_from", default=None,
+                        help="exported results dir of an earlier session (e.g. a kernel output attached as input): "
+                             "finished jobs and aligned connectors are copied in and skipped")
     args = parser.parse_args()
     py, start = sys.executable, time.time()
     tag = llm_tag(args.llm)
@@ -123,10 +126,24 @@ def main():
             return
         for path in glob.glob(os.path.join(runs, "**", "*"), recursive=True):
             rel = os.path.relpath(path, runs)
-            if os.path.isfile(path) and (path.endswith((".json", ".npz", ".log", ".md", ".csv", ".png"))):
+            if os.path.isfile(path) and (path.endswith((".json", ".npz", ".log", ".md", ".csv", ".png")) or \
+                    (path.endswith("connector.pt") and "/align/" in path)):
                 dst = os.path.join(args.export_dir, tag, rel)
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copy(path, dst)
+
+    # resume: bring back finished jobs and aligned connectors from an earlier session
+    if args.resume_from:
+        src = os.path.join(args.resume_from, tag)
+        n = 0
+        for path in glob.glob(os.path.join(src, "**", "*"), recursive=True):
+            if os.path.isfile(path):
+                dst = os.path.join(runs, os.path.relpath(path, src))
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.copy(path, dst)
+                n += 1
+        print(f"resumed {n} files from {src}", flush=True)
+        args.skip_smoke = True
 
     # 2. smoke: a few steps of alignment + a tiny task run per connector type
     if not args.skip_smoke:
