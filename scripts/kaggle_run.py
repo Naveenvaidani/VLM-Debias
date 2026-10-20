@@ -26,6 +26,13 @@ def run_name(mode: str, balanced: bool, seed: int) -> str:
     return f"{mode}{'_balanced' if balanced else ''}" + (f"_s{seed}" if seed else "")
 
 
+def tail(path: str, n: int = 60):
+    """Print the end of a log (carriage-return progress bars collapsed) so failures are visible in the kernel log."""
+    if os.path.exists(path):
+        lines = open(path, errors="replace").read().replace("\r", "\n").splitlines()
+        print(f"--- tail of {path} ---\n" + "\n".join(lines[-n:]) + "\n--- end ---", flush=True)
+
+
 def sh(cmd, gpu=None, log=None):
     env = dict(os.environ, PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True", TOKENIZERS_PARALLELISM="false")
     if gpu is not None:
@@ -73,6 +80,8 @@ def main():
             code = sh([py, "train.py", "--llm", args.llm, "--mode", mode, "--dtype", "fp16", "--epochs", "1",
                        "--max_train_samples", "160", "--batch_size", str(args.batch_size),
                        "--run_name", f"smoke_{mode}"] + ckpt, gpu=0, log=os.path.join(ROOT, "runs", "smoke.log"))
+            if code != 0:
+                tail(os.path.join(ROOT, "runs", "smoke.log"))
             assert code == 0, f"smoke test failed for {mode}: see runs/smoke.log"
 
     # 3. One job per (config, seed); each GPU runs jobs from the shared queue
@@ -121,6 +130,7 @@ def main():
             ok = sh(train_cmd, gpu=gpu, log=log) == 0 and sh([py, "evaluate.py", "--single", name], gpu=gpu, log=log) == 0
             if not ok:
                 failures.append(name)
+                tail(log, 30)
             print(f"[{(time.time() - start) / 60:.0f} min] {'done' if ok else 'FAILED'} {name} (gpu {gpu})", flush=True)
             export(name)
 
