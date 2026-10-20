@@ -52,6 +52,8 @@ def main():
     scaler = torch.amp.GradScaler("cuda") if args.dtype == "fp16" else None
     loader = DataLoader(data, batch_size=args.batch_size, shuffle=True, num_workers=2, drop_last=True)
 
+    # train mode is required: HF models skip gradient checkpointing in eval mode (from_pretrained default)
+    model.train()
     losses, step, start = [], 0, time.time()
     bar = tqdm(total=args.steps, desc=f"align {args.connector}")
     while step < args.steps:
