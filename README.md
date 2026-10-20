@@ -1,160 +1,129 @@
-# VLM-SHIELD: Architectural Mitigation of Shortcut Learning via Local Feature Bottlenecks
+# VLM-SHIELD: Local Feature Bottlenecks against Shortcut Learning in VLMs
 
-### Technical Specification & Engineering Protocol
+Vision-language models built as *vision encoder → MLP projector → LLM* can solve a task through a
+spurious shortcut (backgrounds, watermarks, texture) instead of the object itself. **VLM-SHIELD**
+replaces the projector with a **Local Feature Bottleneck**: the LLM's prompt tokens cross-attend to
+individual SigLIP image patches, and the attended visual context enters the LLM through a
+zero-initialised tanh gate. The answer token's attention map can be inspected directly.
 
-The persistence of shortcut learning in Large Vision-Language Models (LVLMs) stems from a fundamental architectural flaw: standard Multi-Layer Perceptron (MLP) projectors act as "shortcut funnels." When optimized strictly via auto-regressive next-token prediction, the language model naturally learns to exploit spurious global correlations (e.g., backgrounds, watermarks, texture statistics) because they offer a mathematically cheaper path to minimize the loss function than parsing dense, local visual features.
+This repository trains and evaluates the bottleneck against a standard MLP-projector baseline on
+**Waterbirds** (Sagawa et al., 2020), the standard spurious-correlation benchmark: 95% of training
+landbirds appear on land backgrounds and 95% of waterbirds on water, so the background predicts the
+label during training. The test set breaks that correlation.
 
-**VLM-SHIELD** replaces the standard linear projector with a custom **Information-Preserving Attention Bottleneck**. This modified cross-attention architecture forces the LLM to explicitly query spatial vision patches, extinguishing global shortcut collapse.
+## Results (Waterbirds test set, n = 5,794)
+
+| Model | Avg acc | Worst-group acc | Acc_ID | Acc_OOD | Δ_OOD | RSR |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| MLP projector (baseline) | 90.4% | 80.4% | 98.3% | 82.5% | 15.8 pp | 0.161 |
+| VLM-SHIELD bottleneck | 89.2% | 77.3% | 97.1% | 81.3% | 15.8 pp | 0.163 |
+| MLP projector + group-balanced sampling | **90.8%** | **82.8%** | 96.9% | **84.6%** | **12.3 pp** | **0.127** |
+| VLM-SHIELD + group-balanced sampling | 89.4% | 80.9% | 96.5% | 82.3% | 14.2 pp | 0.147 |
+
+Qwen3.5-4B (4-bit QLoRA) for every row; checkpoint selected by validation worst-group accuracy.
+Per-group numbers are in [`metrics/research_paper_metrics.md`](metrics/research_paper_metrics.md),
+and everything is in [`metrics/benchmark_results.json`](metrics/benchmark_results.json).
+
+![Waterbirds test accuracy](metrics/accuracy_summary.png)
+
+![Per-group test accuracy](metrics/per_group_accuracy.png)
+
+### What the numbers say
+
+- **The shortcut is real.** Every model is 12–16 points less accurate on birds shown on the
+  "wrong" background, and `waterbird/land` or `landbird/water` is always the worst group.
+- **The cross-attention bottleneck does not beat the MLP projector here.** It is 2–3 points lower
+  on worst-group accuracy in both the ERM and balanced settings. With one seed per configuration
+  that gap is within noise, so the honest reading is "no measurable benefit", not "worse".
+- **Group-balanced sampling helps both architectures** (+2.5 pp worst-group for the MLP, +3.6 pp
+  for the bottleneck) and gives the best model overall: 82.8% worst-group, RSR 0.127.
+- **Training is unstable under ERM.** Validation worst-group accuracy swings by 30–40 points
+  between epochs (below), so early stopping on worst-group accuracy matters more than the number
+  of epochs. Balanced sampling makes the curves much smoother.
+
+![Training curves](metrics/training_curves.png)
+
+### Where the bottleneck looks
+
+The answer token's cross-attention over the 14×14 SigLIP patches, on test images of waterbirds
+photographed on land backgrounds (the hardest group). Attention is sparse (normalised entropy
+0.50 for the balanced model) and lands on both bird and background patches. The bottleneck makes
+this inspectable, but it does not force the model onto the bird.
+
+![Attention maps](metrics/attention_bottleneck_balanced.png)
 
 ---
 
-## Key Components
+## Setup
 
-1. **Vision Encoder**: `google/siglip-base-patch16-224`
-   - *Rationale*: SigLIP uses a pairwise sigmoid loss, retaining significantly denser local patch features than standard contrastive models (196 spatial patches of size 16x16, dimension 768).
-2. **Language Backbone**: `Qwen/Qwen2.5-1.5B-Instruct`
-   - *Rationale*: At 1.5 billion parameters (1536-dim), Qwen2.5 is highly articulate while allowing efficient gradient checkpointing and fine-tuning on resource-constrained GPUs.
-3. **Local Feature Bottleneck (`LocalFeatureBottleneck`)**:
-   - Cross-attention bottleneck where LLM token embeddings act as queries ($Q$), attending to SigLIP vision patch representations ($K, V$).
-   - If a background patch contains a spurious shortcut, the cross-attention mechanism allows the network to dynamically drop its attention weight to zero.
-4. **Information-Sparsity Loss ($\mathcal{L}_{total} = \mathcal{L}_{NTP} + \lambda \mathcal{L}_{sparsity}$)**:
-   - Penalizes spatial attention collapse onto single shortcut patches via entropy regularization across visual patches.
+| Component | Choice |
+| :--- | :--- |
+| Vision encoder | `google/siglip-base-patch16-224`, frozen; 196 patch features (768-d) cached once |
+| Language model | `Qwen/Qwen3.5-4B` text decoder, 4-bit NF4 (QLoRA), LoRA r=16 on all attention/MLP projections |
+| VLM-SHIELD connector | `LocalFeatureBottleneck`: prompt tokens attend over the 196 patches; output added to the token embeddings through `tanh(gate)`, gate initialised at 0 |
+| Baseline connector | LLaVA-style 2-layer MLP over 2×2-pooled patches → 49 prefix tokens |
+| Task | Prompt *"Is the bird in this image a landbird or a waterbird?"*; prediction = LLM next-token logits restricted to the two answer tokens |
+| Loss | Cross-entropy + 0.1 × normalised attention-entropy penalty `1 − H(A)/log 196` (bottleneck only) |
+| Training | Paged 8-bit AdamW, cosine schedule, batch 16, gradient checkpointing, bf16; up to 8 epochs with early stopping on validation worst-group accuracy |
+| Variants | ERM (natural sampling) and group-balanced sampling (each bird/background group equally likely) |
+| Hardware | One RTX 3050 Laptop GPU (4 GB) |
 
----
+The 248k-row token embedding matrix (tied with the LM head) is never put on the GPU: the prompt is
+fixed, so its embeddings are computed once, and only the two answer-token rows of the LM head are
+kept. This, plus 4-bit weights, is what lets a 4B model train in 4 GB.
 
-## Directory Structure
+### Metrics
 
-```
-VLM Debias/
-├── src/
-│   ├── models/
-│   │   └── debiased_vlm.py   # LocalFeatureBottleneck & DebiasedVLM architecture
-│   └── training/
-│       └── loss.py           # DebiasedVLMLoss (L_NTP + lambda * L_sparsity)
-├── scripts/
-│   └── download_models.py    # Local foundation model downloader script
-├── tests/
-│   └── test_debiased_vlm.py  # Unit tests for bottleneck, model, and loss function
-├── train.py                  # Training pipeline with synthetic shortcut dataset
-├── evaluate.py               # Quantitative debiasing benchmark & spatial entropy evaluation
-├── app.py                    # Validation UI interface (Gradio & OpenCV jet heatmap overlay)
-├── requirements.txt          # Dependencies list
-└── README.md                 # Technical documentation
-```
+Groups are (bird, background): `landbird/land`, `landbird/water`, `waterbird/land`, `waterbird/water`.
+
+- **Average accuracy** over the test set.
+- **Worst-group accuracy**: the lowest of the four group accuracies (the standard Waterbirds metric).
+- **Acc_ID / Acc_OOD**: accuracy on majority groups (bird on its usual background) vs minority groups.
+- **Δ_OOD = Acc_ID − Acc_OOD** and **RSR = Δ_OOD / Acc_ID** (relative shortcut reliance).
+
+All numbers are computed by `evaluate.py` from model predictions on the held-out test split.
 
 ---
 
-## Quick Start & Usage
+## Reproduce
 
-### 1. Download Pre-Trained Foundation Models Locally
-Download `google/siglip-base-patch16-224` and `Qwen/Qwen2.5-1.5B-Instruct` to local storage:
 ```bash
-python scripts/download_models.py --output_dir ./local_models
+python -m venv .venv && source .venv/bin/activate
+pip install torch --index-url https://download.pytorch.org/whl/cu124
+pip install -r requirements.txt
+
+python scripts/prepare_waterbirds.py          # Waterbirds -> data/waterbirds/{images,metadata.csv}
+python scripts/download_models.py             # SigLIP + Qwen3.5-4B into the HF cache
+python scripts/cache_siglip_features.py       # frozen SigLIP features -> data/siglip_patch_features.npy
+
+# One run
+python train.py --mode bottleneck --balanced --gradient_checkpointing
+
+# All four runs (MLP / bottleneck x ERM / balanced), 110 min budget each, then evaluation
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True scripts/run_all.sh Qwen/Qwen3.5-4B 110
+
+python evaluate.py                            # metrics/*.csv|json|md + figures
+python -m pytest tests                        # unit tests
+python app.py --run bottleneck_balanced       # Gradio demo with attention heatmap
 ```
 
-### 2. Run Unit Tests
-Verify model architecture, dimensions, cross-attention mechanics, and loss calculations:
-```bash
-python -m unittest discover tests
+## Repository layout
+
+```
+src/data/waterbirds.py          dataset, cached-feature loader, group metrics
+src/models/debiased_vlm.py      LocalFeatureBottleneck, MLPPrefixProjector, DebiasedVLM (QLoRA Qwen3.5)
+src/models/*_scratch.py         small pure-PyTorch SigLIP/Qwen re-implementations (tests / teaching)
+src/models/lora.py              minimal LoRA layer used by the scratch models
+src/training/loss.py            task loss + attention entropy / shortcut-suppression regularisers
+src/training/engine.py          train / eval loops, group-balanced sampler
+scripts/                        data preparation, feature caching, model download, run_all.sh
+train.py / evaluate.py / app.py training, evaluation + figures, demo
+metrics/                        exported results and figures
 ```
 
-### 3. Train the LocalFeatureBottleneck
-Execute the custom debiasing training pipeline:
-```bash
-# Fast mock training check (CPU friendly)
-python train.py --epochs 3 --batch_size 4 --mock
+## Limitations
 
-# Full pre-trained training
-python train.py --epochs 5 --batch_size 4 --lr 1e-4 --lambda_sparsity 0.1
-```
-
-### 4. Evaluate Shortcut Mitigation
-Quantify spatial attention entropy and shortcut reliance:
-```bash
-python evaluate.py
-```
-
-### 5. Launch the Validation UI Interface
-Visualize internal cross-attention heatmaps to visually verify local grounding:
-```bash
-python app.py
-```
-Open `http://127.0.0.1:7860` in your browser. Upload an image to generate grounded captions and inspect proof of grounding heatmaps.
-
----
-
-## Mathematical Formulation: Dual Grounding Loss
-
-The optimization objective enforces spatial grounding while mitigating shortcut reliance:
-
-$$
-\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{NTP}} + \lambda_{\text{ent}} \mathcal{L}_{\text{entropy}} + \lambda_{\text{supp}} \mathcal{L}_{\text{shortcut\_supp}}
-$$
-
-### Loss Component Breakdown
-
-| Component | Mathematical Definition | Objective |
-| :--- | :---: | :--- |
-| **Causal Next-Token Loss** | $\mathcal{L}_{\text{NTP}} = -\sum_{t} \log P(w_t \mid w_{<t}, \mathbf{z}_{\text{fused}})$ | Maximizes language generation likelihood conditioned on fused visual-text tokens. |
-| **Inverse Entropy Regularizer** | $\mathcal{L}_{\text{entropy}} = \mathbb{E} \left[ \frac{1}{H(\mathbf{A}) + \epsilon} \right]$ | Prevents attention collapse onto single shortcut patches by penalizing ultra-low entropy distributions. |
-| **Patch Attention Entropy** | $H(\mathbf{A}) = -\sum_{p=1}^{196} A_p \log(A_p + \epsilon)$ | Quantifies spatial dispersion of attention weights across all 196 SigLIP visual patches. |
-| **Shortcut Suppression Loss** | $\mathcal{L}_{\text{shortcut\_supp}} = \mathbb{E} \left[ \sum_{p \in \mathcal{S}} A_p \right]$ | Directly penalizes and extinguishes attention leaking into known spurious shortcut regions $\mathcal{S}$. |
-
----
-
-## Evaluation Against Bleeker et al. Benchmark
-
-Following the shortcut evaluation methodology of Bleeker et al., we quantify robustness and shortcut mitigation using the following metrics:
-
-### 1. Relative Shortcut Reliance (RSR)
-Measures the proportion of model accuracy that depends upon spurious correlations rather than true causal features:
-
-$$
-\text{RSR} = \frac{\text{Acc}_{\text{ID}} - \text{Acc}_{\text{OOD}}}{\text{Acc}_{\text{ID}}}
-$$
-
-- $\text{RSR} \to 0$: Model relies entirely on robust, invariant features (shortcut mitigated).
-- $\text{RSR} \to 1$: Model is entirely dependent on spurious shortcuts.
-
-### 2. Out-of-Distribution Performance Drop ($\Delta_{\text{OOD}}$)
-Quantifies accuracy degradation when spurious correlations are severed in out-of-distribution environments:
-
-$$
-\Delta_{\text{OOD}} = \text{Acc}_{\text{ID}} - \text{Acc}_{\text{OOD}}
-$$
-
-### 3. Shortcut Patch Attention Leakage ($\text{Attn}_{\mathcal{S}}$)
-Measures the average attention mass allocated to shortcut-bearing visual patches $\mathcal{S}$ across all sequence generation steps $T$:
-
-$$
-\text{Attn}_{\mathcal{S}} = \frac{1}{T} \sum_{t=1}^{T} \sum_{p \in \mathcal{S}} A_{t, p}
-$$
-
-### 4. Spatial Grounding Entropy ($H_{\text{attn}}$)
-Measures the spatial dispersion of cross-attention across the full visual patch extent $N=196$:
-
-$$
-H_{\text{attn}} = -\sum_{p=1}^{N} A_p \log(A_p + \epsilon)
-$$
-
----
-
-## Quantitative Benchmark Results
-
-### Performance Comparison under Spurious Shortcut Conditions
-
-| Metric | Baseline MLP Projector | VLM-SHIELD (Ours) | Delta / Gain |
-| :--- | :---: | :---: | :---: |
-| **In-Distribution Accuracy ($\text{Acc}_{\text{ID}}$)** | 96.0% | **100.0%** | +4.0% |
-| **Out-of-Distribution Accuracy ($\text{Acc}_{\text{OOD}}$)** | 62.0% | **100.0%** | **+38.0%** |
-| **OOD Accuracy Drop ($\Delta_{\text{OOD}}$)** | 34.0% | **0.0%** | **-34.0%** |
-| **Relative Shortcut Reliance ($\text{RSR}$)** | 0.3542 | **0.0000** | **-100.0% (Eliminated)** |
-| **Shortcut Attention Leakage ($\text{Attn}_{\mathcal{S}}$)** | High (Global) | **0.0053** | **Suppressed** |
-| **Spatial Grounding Entropy ($H_{\text{attn}}$)** | N/A | **5.2765** | **Optimal Dispersion** |
-
-### Benchmark Visualization
-
-![Shortcut Mitigation Benchmark](metrics/shortcut_mitigation_benchmark.png)
-
-> **Key Takeaway**: VLM-SHIELD reduces **Relative Shortcut Reliance (RSR) by 100%** under benchmark spurious shortcut tests by constraining language tokens to cross-attend to spatial image patches through a bottleneck, completely preventing shortcut feature collapse.
-
+- One seed per configuration; differences of a few points are within run-to-run noise.
+- Waterbirds has no shortcut-region masks in this setup, so the shortcut-suppression term of the
+  loss is implemented and tested but not used in these runs.
+- The vision encoder is frozen; only LoRA adapters and the connector are trained.
