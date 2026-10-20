@@ -12,7 +12,7 @@ import numpy as np
 import torch
 from PIL import Image
 from tqdm import tqdm
-from transformers import AutoImageProcessor, SiglipVisionModel
+from transformers import AutoImageProcessor, AutoModel, SiglipVisionModel
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.data.waterbirds import find_waterbirds_root, load_metadata
@@ -32,8 +32,14 @@ def main():
     n = len(meta["y"])
 
     processor = AutoImageProcessor.from_pretrained(args.vision_model)
-    encoder = SiglipVisionModel.from_pretrained(args.vision_model, dtype=torch.float16).to(device).eval()
-    num_patches = (encoder.config.image_size // encoder.config.patch_size) ** 2
+    if "siglip" in args.vision_model.lower():
+        encoder = SiglipVisionModel.from_pretrained(args.vision_model, dtype=torch.float16)
+    else:
+        # e.g. facebook/dinov3-vitb16-pretrain-lvd1689m (gated: accept the license on the model page first)
+        encoder = AutoModel.from_pretrained(args.vision_model, dtype=torch.float16)
+    encoder = encoder.to(device).eval()
+    image_size = encoder.config.image_size
+    num_patches = (image_size // encoder.config.patch_size) ** 2
     out = np.lib.format.open_memmap(
         args.out, mode="w+", dtype=np.float16, shape=(n, num_patches, encoder.config.hidden_size)
     )
@@ -41,9 +47,11 @@ def main():
     for start in tqdm(range(0, n, args.batch_size), desc="SigLIP features"):
         files = meta["img_filename"][start:start + args.batch_size]
         images = [Image.open(os.path.join(root, f)).convert("RGB") for f in files]
-        pixel_values = processor(images=images, return_tensors="pt").pixel_values.to(device, torch.float16)
+        pixel_values = processor(images=images, return_tensors="pt", size={"height": image_size, "width": image_size}
+                                 ).pixel_values.to(device, torch.float16)
         with torch.no_grad():
-            feats = encoder(pixel_values=pixel_values).last_hidden_state
+            # keep only the spatial patch tokens (drops CLS / register tokens if the encoder has them)
+            feats = encoder(pixel_values=pixel_values).last_hidden_state[:, -num_patches:]
         out[start:start + len(files)] = feats.cpu().numpy()
 
     out.flush()

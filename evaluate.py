@@ -109,7 +109,9 @@ def main():
         ckpt = torch.load(os.path.join("runs", run, "best.pt"), map_location="cpu")
         train_args = ckpt["args"]
         model = DebiasedVLM(llm_model_name_or_path=train_args["llm"], mode=train_args["mode"],
-                            lora_rank=train_args["lora_rank"], lora_alpha=2.0 * train_args["lora_rank"], device=device)
+                            lora_rank=train_args["lora_rank"], lora_alpha=2.0 * train_args["lora_rank"], device=device,
+                            dtype=train_args.get("dtype", "bf16"), quantize_4bit=bool(train_args.get("quantize_4bit", 1)),
+                            vision_dim=test_set.features.shape[-1])
         missing = set(ckpt["state"]) - set(dict(model.named_parameters()))
         assert not missing, f"checkpoint keys not in model: {list(missing)[:5]}"
         model.load_state_dict(ckpt["state"], strict=False)

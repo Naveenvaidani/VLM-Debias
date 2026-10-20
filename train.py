@@ -38,11 +38,16 @@ def main():
     parser.add_argument("--features", default="./data/siglip_patch_features.npy")
     parser.add_argument("--run_name", default=None)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--dtype", choices=["bf16", "fp16"], default="bf16", help="fp16 on GPUs without bf16 (T4)")
+    parser.add_argument("--quantize_4bit", type=int, default=1, help="0 = load the LLM unquantised (needs ~9 GB for 4B)")
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     run_name = args.run_name or f"{args.mode}{'_balanced' if args.balanced else ''}"
+    # a single seed keeps the plain name so earlier runs/ checkpoints stay valid; others get a suffix
+    if not args.run_name and args.seed:
+        run_name += f"_s{args.seed}"
     run_dir = os.path.join("runs", run_name)
     os.makedirs(run_dir, exist_ok=True)
 
@@ -58,7 +63,9 @@ def main():
     model = DebiasedVLM(
         llm_model_name_or_path=args.llm, mode=args.mode, lora_rank=args.lora_rank,
         lora_alpha=2.0 * args.lora_rank, gradient_checkpointing=args.gradient_checkpointing, device=device,
+        dtype=args.dtype, quantize_4bit=bool(args.quantize_4bit), vision_dim=train_set.features.shape[-1],
     )
+    scaler = torch.amp.GradScaler("cuda") if args.dtype == "fp16" else None
     lora_params = [p for n, p in model.llm.named_parameters() if p.requires_grad]
     connector_params = list(model.connector.parameters())
     print(f"Trainable: LoRA {sum(p.numel() for p in lora_params):,} | connector {sum(p.numel() for p in connector_params):,}")
@@ -76,7 +83,7 @@ def main():
     start = time.time()
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
-        train_stats = train_one_epoch(model, train_loader, optimizer, scheduler, loss_fn, device)
+        train_stats = train_one_epoch(model, train_loader, optimizer, scheduler, loss_fn, device, scaler=scaler)
         val = evaluate(model, val_loader, device)["metrics"]
         epoch_min = (time.time() - t0) / 60
         history.append({"epoch": epoch, "minutes": epoch_min, **{f"train_{k}": v for k, v in train_stats.items()},

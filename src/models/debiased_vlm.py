@@ -110,12 +110,15 @@ class DebiasedVLM(nn.Module):
         gradient_checkpointing: bool = False,
         device: str = "cuda",
         class_names: Sequence[str] = CLASS_NAMES,
+        dtype: str = "bf16",
     ):
         super().__init__()
         from transformers import AutoModelForImageTextToText, AutoTokenizer, BitsAndBytesConfig
         from peft import LoraConfig, get_peft_model
 
         assert mode in ("bottleneck", "mlp_prefix")
+        assert dtype in ("bf16", "fp16"), "T4 GPUs have no bf16 support: use dtype='fp16'"
+        self.compute_dtype = torch.bfloat16 if dtype == "bf16" else torch.float16
         self.mode = mode
         self.device_name = device
         self.tokenizer = AutoTokenizer.from_pretrained(llm_model_name_or_path)
@@ -126,13 +129,13 @@ class DebiasedVLM(nn.Module):
                 load_in_4bit=True,
                 bnb_4bit_quant_type="nf4",
                 bnb_4bit_use_double_quant=True,
-                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_compute_dtype=self.compute_dtype,
                 llm_int8_skip_modules=["lm_head", "embed_tokens", "visual"],
             )
         llm = AutoModelForImageTextToText.from_pretrained(
             llm_model_name_or_path,
             quantization_config=quant_config,
-            dtype=torch.bfloat16,
+            dtype=self.compute_dtype,
             device_map={"": device},
             low_cpu_mem_usage=True,
         )
@@ -150,7 +153,7 @@ class DebiasedVLM(nn.Module):
         self.register_buffer("answer_head", embed.weight[answer_ids].detach().clone().float().to(device))
         self.register_buffer("prompt_embeds", embed(
             self.tokenizer(PROMPT, return_tensors="pt", add_special_tokens=False).input_ids.to(embed.weight.device)
-        ).detach().to(device, torch.bfloat16))
+        ).detach().to(device, self.compute_dtype))
 
         # Keep only the text decoder. The 248k-vocab embedding (tied with lm_head) is
         # replaced by a 1-row placeholder, freeing ~1.3 GB of GPU memory.
@@ -198,6 +201,6 @@ class DebiasedVLM(nn.Module):
         else:
             embeds = torch.cat([self.connector(vision_patches.float()), text.float()], dim=1)
 
-        hidden = self.backbone(inputs_embeds=embeds.to(torch.bfloat16), use_cache=False).last_hidden_state
+        hidden = self.backbone(inputs_embeds=embeds.to(self.compute_dtype), use_cache=False).last_hidden_state
         logits = hidden[:, -1].float() @ self.answer_head.T
         return logits, attention_maps

@@ -25,7 +25,7 @@ def evaluate(model, loader: DataLoader, device: str, keep_attention: int = 0) ->
     model.eval()
     preds, labels, groups, entropies, kept = [], [], [], [], []
     for feats, y, g in tqdm(loader, desc="eval", leave=False):
-        with torch.autocast("cuda", dtype=torch.bfloat16, enabled=device == "cuda"):
+        with torch.autocast("cuda", dtype=model.compute_dtype, enabled=device == "cuda"):
             logits, attn = model(feats.to(device, non_blocking=True))
         preds.append(logits.argmax(-1).cpu())
         labels.append(y)
@@ -49,17 +49,27 @@ def evaluate(model, loader: DataLoader, device: str, keep_attention: int = 0) ->
     return result
 
 
-def train_one_epoch(model, loader, optimizer, scheduler, loss_fn, device: str, grad_clip: float = 1.0) -> Dict[str, float]:
+def train_one_epoch(model, loader, optimizer, scheduler, loss_fn, device: str, grad_clip: float = 1.0,
+                    scaler=None) -> Dict[str, float]:
+    """`scaler`: a torch.amp.GradScaler, required when training in fp16 (T4 GPUs)."""
     model.train()
     totals: Dict[str, float] = {}
     for feats, y, _ in tqdm(loader, desc="train", leave=False):
         optimizer.zero_grad(set_to_none=True)
-        with torch.autocast("cuda", dtype=torch.bfloat16, enabled=device == "cuda"):
+        with torch.autocast("cuda", dtype=model.compute_dtype, enabled=device == "cuda"):
             logits, attn = model(feats.to(device, non_blocking=True))
         loss, loss_dict = loss_fn(logits, y.to(device), attn)
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_([p for p in model.parameters() if p.requires_grad], grad_clip)
-        optimizer.step()
+        params = [p for p in model.parameters() if p.requires_grad]
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(params, grad_clip)
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(params, grad_clip)
+            optimizer.step()
         if scheduler is not None:
             scheduler.step()
         for k, v in loss_dict.items():
