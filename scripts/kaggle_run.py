@@ -12,6 +12,7 @@ bf16 laptop runs, so compare architectures *within* one environment, not across 
 import argparse
 import os
 import queue
+import shutil
 import subprocess
 import sys
 import threading
@@ -47,6 +48,9 @@ def main():
     parser.add_argument("--patience", type=int, default=2)
     parser.add_argument("--time_budget_min", type=float, default=75, help="per-run training budget")
     parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--total_budget_min", type=float, default=630,
+                        help="don't start a job that could end after this many minutes (Kaggle kills sessions at 12 h)")
+    parser.add_argument("--export_dir", default=None, help="copy each finished run's small result files here")
     parser.add_argument("--skip_smoke", action="store_true")
     parser.add_argument("--gradient_checkpointing", action="store_true", help="needed on GPUs with <= 8 GB")
     args = parser.parse_args()
@@ -78,6 +82,20 @@ def main():
             jobs.put((mode, balanced, seed))
     failures = []
 
+    def export(name: str):
+        """Copy the small result files (not the checkpoint) so a killed session loses nothing."""
+        if not args.export_dir:
+            return
+        dst = os.path.join(args.export_dir, "runs", name)
+        os.makedirs(dst, exist_ok=True)
+        for fname in ("history.json", "test_results.pt"):
+            src = os.path.join(ROOT, "runs", name, fname)
+            if os.path.exists(src):
+                shutil.copy(src, dst)
+        log = os.path.join(ROOT, "runs", f"{name}.log")
+        if os.path.exists(log):
+            shutil.copy(log, os.path.join(args.export_dir, "runs", f"{name}.log"))
+
     def worker(gpu: int):
         while True:
             try:
@@ -86,6 +104,9 @@ def main():
                 return
             name = run_name(mode, balanced, seed)
             run_dir = os.path.join(ROOT, "runs", name)
+            if (time.time() - start) / 60 + args.time_budget_min + 15 > args.total_budget_min:
+                print(f"skip {name}: not enough session time left", flush=True)
+                continue
             if os.path.exists(os.path.join(run_dir, "test_results.pt")):
                 print(f"skip {name}", flush=True)
                 continue
@@ -101,6 +122,7 @@ def main():
             if not ok:
                 failures.append(name)
             print(f"[{(time.time() - start) / 60:.0f} min] {'done' if ok else 'FAILED'} {name} (gpu {gpu})", flush=True)
+            export(name)
 
     threads = [threading.Thread(target=worker, args=(g,)) for g in range(args.gpus)]
     for t in threads:
@@ -111,6 +133,8 @@ def main():
     # 4. Figures for seed 0, then mean +- std over seeds
     sh([py, "evaluate.py"], gpu=0)
     sh([py, "scripts/aggregate_seeds.py"])
+    if args.export_dir and os.path.isdir(os.path.join(ROOT, "metrics")):
+        shutil.copytree(os.path.join(ROOT, "metrics"), os.path.join(args.export_dir, "metrics"), dirs_exist_ok=True)
     print(f"Finished in {(time.time() - start) / 60:.0f} min. Failed runs: {failures or 'none'}")
 
 
