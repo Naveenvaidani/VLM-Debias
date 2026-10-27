@@ -101,6 +101,12 @@ def main():
     parser.add_argument("--export_dir", default=None)
     parser.add_argument("--gradient_checkpointing", action="store_true")
     parser.add_argument("--skip_smoke", action="store_true")
+    parser.add_argument("--mlp_pool", type=int, default=1, help="avg-pool MLP patch tokens (2 -> 49 tokens)")
+    parser.add_argument("--no_4bit", action="store_true", help="fp16 LLM weights instead of NF4")
+    parser.add_argument("--data_from", default=None,
+                        help="prepared data/ dir from a data-prep session (skips building tasks and features)")
+    parser.add_argument("--prepare_only", action="store_true",
+                        help="build tasks + features, export features/metadata to --export_dir/data and stop")
     parser.add_argument("--resume_from", default=None,
                         help="exported results dir of an earlier session (e.g. a kernel output attached as input): "
                              "finished jobs and aligned connectors are copied in and skipped")
@@ -110,16 +116,28 @@ def main():
     runs = os.path.join(ROOT, "runs_study", tag)
     os.makedirs(runs, exist_ok=True)
     ckpt = ["--gradient_checkpointing"] if args.gradient_checkpointing else []
+    ckpt += ["--mlp_pool", str(args.mlp_pool)] + (["--no_4bit"] if args.no_4bit else [])
     tasks = args.tasks.split(",")
     connectors = args.connectors.split(",")
 
-    # 1. data
-    if "waterbirds" in tasks and not os.path.exists(os.path.join(ROOT, "data", "waterbirds", "metadata.csv")):
+    # 1. data (copied from a data-prep session when available: images are not needed, only features)
+    if args.data_from:
+        shutil.copytree(args.data_from, os.path.join(ROOT, "data"), dirs_exist_ok=True)
+    wb_meta = os.path.join(ROOT, "data", "waterbirds", "metadata.csv")
+    if not args.data_from and "waterbirds" in tasks and not os.path.exists(wb_meta):
         assert sh([py, "scripts/prepare_waterbirds.py"]) == 0
     if not os.path.exists(os.path.join(ROOT, "data", "tasks", "captions", "metadata.csv")):
         families = sorted({t.split("_p")[0] for t in tasks})
         assert sh([py, "study/build_tasks.py", "--coco_root", args.coco_root, "--only", ",".join(families)]) == 0
     assert sh([py, "study/cache_features.py", "--tasks_dir", "data/tasks"], gpu=0) == 0
+    if args.prepare_only:
+        for path in glob.glob(os.path.join(ROOT, "data", "tasks", "*", "*")):
+            if path.endswith((".npy", ".csv", ".json")):
+                dst = os.path.join(args.export_dir, "data", os.path.relpath(path, os.path.join(ROOT, "data")))
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.copy(path, dst)
+        print(f"data exported in {(time.time() - start) / 60:.0f} min")
+        return
 
     def export(name):
         if not args.export_dir:
@@ -154,7 +172,8 @@ def main():
                       gpu=0, log=log) == 0, f"smoke align failed ({c})"
             assert sh([py, "study/train_task.py", "--llm", args.llm, "--connector", c, "--task_dir",
                        f"data/tasks/{tasks[0]}", "--align_ckpt", os.path.join(d, "connector.pt"),
-                       "--run_dir", d, "--epochs", "1", "--max_train_samples", "64"] + ckpt,
+                       "--run_dir", d, "--epochs", "1", "--max_train_samples", "32",
+                       "--max_eval_samples", "64"] + ckpt,
                       gpu=0, log=log) == 0, f"smoke train failed ({c})"
         shutil.rmtree(os.path.join(runs, "smoke"), ignore_errors=True)
 

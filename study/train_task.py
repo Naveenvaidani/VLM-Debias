@@ -41,8 +41,11 @@ def main():
     parser.add_argument("--lora_rank", type=int, default=16)
     parser.add_argument("--dtype", choices=["fp16", "bf16"], default="fp16")
     parser.add_argument("--gradient_checkpointing", action="store_true")
+    parser.add_argument("--mlp_pool", type=int, default=1, help="avg-pool MLP patch tokens (2 -> 196 to 49)")
+    parser.add_argument("--no_4bit", action="store_true", help="fp16 weights instead of NF4 (faster if it fits)")
     parser.add_argument("--time_budget_min", type=float, default=0)
     parser.add_argument("--max_train_samples", type=int, default=0, help="debug only")
+    parser.add_argument("--max_eval_samples", type=int, default=0, help="cap val/test sets (smoke tests only)")
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -57,11 +60,19 @@ def main():
     if args.max_train_samples:
         train_set.indices, train_set.y, train_set.group = (x[:args.max_train_samples] for x in
                                                             (train_set.indices, train_set.y, train_set.group))
-    val_set = TaskDataset(spec, "val", template=0)
+    def cap(ds):
+        """Evenly spaced subset, so every group stays represented (smoke tests only)."""
+        if args.max_eval_samples and len(ds.indices) > args.max_eval_samples:
+            keep = np.linspace(0, len(ds.indices) - 1, args.max_eval_samples).astype(int)
+            ds.indices, ds.y, ds.group = (np.asarray(x)[keep] for x in (ds.indices, ds.y, ds.group))
+        return ds
+
+    val_set = cap(TaskDataset(spec, "val", template=0))
     vision_dim = train_set.features.shape[-1]
 
     model = StudyVLM(args.llm, args.connector, builder.before_ids, vision_dim=vision_dim, dtype=args.dtype,
-                     lora_rank=args.lora_rank, gradient_checkpointing=args.gradient_checkpointing, device=device)
+                     lora_rank=args.lora_rank, gradient_checkpointing=args.gradient_checkpointing, device=device,
+                     mlp_pool=args.mlp_pool, quantize_4bit=not args.no_4bit)
     if args.align_ckpt:
         model.connector.load_state_dict(torch.load(args.align_ckpt, map_location=device))
 
@@ -107,7 +118,7 @@ def main():
         model.load_state_dict(state, strict=False)
         per_template = {}
         for t in range(len(spec.questions)):
-            loader = DataLoader(TaskDataset(spec, "test", template=t), batch_size=args.batch_size * 2, num_workers=2)
+            loader = DataLoader(cap(TaskDataset(spec, "test", template=t)), batch_size=args.batch_size * 2, num_workers=2)
             res = evaluate(model, builder, loader, device, spec.group_names, keep_attention=(t == 0))
             per_template[t] = res["metrics"]
             arrays[f"{rule}_t{t}_preds"] = res["preds"]

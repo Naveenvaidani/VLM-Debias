@@ -49,6 +49,7 @@ class StudyVLM(nn.Module):
         gradient_checkpointing: bool = False,
         device: str = "cuda",
         use_lora: bool = True,
+        mlp_pool: int = 1,
     ):
         super().__init__()
         from peft import LoraConfig, get_peft_model
@@ -88,7 +89,7 @@ class StudyVLM(nn.Module):
         self.decoder = decoder
         llm_dim = self.embed.weight.shape[1]
         self.llm_dim = llm_dim
-        self.connector = build_connector(connector, vision_dim, llm_dim).to(device=device, dtype=torch.float32)
+        self.connector = build_connector(connector, vision_dim, llm_dim, mlp_pool=mlp_pool).to(device=device, dtype=torch.float32)
         self.register_buffer("before_ids", torch.tensor(before_ids, dtype=torch.long, device=device))
         self.device_name = device
 

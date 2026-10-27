@@ -3,7 +3,8 @@ Vision-language connectors compared in the study. All map frozen vision patch fe
 [B, P, vision_dim] into the LLM; parameter counts are kept in the same range (~8-11M at
 llm_dim=2560) so differences come from the design, not capacity.
 
-- MLPProjector:      LLaVA-1.5 style. Every patch becomes one LLM token (P prefix tokens).
+- MLPProjector:      LLaVA-1.5 style. Every patch becomes one LLM token (P prefix tokens), or one
+                     token per pool x pool patch window (P / pool^2 tokens) when pool > 1.
 - QFormerConnector:  BLIP-2 style. A fixed set of learned queries cross-attends to the patches;
                      the queries become prefix tokens (num_queries tokens).
 - CrossAttnBottleneck: no image tokens. Each text token cross-attends to the patches and the
@@ -13,18 +14,25 @@ from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class MLPProjector(nn.Module):
     kind = "prefix"
 
-    def __init__(self, vision_dim: int, llm_dim: int):
+    def __init__(self, vision_dim: int, llm_dim: int, pool: int = 1):
         super().__init__()
+        self.pool = pool
         self.net = nn.Sequential(
             nn.LayerNorm(vision_dim), nn.Linear(vision_dim, llm_dim), nn.GELU(), nn.Linear(llm_dim, llm_dim)
         )
 
     def forward(self, patches: torch.Tensor) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+        if self.pool > 1:
+            b, p, d = patches.shape
+            side = int(p ** 0.5)
+            grid = patches.transpose(1, 2).reshape(b, d, side, side)
+            patches = F.avg_pool2d(grid, self.pool).flatten(2).transpose(1, 2)
         return self.net(patches), None
 
 
@@ -78,5 +86,7 @@ class CrossAttnBottleneck(nn.Module):
 CONNECTORS = {"mlp": MLPProjector, "qformer": QFormerConnector, "bottleneck": CrossAttnBottleneck}
 
 
-def build_connector(name: str, vision_dim: int, llm_dim: int) -> nn.Module:
+def build_connector(name: str, vision_dim: int, llm_dim: int, mlp_pool: int = 1) -> nn.Module:
+    if name == "mlp":
+        return MLPProjector(vision_dim, llm_dim, pool=mlp_pool)
     return CONNECTORS[name](vision_dim, llm_dim)

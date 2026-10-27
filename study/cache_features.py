@@ -18,7 +18,8 @@ from transformers import AutoImageProcessor, AutoModel, SiglipVisionModel
 
 def load_encoder(name, device):
     cls = SiglipVisionModel if "siglip" in name.lower() else AutoModel
-    enc = cls.from_pretrained(name, dtype=torch.float16).to(device).eval()
+    dtype = torch.float16 if device == "cuda" else torch.float32  # fp16 matmuls are slow or missing on CPU
+    enc = cls.from_pretrained(name, dtype=dtype).to(device).eval()
     return AutoImageProcessor.from_pretrained(name), enc
 
 
@@ -41,7 +42,7 @@ def cache_dir(task_dir, processor, encoder, device, batch_size, layers):
     for start in tqdm(range(0, len(images), batch_size), desc=os.path.basename(task_dir)):
         batch = [Image.open(p).convert("RGB") for p in images[start:start + batch_size]]
         px = processor(images=batch, return_tensors="pt", size={"height": size, "width": size}
-                       ).pixel_values.to(device, torch.float16)
+                       ).pixel_values.to(device, encoder.dtype)
         with torch.no_grad():
             out = encoder(pixel_values=px, output_hidden_states=len(outs) > 1 or -1 not in outs)
         for layer, (_, arr) in outs.items():

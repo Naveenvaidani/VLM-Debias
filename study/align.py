@@ -34,6 +34,8 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--dtype", choices=["fp16", "bf16"], default="fp16")
     parser.add_argument("--gradient_checkpointing", action="store_true")
+    parser.add_argument("--mlp_pool", type=int, default=1, help="avg-pool MLP patch tokens (2 -> 196 to 49)")
+    parser.add_argument("--no_4bit", action="store_true", help="fp16 weights instead of NF4 (faster if it fits)")
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
@@ -45,7 +47,8 @@ def main():
     data = CaptionDataset(args.captions_dir, seed=args.seed)
     vision_dim = data.features.shape[-1]
     model = StudyVLM(args.llm, args.connector, builder.before_ids, vision_dim=vision_dim, dtype=args.dtype,
-                     gradient_checkpointing=args.gradient_checkpointing, device=device, use_lora=False)
+                     gradient_checkpointing=args.gradient_checkpointing, device=device,
+                     mlp_pool=args.mlp_pool, quantize_4bit=not args.no_4bit, use_lora=False)
     params = list(model.connector.parameters())
     optimizer = torch.optim.AdamW(params, lr=args.lr, weight_decay=0.0)
     scheduler = get_cosine_schedule_with_warmup(optimizer, int(0.03 * args.steps), args.steps)
