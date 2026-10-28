@@ -43,6 +43,8 @@ def main():
     parser.add_argument("--dtype", choices=["fp16", "bf16"], default="fp16")
     parser.add_argument("--device", choices=["auto", "cuda", "xla", "cpu"], default="auto")
     parser.add_argument("--gradient_checkpointing", action="store_true")
+    parser.add_argument("--mlp_grid", type=int, default=0,
+                        help="MLP tokens = grid x grid (e.g. 6 -> 36, near Q-Former's 32)")
     parser.add_argument("--mlp_pool", type=int, default=1, help="avg-pool MLP patch tokens (2 -> 196 to 49)")
     parser.add_argument("--no_4bit", action="store_true", help="fp16 weights instead of NF4 (faster if it fits)")
     parser.add_argument("--time_budget_min", type=float, default=0)
@@ -114,7 +116,8 @@ def main():
     model = StudyVLM(args.llm, args.connector, builder.before_ids, vision_dim=vision_dim, dtype=args.dtype,
                      lora_rank=args.lora_rank, gradient_checkpointing=args.gradient_checkpointing, device=device,
                      use_lora=not args.freeze_llm,
-                     mlp_pool=args.mlp_pool, quantize_4bit=not args.no_4bit)
+                     mlp_pool=args.mlp_pool, mlp_grid=args.mlp_grid,
+                     quantize_4bit=not args.no_4bit)
     if args.align_ckpt:
         model.connector.load_state_dict(torch.load(args.align_ckpt, map_location="cpu"))
     if args.init_from:  # stage 3: start from a trained run and retrain only the connector

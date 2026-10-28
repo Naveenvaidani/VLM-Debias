@@ -36,6 +36,8 @@ def main():
     parser.add_argument("--captions_dir", default="./data/tasks/captions")
     parser.add_argument("--n", type=int, default=512)
     parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--mlp_grid", type=int, default=0,
+                        help="MLP tokens = grid x grid (e.g. 6 -> 36, near Q-Former's 32)")
     parser.add_argument("--mlp_pool", type=int, default=1)
     parser.add_argument("--no_4bit", action="store_true")
     parser.add_argument("--dtype", choices=["fp16", "bf16"], default="fp16")
@@ -48,7 +50,8 @@ def main():
     data = CaptionDataset(args.captions_dir, seed=0)
     idx = np.linspace(0, len(data) - 1, min(args.n, len(data))).astype(int)  # fixed, evenly spaced subset
     model = StudyVLM(args.llm, args.connector, builder.before_ids, vision_dim=data.features.shape[-1],
-                     dtype=args.dtype, device=device, mlp_pool=args.mlp_pool, quantize_4bit=not args.no_4bit)
+                     dtype=args.dtype, device=device, mlp_pool=args.mlp_pool, mlp_grid=args.mlp_grid,
+                     quantize_4bit=not args.no_4bit)
     model.load_state_dict(torch.load(args.adapter, map_location="cpu"), strict=False)
     if args.connector_ckpt:
         model.connector.load_state_dict(torch.load(args.connector_ckpt, map_location="cpu"))

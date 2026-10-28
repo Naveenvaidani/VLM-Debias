@@ -104,6 +104,7 @@ def main():
     parser.add_argument("--gradient_checkpointing", action="store_true")
     parser.add_argument("--skip_smoke", action="store_true")
     parser.add_argument("--mlp_pool", type=int, default=1, help="avg-pool MLP patch tokens (2 -> 49 tokens)")
+    parser.add_argument("--mlp_grid", type=int, default=0, help="adaptive MLP token grid (6 -> 36 tokens)")
     parser.add_argument("--no_4bit", action="store_true", help="fp16 LLM weights instead of NF4")
     parser.add_argument("--data_from", default=None,
                         help="prepared data/ dir from a data-prep session (skips building tasks and features)")
@@ -137,7 +138,7 @@ def main():
     runs = os.path.join(ROOT, "runs_study", tag)
     os.makedirs(runs, exist_ok=True)
     ckpt = ["--gradient_checkpointing"] if args.gradient_checkpointing else []
-    ckpt += ["--mlp_pool", str(args.mlp_pool)] + (["--no_4bit"] if args.no_4bit else [])
+    ckpt += ["--mlp_pool", str(args.mlp_pool)] + (["--mlp_grid", str(args.mlp_grid)] if args.mlp_grid else []) + (["--no_4bit"] if args.no_4bit else [])
     tasks = args.tasks.split(",")
     connectors = args.connectors.split(",")
 

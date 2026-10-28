@@ -20,19 +20,20 @@ import torch.nn.functional as F
 class MLPProjector(nn.Module):
     kind = "prefix"
 
-    def __init__(self, vision_dim: int, llm_dim: int, pool: int = 1):
+    def __init__(self, vision_dim: int, llm_dim: int, pool: int = 1, grid: int = 0):
         super().__init__()
-        self.pool = pool
+        self.pool, self.grid = pool, grid  # grid > 0: adaptive pooling to grid x grid tokens (overrides pool)
         self.net = nn.Sequential(
             nn.LayerNorm(vision_dim), nn.Linear(vision_dim, llm_dim), nn.GELU(), nn.Linear(llm_dim, llm_dim)
         )
 
     def forward(self, patches: torch.Tensor) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
-        if self.pool > 1:
+        if self.pool > 1 or self.grid:
             b, p, d = patches.shape
             side = int(p ** 0.5)
             grid = patches.transpose(1, 2).reshape(b, d, side, side)
-            patches = F.avg_pool2d(grid, self.pool).flatten(2).transpose(1, 2)
+            grid = F.adaptive_avg_pool2d(grid, self.grid) if self.grid else F.avg_pool2d(grid, self.pool)
+            patches = grid.flatten(2).transpose(1, 2)
         return self.net(patches), None
 
 
@@ -96,7 +97,7 @@ CONNECTORS = {"mlp": MLPProjector, "qformer": QFormerConnector, "bottleneck": Cr
               "bottleneck_fixed": lambda v, l: CrossAttnBottleneck(v, l, gate="fixed")}
 
 
-def build_connector(name: str, vision_dim: int, llm_dim: int, mlp_pool: int = 1) -> nn.Module:
+def build_connector(name: str, vision_dim: int, llm_dim: int, mlp_pool: int = 1, mlp_grid: int = 0) -> nn.Module:
     if name == "mlp":
-        return MLPProjector(vision_dim, llm_dim, pool=mlp_pool)
+        return MLPProjector(vision_dim, llm_dim, pool=mlp_pool, grid=mlp_grid)
     return CONNECTORS[name](vision_dim, llm_dim)

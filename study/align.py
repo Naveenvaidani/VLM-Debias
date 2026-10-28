@@ -36,6 +36,8 @@ def main():
     parser.add_argument("--dtype", choices=["fp16", "bf16"], default="fp16")
     parser.add_argument("--device", choices=["auto", "cuda", "xla", "cpu"], default="auto")
     parser.add_argument("--gradient_checkpointing", action="store_true")
+    parser.add_argument("--mlp_grid", type=int, default=0,
+                        help="MLP tokens = grid x grid (e.g. 6 -> 36, near Q-Former's 32)")
     parser.add_argument("--mlp_pool", type=int, default=1, help="avg-pool MLP patch tokens (2 -> 196 to 49)")
     parser.add_argument("--no_4bit", action="store_true", help="fp16 weights instead of NF4 (faster if it fits)")
     parser.add_argument("--seed", type=int, default=0)
@@ -59,7 +61,8 @@ def main():
     vision_dim = data.features.shape[-1]
     model = StudyVLM(args.llm, args.connector, builder.before_ids, vision_dim=vision_dim, dtype=args.dtype,
                      gradient_checkpointing=args.gradient_checkpointing, device=device,
-                     mlp_pool=args.mlp_pool, quantize_4bit=not args.no_4bit, use_lora=False)
+                     mlp_pool=args.mlp_pool, mlp_grid=args.mlp_grid,
+                     quantize_4bit=not args.no_4bit, use_lora=False)
     params = list(model.connector.parameters())
     ltd = None
     if args.ltd_weight:  # frozen sentence encoder + a small head that is discarded after alignment

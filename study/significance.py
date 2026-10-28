@@ -59,6 +59,7 @@ def main():
     parser.add_argument("--rule", default="wga")
     parser.add_argument("--n_boot", type=int, default=2000)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--margin", type=float, default=3.0, help="equivalence margin in WGA points (TOST)")
     args = parser.parse_args()
     rng = np.random.default_rng(args.seed)
     rows = []
@@ -98,6 +99,9 @@ def main():
             h = np.take_along_axis(seed_boot[a][:, :n], pick, 1).mean(1) - \
                 np.take_along_axis(seed_boot[b][:, :n], pick, 1).mean(1)
             p_hier = min(1.0, 2 * min((h <= 0).mean(), (h >= 0).mean()))
+            # equivalence (TOST) on the hierarchical bootstrap: both one-sided tests against +-margin
+            m = args.margin / 100
+            p_tost = max((h <= -m).mean(), (h >= m).mean())
             t_p = stats.ttest_rel([seeds_a[s] for s in common], [seeds_b[s] for s in common]).pvalue \
                 if len(common) >= 2 else np.nan
             task_rows.append({"task": task, "A": a, "B": b, "wga_A": point[a] * 100, "wga_B": point[b] * 100,
@@ -105,7 +109,8 @@ def main():
                               "ci_high_pp": np.percentile(diff, 97.5) * 100, "p_bootstrap": p_boot,
                               "p_paired_t_seeds": t_p, "n_seeds": len(common),
                               "hier_ci_low_pp": np.percentile(h, 2.5) * 100, "hier_ci_high_pp": np.percentile(h, 97.5) * 100,
-                              "p_hierarchical": p_hier})
+                              "p_hierarchical": p_hier, "p_equivalence_tost": p_tost,
+                              "equivalent_within_margin": bool(p_tost < 0.05)})
         adj = holm(np.array([r["p_hierarchical"] for r in task_rows]))
         for r, p in zip(task_rows, adj):
             r["p_hier_holm"] = p
@@ -116,7 +121,7 @@ def main():
     df.to_csv(os.path.join(args.out, f"significance_{args.rule}.csv"), index=False)
     show = df.round({"wga_A": 1, "wga_B": 1, "diff_pp": 1, "ci_low_pp": 1, "ci_high_pp": 1, "p_bootstrap": 4,
                      "p_paired_t_seeds": 3, "hier_ci_low_pp": 1, "hier_ci_high_pp": 1, "p_hierarchical": 4,
-                     "p_hier_holm": 4})
+                     "p_hier_holm": 4, "p_equivalence_tost": 4})
     with open(os.path.join(args.out, f"significance_{args.rule}.md"), "w") as f:
         f.write(f"# Pairwise connector comparisons (test WGA, {args.rule} selection)\n\n"
                 f"Difference A - B in points; 95% CI from {args.n_boot} stratified bootstrap resamples of the test "
