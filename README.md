@@ -64,9 +64,9 @@ features, same data, same training budget) and swaps only the vision-language co
 - **Cross-attention bottleneck** (this repo's design, no image tokens), 8.9M parameters
 
 Each connector is first aligned on 10k COCO captions (300 steps, LLM frozen), then trained for 4 epochs
-on two shortcut tasks: **Waterbirds** (background shortcut) and **Watermark** (COCO images where a
-corner watermark predicts the label 95% of the time in training). Validation and test sets are
-group-balanced. 3 seeds per configuration, 18 runs in total, on Kaggle 2x T4.
+on two shortcut tasks: **Waterbirds** (background shortcut; official splits, test n = 5,794) and
+**Watermark** (COCO images where a corner watermark predicts "is there a dog?" 95% of the time in
+training; our own group-balanced val/test, test n = 2,400). 3 seeds per configuration, 18 runs in total, on Kaggle 2x T4.
 
 ### Test worst-group accuracy (mean ± s.d. over 3 seeds, checkpoint chosen by validation WGA)
 
@@ -82,14 +82,19 @@ group-balanced. 3 seeds per configuration, 18 runs in total, on Kaggle 2x T4.
 
 What the numbers say:
 
-- **MLP and Q-Former are close.** Q-Former is 2.8 points worse on Waterbirds and 5.0 points better on
-  Watermark, and both differences are inside the seed-to-seed spread.
+- **No connector removes the shortcut.** The best Waterbirds result (MLP, 74.5) is in the range of plain
+  ERM in the literature (about 73 with a ResNet-50); group-aware methods such as DFR or GroupDRO reach 91-93.
+- **MLP and Q-Former are close.** Q-Former is 2.8 points lower on Waterbirds (lower on all 3 seeds) and
+  5.0 points higher on Watermark (inside the seed spread).
 - **The cross-attention bottleneck relies on the shortcut most and is unstable.** It has the largest
-  ID-to-OOD gap on both tasks, and one seed per task collapsed (45.1 and 32.2 WGA) while the others
-  reached 56-73. Its best checkpoint was often the last epoch, so it may be under-trained at this
-  budget; its zero-initialised gate also starts with no visual signal.
-- **The held-out question phrasing** (never seen in training) gives the same WGA as the training
-  phrasings to within 1-2 points, so the models are not keying on the wording.
+  ID-to-OOD gap on both tasks, and one seed per task collapsed (45.1 and 32.2 WGA).
+- **It attends to the watermark.** When the watermark is present, the bottleneck puts 16.7% of its
+  attention on the watermark corner, against 6.1% when it is absent and 8.2% for uniform attention;
+  Q-Former shifts less (11.6% vs 7.7%). See [`results_study/attention_watermark.csv`](results_study/attention_watermark.csv).
+- **Its learnable gate stays shut.** The zero-initialised tanh gate is 0.0005 after caption alignment,
+  matching the gate-suppression effect reported by Farazi et al. (2026, arXiv 2607.23335). A fixed-gate
+  variant is being run to test whether the closed gate causes the shortcut reliance.
+- **The held-out question phrasing** gives the same WGA as the training phrasings to within 1-2 points.
 
 Full tables, including checkpoint selection without group labels: [`results_study/summary.md`](results_study/summary.md);
 every run: [`results_study/all_runs.csv`](results_study/all_runs.csv).
@@ -178,7 +183,16 @@ results_study/, docs/figures/study/   connector-study results and figures
 ## Limitations
 
 - Waterbirds study at the top: one seed per configuration; differences of a few points are within run-to-run noise.
-- Connector study: 3 seeds and 2 tasks, so differences under ~5 points are not significant.
+- Connector study:
+  - 3 seeds and 2 tasks, one LLM (Qwen3.5-4B, 4-bit) and one small vision encoder (SigLIP-base), so
+    differences under ~5 points are not significant.
+  - Seeds vary only the task stage; stage-1 alignment ran once per connector (`--align_per_seed` now exists).
+  - LoRA also adapts the LLM, which can learn the shortcut whatever the connector; a frozen-LLM run
+    (`--freeze_llm`) separates the two.
+  - Alignment is short (300 steps on 10k captions; LLaVA uses 558k pairs), and the MLP uses 2x2-pooled
+    patches (49 tokens) instead of all 196 for speed.
+  - Average accuracy is the plain test mean, not reweighted by training group sizes as in some papers.
+  - Checkpoints are selected with group labels (val WGA); the label-free rule is in the summary tables.
 - Waterbirds has no shortcut-region masks in this setup, so the shortcut-suppression term of the
   loss is implemented and tested but not used in these runs.
 - The vision encoder is frozen; only LoRA adapters and the connector are trained.
