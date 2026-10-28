@@ -54,6 +54,58 @@ this inspectable, but it does not force the model onto the bird.
 
 ---
 
+## Connector study: does the connector design change shortcut reliance?
+
+A second experiment holds everything fixed (Qwen3.5-4B in 4-bit with LoRA, frozen SigLIP-base patch
+features, same data, same training budget) and swaps only the vision-language connector:
+
+- **MLP projector** (LLaVA-style), 2x2-pooled patches, 49 image tokens, 8.5M parameters
+- **Q-Former** (BLIP-2-style), 32 learned queries, 11.4M parameters
+- **Cross-attention bottleneck** (this repo's design, no image tokens), 8.9M parameters
+
+Each connector is first aligned on 10k COCO captions (300 steps, LLM frozen), then trained for 4 epochs
+on two shortcut tasks: **Waterbirds** (background shortcut) and **Watermark** (COCO images where a
+corner watermark predicts the label 95% of the time in training). Validation and test sets are
+group-balanced. 3 seeds per configuration, 18 runs in total, on Kaggle 2x T4.
+
+### Test worst-group accuracy (mean ± s.d. over 3 seeds, checkpoint chosen by validation WGA)
+
+| Task | MLP projector | Q-Former | Cross-attn bottleneck |
+| :--- | :---: | :---: | :---: |
+| Waterbirds | **74.5 ± 1.5** | 71.7 ± 2.5 | 62.1 ± 14.9 |
+| Watermark | 63.6 ± 4.4 | **68.6 ± 4.1** | 50.3 ± 16.1 |
+
+| Task | Avg acc (MLP / Q-Former / bottleneck) | ID → OOD gap in points (MLP / Q-Former / bottleneck) |
+| :--- | :---: | :---: |
+| Waterbirds | 90.4 / 87.6 / 83.0 | 17.0 / 21.0 / 27.2 |
+| Watermark | 84.9 / 87.3 / 79.7 | 27.4 / 21.6 / 37.0 |
+
+What the numbers say:
+
+- **MLP and Q-Former are close.** Q-Former is 2.8 points worse on Waterbirds and 5.0 points better on
+  Watermark, and both differences are inside the seed-to-seed spread.
+- **The cross-attention bottleneck relies on the shortcut most and is unstable.** It has the largest
+  ID-to-OOD gap on both tasks, and one seed per task collapsed (45.1 and 32.2 WGA) while the others
+  reached 56-73. Its best checkpoint was often the last epoch, so it may be under-trained at this
+  budget; its zero-initialised gate also starts with no visual signal.
+- **The held-out question phrasing** (never seen in training) gives the same WGA as the training
+  phrasings to within 1-2 points, so the models are not keying on the wording.
+
+Full tables, including checkpoint selection without group labels: [`results_study/summary.md`](results_study/summary.md);
+every run: [`results_study/all_runs.csv`](results_study/all_runs.csv).
+
+![Worst-group accuracy by connector](docs/figures/study/wga_wga.png)
+
+![ID vs OOD accuracy](docs/figures/study/id_vs_ood_wga.png)
+
+![Paired difference vs MLP](docs/figures/study/delta_vs_mlp_wga.png)
+
+Run it: [`study/kaggle_kernels/`](study/kaggle_kernels/) holds the Kaggle scripts (data prep on one
+session, training on the next; a follow-up session resumes from saved results). Speed on a T4,
+batch 16: 4.0 / 2.5 / 1.7 s per step for MLP / Q-Former / bottleneck after pooling MLP tokens
+196 → 49 and dropping gradient checkpointing (MLP was 13.7 s before); `study/bench_speed.py`
+measures this.
+
 ## Setup
 
 | Component | Choice |
@@ -119,11 +171,14 @@ src/training/engine.py          train / eval loops, group-balanced sampler
 scripts/                        data preparation, feature caching, model download, run_all.sh
 train.py / evaluate.py / app.py training, evaluation + figures, demo
 metrics/                        exported results and figures
+src/study/, study/              connector study: connectors, generic VLM wrapper, tasks, training, plots
+results_study/, docs/figures/study/   connector-study results and figures
 ```
 
 ## Limitations
 
-- One seed per configuration; differences of a few points are within run-to-run noise.
+- Waterbirds study at the top: one seed per configuration; differences of a few points are within run-to-run noise.
+- Connector study: 3 seeds and 2 tasks, so differences under ~5 points are not significant.
 - Waterbirds has no shortcut-region masks in this setup, so the shortcut-suppression term of the
   loss is implemented and tested but not used in these runs.
 - The vision encoder is frozen; only LoRA adapters and the connector are trained.

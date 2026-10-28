@@ -69,7 +69,7 @@ def bars_per_task(df, metric, ylabel, title, path, ylim=(0, 105)):
     n_seeds = df.groupby(["task", "connector"]).seed.nunique().max()
     fig.text(0.01, 0.005, f"Bars: mean over {n_seeds} seed(s); error bars: ±1 s.d.; dots: individual seeds.",
              fontsize=8.5, color=INK2)
-    fig.tight_layout(rect=(0, 0.04, 1, 0.9), w_pad=2.5)
+    fig.tight_layout(rect=(0, 0.04, 1, 0.95), w_pad=2.5)
     fig.savefig(path, dpi=200)
     plt.close(fig)
 
@@ -102,7 +102,7 @@ def id_vs_ood(df, path):
     fig.legend(handles=handles, loc="lower left", ncol=2, frameon=False, fontsize=9, bbox_to_anchor=(0.01, 0.0))
     fig.suptitle(wrap("Shortcut cost: accuracy drop from ID to OOD groups (label = gap in points)", fig),
                  x=0.01, ha="left", fontsize=12.5, color=INK, y=0.99)
-    fig.tight_layout(rect=(0, 0.07, 1, 0.9), w_pad=2.5)
+    fig.tight_layout(rect=(0, 0.07, 1, 0.95), w_pad=2.5)
     fig.savefig(path, dpi=200)
     plt.close(fig)
 
@@ -129,8 +129,8 @@ def paired_delta(df, path):
                    label=LABELS[c].replace("\n", " ") if i == 0 else None)
             ax.scatter(np.full(len(d), x), d, s=14, color=INK, alpha=0.55, zorder=3, linewidths=0)
             lo, hi = min(lo, d.min(), d.mean()), max(hi, d.max(), d.mean())
-            ax.text(x, d.mean() + (1.2 if d.mean() >= 0 else -1.2), f"{d.mean():+.1f}", ha="center",
-                    va="bottom" if d.mean() >= 0 else "top", fontsize=8.5, color=INK)
+            ax.text(x + width * 0.47, d.mean(), f" {d.mean():+.1f}", ha="left", va="center", fontsize=8.5,
+                    color=INK, bbox=dict(facecolor=SURFACE, edgecolor="none", pad=1))
     ax.axhline(0, color=INK2, lw=1)
     span = max(hi - lo, 4.0)
     ax.set_ylim(lo - 0.18 * span, hi + 0.22 * span)
@@ -142,7 +142,7 @@ def paired_delta(df, path):
                  color=INK, y=0.99)
     ax.legend(frameon=False, fontsize=9, loc="upper left", bbox_to_anchor=(1.0, 1.0))
     style(ax)
-    fig.tight_layout(rect=(0, 0, 1, 0.88))
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
     fig.savefig(path, dpi=200)
     plt.close(fig)
 
