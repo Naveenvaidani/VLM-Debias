@@ -216,6 +216,37 @@ All numbers are computed by `evaluate.py` from model predictions on the held-out
 
 ---
 
+## Experimental protocol (connector study)
+
+| Item | Setting |
+| :--- | :--- |
+| LLM | Qwen/Qwen3.5-4B, NF4 4-bit (double quantisation), fp16 compute; native vision tower removed |
+| Vision features | google/siglip-base-patch16-224, frozen, last layer, 196 patches x 768, cached once |
+| Connectors | MLP (LayerNorm-Linear-GELU-Linear, 2x2 patch pooling, 49 tokens, 8.5M); Q-Former (32 queries, 8 heads, 1 block, 11.4M); cross-attention (attn dim 1024, 8 heads, 8.9M) with a learned zero-initialised tanh gate or a fixed gate with zero-initialised output |
+| Stage 1 (alignment) | 10k COCO caption pairs (no task val/test images), 300 steps, batch 16, AdamW lr 1e-3, 3% warmup + cosine, LLM frozen |
+| Stage 2 (task) | LoRA r 16, alpha 32, dropout 0.05 on attention, linear-attention and MLP projections; PagedAdamW8bit, lr 2e-4 (LoRA and connector), weight decay 0.01, batch 16, 4 epochs, 5% warmup + cosine, grad clip 1.0, early stop after 2 epochs without val WGA gain |
+| Prompting | Chat template; answer = first token of the class word; 2 training question phrasings, 1 held out for test |
+| Checkpoint selection | Best val worst-group accuracy (uses group labels); best val average accuracy reported as the label-free alternative |
+| Stage 3 (connector-only) | From the selected stage-2 model, LLM and LoRA frozen. DFR-style: group-balanced half of val, other half selects. JTT-style: training set with the stage-2 model's errors repeated 20x. 1 epoch |
+| Seeds | 3 per configuration (5 planned); seeds vary data order, LoRA init and stage-2 sampling; per-seed alignment in a separate run |
+| Hardware | Kaggle 2x NVIDIA T4 (16 GB); one job per GPU |
+
+## Statistics
+
+- Point estimates are means over seeds of test worst-group accuracy, averaged over the three question phrasings.
+- Pairwise comparisons ([`results_study/significance_wga.md`](results_study/significance_wga.md)): 95% intervals
+  from 2,000 stratified bootstrap resamples of the test set, and a **hierarchical bootstrap** that also resamples
+  seeds. Significance uses the hierarchical p-value with Holm-Bonferroni correction within each task.
+- With 3 seeds only the learned-vs-fixed gate difference on Watermark survives correction (p = 0.03); every
+  other connector difference is inside training variance. Five seeds are being run.
+
+## Reproducibility
+
+- Every Kaggle run writes `environment.txt` (exact `pip freeze`, GPU driver, git commit) next to its results.
+- Data splits are deterministic (`study/build_tasks.py`, seed 0); Waterbirds uses the official splits.
+- `study/kaggle_kernels/` holds the exact scripts for every run; runs resume from exported results.
+- Unit tests: `python -m pytest tests` (18).
+
 ## Reproduce
 
 ```bash
