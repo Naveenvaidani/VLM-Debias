@@ -93,6 +93,7 @@ def main():
     parser.add_argument("--tasks", default="waterbirds,cooccur,watermark_p0.95,typographic_p0.95")
     parser.add_argument("--connectors", default=",".join(CONNECTORS))
     parser.add_argument("--seeds", type=int, default=3)
+    parser.add_argument("--seed_start", type=int, default=0, help="first seed to run (e.g. 2 to finish seed 2 only)")
     parser.add_argument("--gpus", type=int, default=2)
     parser.add_argument("--align_steps", type=int, default=1200)
     parser.add_argument("--epochs", type=int, default=6)
@@ -191,7 +192,7 @@ def main():
 
     # 4. stage 2 task runs (seed-major order, so partial sessions still cover every config)
     task_jobs = []
-    for seed in range(args.seeds):
+    for seed in range(args.seed_start, args.seeds):
         for task in tasks:
             for c in connectors:
                 d = os.path.join(runs, task, c, f"s{seed}")
