@@ -108,6 +108,8 @@ class PromptBuilder:
             seqs.append(seq)
             labels.append(lab)
         length = max(len(s) for s in seqs)
+        if getattr(self, "pad_to", None):  # fixed shapes for XLA (no recompilation per batch)
+            length = max(length, self.pad_to)
         pad = self.tok.pad_token_id if self.tok.pad_token_id is not None else 0
         ids = torch.full((len(seqs), length), pad, dtype=torch.long)
         mask = torch.zeros((len(seqs), length), dtype=torch.long)

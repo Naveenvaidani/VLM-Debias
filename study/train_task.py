@@ -22,6 +22,7 @@ from transformers import AutoTokenizer, get_cosine_schedule_with_warmup
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.study.data import TaskDataset, TaskSpec, PromptBuilder
 from src.study.engine import evaluate, train_epoch
+from src.study.device import get_device, is_xla, torch_device
 from src.study.vlm import StudyVLM
 
 
@@ -40,6 +41,7 @@ def main():
     parser.add_argument("--connector_lr", type=float, default=2e-4)
     parser.add_argument("--lora_rank", type=int, default=16)
     parser.add_argument("--dtype", choices=["fp16", "bf16"], default="fp16")
+    parser.add_argument("--device", choices=["auto", "cuda", "xla", "cpu"], default="auto")
     parser.add_argument("--gradient_checkpointing", action="store_true")
     parser.add_argument("--mlp_pool", type=int, default=1, help="avg-pool MLP patch tokens (2 -> 196 to 49)")
     parser.add_argument("--no_4bit", action="store_true", help="fp16 weights instead of NF4 (faster if it fits)")
@@ -51,11 +53,16 @@ def main():
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = get_device(args.device)
+    if device == "xla" and args.dtype == "fp16":
+        args.dtype = "bf16"  # TPUs compute in bf16
+    device = torch_device(device)
     os.makedirs(args.run_dir, exist_ok=True)
     spec = TaskSpec(args.task_dir)
     tok = AutoTokenizer.from_pretrained(args.llm)
     builder = PromptBuilder(tok, spec.questions, spec.answers)
+    if is_xla(get_device(args.device)):
+        builder.pad_to = max(len(a) for a in builder.after_ids) + 1
 
     train_set = TaskDataset(spec, "train", seed=args.seed)
     if args.max_train_samples:
@@ -76,20 +83,22 @@ def main():
                      use_lora=not args.freeze_llm,
                      mlp_pool=args.mlp_pool, quantize_4bit=not args.no_4bit)
     if args.align_ckpt:
-        model.connector.load_state_dict(torch.load(args.align_ckpt, map_location=device))
+        model.connector.load_state_dict(torch.load(args.align_ckpt, map_location="cpu"))
 
-    import bitsandbytes as bnb
     lora_params = [p for n, p in model.decoder.named_parameters() if p.requires_grad]
     groups = [{"params": lora_params, "lr": args.lr}] if lora_params else []
-    optimizer = bnb.optim.PagedAdamW8bit(groups + [
-        {"params": list(model.connector.parameters()), "lr": args.connector_lr},
-    ], weight_decay=0.01)
+    param_groups = groups + [{"params": list(model.connector.parameters()), "lr": args.connector_lr}]
+    if str(device).startswith("cuda"):
+        import bitsandbytes as bnb
+        optimizer = bnb.optim.PagedAdamW8bit(param_groups, weight_decay=0.01)
+    else:  # bitsandbytes optimizers are CUDA-only
+        optimizer = torch.optim.AdamW(param_groups, weight_decay=0.01)
     g = torch.Generator().manual_seed(args.seed)
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, generator=g, num_workers=2)
     val_loader = DataLoader(val_set, batch_size=args.batch_size * 2, num_workers=2)
     total_steps = args.epochs * len(train_loader)
     scheduler = get_cosine_schedule_with_warmup(optimizer, int(0.05 * total_steps), total_steps)
-    scaler = torch.amp.GradScaler("cuda") if args.dtype == "fp16" else None
+    scaler = torch.amp.GradScaler("cuda") if args.dtype == "fp16" and str(device).startswith("cuda") else None
 
     best = {"wga": (-1.0, None, 0), "avg": (-1.0, None, 0)}  # rule -> (val score, state, epoch)
     history, stale, start = [], 0, time.time()

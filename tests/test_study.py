@@ -58,6 +58,26 @@ class TestStudy(unittest.TestCase):
         fused.sum().backward()
         self.assertGreater(conn.out_proj.weight.grad.abs().sum().item(), 0)
 
+    def test_logits_at_fixed_shape_path_matches(self):
+        import src.study.vlm as vlm
+        from types import SimpleNamespace
+        torch.manual_seed(0)
+        fake = SimpleNamespace(lm_head=torch.nn.Linear(8, 11, bias=False))
+        hidden = torch.randn(3, 5, 8)
+        labels = torch.full((3, 5), -100)
+        labels[0, 2], labels[1, 0], labels[2, 4] = 4, 7, 1
+        ref_logits, ref_target = vlm.StudyVLM.logits_at(fake, hidden, labels)
+        orig = vlm.is_xla
+        vlm.is_xla = lambda d: True
+        try:
+            g_logits, g_target = vlm.StudyVLM.logits_at(fake, hidden, labels, one_per_row=True)
+            f_logits, f_target = vlm.StudyVLM.logits_at(fake, hidden, labels)
+        finally:
+            vlm.is_xla = orig
+        self.assertTrue(torch.allclose(ref_logits, g_logits) and torch.equal(ref_target, g_target))
+        ce = torch.nn.functional.cross_entropy
+        self.assertTrue(torch.allclose(ce(ref_logits, ref_target), ce(f_logits, f_target, ignore_index=-100)))
+
     def test_prompt_builder_labels_only_targets(self):
         pb = PromptBuilder(FakeTokenizer(), ["is there a dog", "any dog at all"], ["No", "Yes"])
         b = pb.answer_batch([0, 1], [1, 0])

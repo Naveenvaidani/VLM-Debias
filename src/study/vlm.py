@@ -11,6 +11,7 @@ import torch
 import torch.nn as nn
 
 from src.study.connectors import build_connector
+from src.study.device import is_xla
 
 NATIVE_VISION_PARTS = ("visual", "vision_tower", "vision_model", "multi_modal_projector", "connector",
                        "vision_embed_tokens", "mm_projector")
@@ -60,7 +61,8 @@ class StudyVLM(nn.Module):
         config = AutoConfig.from_pretrained(llm_name)
         is_vlm = hasattr(config, "vision_config")
         quant = None
-        if quantize_4bit:
+        xla = is_xla(device)
+        if quantize_4bit and not xla:  # bitsandbytes is CUDA-only; TPUs load bf16 weights
             quant = BitsAndBytesConfig(
                 load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=True,
                 bnb_4bit_compute_dtype=self.compute_dtype,
@@ -68,12 +70,15 @@ class StudyVLM(nn.Module):
             )
         cls = AutoModelForImageTextToText if is_vlm else AutoModelForCausalLM
         llm = cls.from_pretrained(llm_name, quantization_config=quant, dtype=self.compute_dtype,
-                                  device_map={"": device}, low_cpu_mem_usage=True)
+                                  device_map=None if xla else {"": device}, low_cpu_mem_usage=True)
         for owner in (llm, getattr(llm, "model", None)):
             for part in NATIVE_VISION_PARTS:
                 if owner is not None and isinstance(getattr(owner, part, None), nn.Module):
                     delattr(owner, part)
-        torch.cuda.empty_cache()
+        if xla:
+            llm.to(device)
+        elif torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         decoder = _find_decoder(llm)
         self.embed = llm.get_input_embeddings()
@@ -125,8 +130,21 @@ class StudyVLM(nn.Module):
                               use_cache=False).last_hidden_state
         return hidden[:, offset:], attn, offset
 
-    def logits_at(self, hidden_after: torch.Tensor, labels: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Full-vocabulary logits at labelled positions only (keeps memory small for 248k vocabs)."""
+    def logits_at(self, hidden_after: torch.Tensor, labels: torch.Tensor, one_per_row: bool = False
+                  ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Full-vocabulary logits at labelled positions only (keeps memory small for 248k vocabs).
+
+        On XLA, boolean indexing gives data-dependent shapes, so fixed-shape alternatives are used:
+        one_per_row (answer batches) gathers the single labelled position of each row; otherwise
+        logits cover every position and unlabelled targets stay -100 (ignored by cross_entropy)."""
+        if is_xla(labels.device):
+            if one_per_row:
+                pos = (labels != -100).long().argmax(1)
+                rows = torch.arange(labels.shape[0], device=labels.device)
+                h, target = hidden_after[rows, pos], labels[rows, pos]
+            else:
+                h, target = hidden_after.flatten(0, 1), labels.flatten()
+            return self.lm_head(h.to(self.lm_head.weight.dtype)).float(), target
         sel = labels != -100
         h = hidden_after[sel]
         return self.lm_head(h.to(self.lm_head.weight.dtype)).float(), labels[sel]

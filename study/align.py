@@ -18,6 +18,7 @@ from transformers import AutoTokenizer, get_cosine_schedule_with_warmup
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.study.data import CaptionDataset, PromptBuilder
+from src.study.device import autocast, get_device, is_xla, step_done, torch_device
 from src.study.vlm import StudyVLM
 
 CAPTION_PROMPT = ["Describe this image briefly."]
@@ -33,6 +34,7 @@ def main():
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--dtype", choices=["fp16", "bf16"], default="fp16")
+    parser.add_argument("--device", choices=["auto", "cuda", "xla", "cpu"], default="auto")
     parser.add_argument("--gradient_checkpointing", action="store_true")
     parser.add_argument("--mlp_pool", type=int, default=1, help="avg-pool MLP patch tokens (2 -> 196 to 49)")
     parser.add_argument("--no_4bit", action="store_true", help="fp16 weights instead of NF4 (faster if it fits)")
@@ -40,10 +42,15 @@ def main():
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = get_device(args.device)
+    if device == "xla" and args.dtype == "fp16":
+        args.dtype = "bf16"  # TPUs compute in bf16
+    device = torch_device(device)
     os.makedirs(args.out, exist_ok=True)
     tok = AutoTokenizer.from_pretrained(args.llm)
     builder = PromptBuilder(tok, CAPTION_PROMPT, ["No", "Yes"])
+    if is_xla(get_device(args.device)):
+        builder.pad_to = len(builder.after_ids[0]) + 49  # longest caption target (48 tokens + eos)
     data = CaptionDataset(args.captions_dir, seed=args.seed)
     vision_dim = data.features.shape[-1]
     model = StudyVLM(args.llm, args.connector, builder.before_ids, vision_dim=vision_dim, dtype=args.dtype,
@@ -52,7 +59,7 @@ def main():
     params = list(model.connector.parameters())
     optimizer = torch.optim.AdamW(params, lr=args.lr, weight_decay=0.0)
     scheduler = get_cosine_schedule_with_warmup(optimizer, int(0.03 * args.steps), args.steps)
-    scaler = torch.amp.GradScaler("cuda") if args.dtype == "fp16" else None
+    scaler = torch.amp.GradScaler("cuda") if args.dtype == "fp16" and str(device).startswith("cuda") else None
     loader = DataLoader(data, batch_size=args.batch_size, shuffle=True, num_workers=2, drop_last=True)
 
     # train mode is required: HF models skip gradient checkpointing in eval mode (from_pretrained default)
@@ -62,10 +69,10 @@ def main():
     while step < args.steps:
         for feats, caps in loader:
             b = {k: v.to(device) for k, v in builder.caption_batch(list(caps)).items()}
-            with torch.autocast("cuda", dtype=model.compute_dtype, enabled=device == "cuda"):
+            with autocast(device, model.compute_dtype):
                 hidden, _, _ = model(feats.to(device), b["after_ids"], b["after_mask"])
                 logits, target = model.logits_at(hidden, b["labels"])
-            loss = F.cross_entropy(logits, target)
+            loss = F.cross_entropy(logits, target, ignore_index=-100)
             optimizer.zero_grad(set_to_none=True)
             if scaler is not None:
                 scaler.scale(loss).backward()
@@ -78,6 +85,7 @@ def main():
                 torch.nn.utils.clip_grad_norm_(params, 1.0)
                 optimizer.step()
             scheduler.step()
+            step_done(device)
             losses.append(loss.item())
             step += 1
             bar.update(1)

@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 
 from src.study.data import PromptBuilder, group_metrics
+from src.study.device import autocast, step_done
 
 
 def _to(batch: Dict[str, torch.Tensor], device: str) -> Dict[str, torch.Tensor]:
@@ -14,9 +15,9 @@ def _to(batch: Dict[str, torch.Tensor], device: str) -> Dict[str, torch.Tensor]:
 
 def step_loss(model, builder: PromptBuilder, feats, y, templates, device):
     b = _to(builder.answer_batch(templates.tolist(), y.tolist()), device)
-    with torch.autocast("cuda", dtype=model.compute_dtype, enabled=device == "cuda"):
+    with autocast(device, model.compute_dtype):
         hidden, attn, _ = model(feats.to(device, non_blocking=True), b["after_ids"], b["after_mask"])
-        logits, target = model.logits_at(hidden, b["labels"])
+        logits, target = model.logits_at(hidden, b["labels"], one_per_row=True)
     return F.cross_entropy(logits, target)
 
 
@@ -38,6 +39,7 @@ def train_epoch(model, builder, loader, optimizer, scheduler, scaler, device, gr
             torch.nn.utils.clip_grad_norm_(params, grad_clip)
             optimizer.step()
         scheduler.step()
+        step_done(device)
         total += loss.item()
     return total / max(len(loader), 1)
 
@@ -56,9 +58,9 @@ def evaluate(model, builder: PromptBuilder, loader, device, group_names: List[st
     preds, gen_correct, labels, groups, attn_keep = [], [], [], [], []
     for feats, y, g, t in tqdm(loader, desc="eval", leave=False):
         b = _to(builder.answer_batch(t.tolist(), y.tolist()), device)
-        with torch.autocast("cuda", dtype=model.compute_dtype, enabled=device == "cuda"):
+        with autocast(device, model.compute_dtype):
             hidden, attn, offset = model(feats.to(device, non_blocking=True), b["after_ids"], b["after_mask"])
-            logits, target = model.logits_at(hidden, b["labels"])
+            logits, target = model.logits_at(hidden, b["labels"], one_per_row=True)
         preds.append(logits[:, answer_ids].argmax(-1).cpu())
         gen_correct.append((logits.argmax(-1) == target).cpu())
         labels.append(y)

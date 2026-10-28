@@ -1,0 +1,4 @@
+{"id": "jeyadevr/vlm-shortcut-tpu-pilot", "title": "VLM Shortcut TPU Pilot", "code_file": "vlm-shortcut-tpu-pilot.py",
+ "language": "python", "kernel_type": "script", "is_private": true, "enable_gpu": false, "enable_tpu": true,
+ "enable_internet": true, "dataset_sources": [], "kernel_sources": ["jeyadevr/vlm-shortcut-data-prep"],
+ "competition_sources": [], "model_sources": [], "machine_shape": "Tpu1VmV38"}
