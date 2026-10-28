@@ -174,7 +174,8 @@ def main():
                 shutil.copy(path, dst)
                 n += 1
         print(f"resumed {n} files from {src}", flush=True)
-        args.skip_smoke = True
+        if glob.glob(os.path.join(src, "*", "*", "s*", "results.json")):
+            args.skip_smoke = True  # a previous session already passed the smoke test
 
     # 2. smoke: a few steps of alignment + a tiny task run per connector type
     if not args.skip_smoke:
