@@ -260,6 +260,14 @@ def main():
                     steps.append([py, "study/train_task.py", "--llm", args.llm, "--connector", c,
                                   "--task_dir", f"data/tasks/{task}", "--init_from", os.path.join(d, "adapter.pt"),
                                   "--run_dir", d3, "--seed", str(seed)] + mode[st] + ckpt)
+                # cost of the fix: caption loss of the stage-2 model and of each retrained connector
+                cap = [py, "study/caption_eval.py", "--llm", args.llm, "--connector", c,
+                       "--adapter", os.path.join(d, "adapter.pt"), "--mlp_pool", str(args.mlp_pool)]
+                steps.append(cap + ["--out", os.path.join(d, "caption_eval.json")])
+                for st in [x for x in stages if x in ("dfr", "jtt")]:
+                    d3 = os.path.join(runs, task, f"{c}_{st}", f"s{seed}")
+                    steps.append(cap + ["--connector_ckpt", os.path.join(d3, "connector.pt"),
+                                        "--out", os.path.join(d3, "caption_eval.json")])
                 chain = " && ".join(" ".join(shlex.quote(x) for x in cmd) for cmd in steps)
                 last = os.path.join(runs, task, f"{c}_{stages[-1]}", f"s{seed}")
                 task_jobs.append((f"{task}/{c}/s{seed}+{'+'.join(stages)}", ["bash", "-c", chain],
