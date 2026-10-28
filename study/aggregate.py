@@ -80,7 +80,7 @@ def main():
         # paired differences vs the MLP baseline (same task, same seed)
         piv = d.pivot_table(index=["task", "seed"], columns="connector", values="worst_group_acc")
         diffs = []
-        for c in ("qformer", "bottleneck", "bottleneck_fixed"):
+        for c in sorted(set(df.connector) - {"mlp"}):
             if c in piv and "mlp" in piv:
                 delta = (piv[c] - piv["mlp"]).dropna()
                 for task, v in delta.groupby(level=0):
@@ -103,7 +103,7 @@ def main():
         means = [s.mean() * 100 if len(s) else np.nan for s in stats]
         sds = [s.std() * 100 if len(s) > 1 else 0 for s in stats]
         x = np.arange(len(tasks)) + (i - (len(conns) - 1) / 2) * width
-        ax.bar(x, means, width * 0.92, yerr=sds, capsize=3, color=SERIES[c], label=LABELS[c],
+        ax.bar(x, means, width * 0.92, yerr=sds, capsize=3, color=SERIES.get(c, "#6b6a66"), label=LABELS.get(c, c),
                error_kw={"ecolor": "#52514e", "elinewidth": 1})
     ax.set_xticks(np.arange(len(tasks)))
     ax.set_xticklabels(tasks)

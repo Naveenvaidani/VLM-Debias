@@ -17,6 +17,19 @@ CONNECTORS = ["mlp", "qformer", "bottleneck", "bottleneck_fixed"]
 LABELS = {"mlp": "MLP\nprojector", "qformer": "Q-Former", "bottleneck": "Cross-attn\n(learned gate)",
           "bottleneck_fixed": "Cross-attn\n(fixed gate)"}
 COLORS = {"mlp": "#2a78d6", "qformer": "#eb6834", "bottleneck": "#1baf7a", "bottleneck_fixed": "#7a5bd6"}
+STAGE3 = {"dfr": "\n+ connector-DFR", "jtt": "\n+ connector-JTT"}
+
+
+def label(c):
+    """Connector label; stage-3 variants are named <connector>_<dfr|jtt>."""
+    base, _, stage = c.partition("_dfr") if c.endswith("_dfr") else c.partition("_jtt")
+    if c.endswith(("_dfr", "_jtt")):
+        return LABELS.get(base, base).replace("\n", " ") + STAGE3[c[-3:]]
+    return LABELS.get(c, c)
+
+
+def color(c):
+    return COLORS.get(c.rsplit("_", 1)[0] if c.endswith(("_dfr", "_jtt")) else c, "#6b6a66")
 TASK_TITLES = {"waterbirds": "Background\n(Waterbirds)", "cooccur": "Co-occurrence\n(COCO)",
                "watermark_p0.95": "Watermark\n(synthetic)", "typographic_p0.95": "Text in image\n(synthetic)"}
 INK, INK2, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#fcfcfb"
@@ -39,7 +52,10 @@ def style(ax):
 
 
 def ordered(values, order):
-    return [v for v in order if v in set(values)] + sorted(set(values) - set(order))
+    vals = set(values)
+    head = [v for v in order if v in vals]
+    stage3 = [f"{c}_{s}" for c in head for s in ("dfr", "jtt") if f"{c}_{s}" in vals]
+    return head + stage3 + sorted(vals - set(head) - set(stage3))
 
 
 def bars_per_task(df, metric, ylabel, title, path, ylim=(0, 105)):
@@ -54,14 +70,14 @@ def bars_per_task(df, metric, ylabel, title, path, ylim=(0, 105)):
             if not len(vals):
                 continue
             mean, sd = vals.mean(), vals.std(ddof=1) if len(vals) > 1 else 0.0
-            ax.bar(i, mean, 0.62, color=COLORS[c], alpha=0.9, zorder=2)
+            ax.bar(i, mean, 0.62, color=color(c), alpha=0.9, zorder=2)
             ax.errorbar(i, mean, yerr=sd, color=INK2, capsize=4, lw=1, zorder=3)
             ax.scatter(i + rng.uniform(-0.12, 0.12, len(vals)), vals, s=14, color=INK, alpha=0.55, zorder=4,
                        linewidths=0)
             ax.text(i, min(mean + sd + 2.5, ylim[1] - 4), f"{mean:.1f}", ha="center", va="bottom", fontsize=9,
                     color=INK)
         ax.set_xticks(range(len(conns)))
-        ax.set_xticklabels([LABELS[c] for c in conns], fontsize=8.5)
+        ax.set_xticklabels([label(c) for c in conns], fontsize=8.5)
         ax.set_title(TASK_TITLES.get(task, task), pad=10)
         ax.set_ylim(*ylim)
         style(ax)
@@ -87,12 +103,12 @@ def id_vs_ood(df, path):
             if row.empty:
                 continue
             a_id, a_ood = row.acc_id.iloc[0] * 100, row.acc_ood.iloc[0] * 100
-            ax.plot([i, i], [a_ood, a_id], color=COLORS[c], lw=3, alpha=0.5, zorder=2)
-            ax.scatter([i], [a_id], s=60, color=COLORS[c], marker="o", zorder=3, edgecolor=SURFACE, linewidth=1.5)
-            ax.scatter([i], [a_ood], s=70, color=COLORS[c], marker="D", zorder=3, edgecolor=SURFACE, linewidth=1.5)
+            ax.plot([i, i], [a_ood, a_id], color=color(c), lw=3, alpha=0.5, zorder=2)
+            ax.scatter([i], [a_id], s=60, color=color(c), marker="o", zorder=3, edgecolor=SURFACE, linewidth=1.5)
+            ax.scatter([i], [a_ood], s=70, color=color(c), marker="D", zorder=3, edgecolor=SURFACE, linewidth=1.5)
             ax.text(i + 0.14, (a_id + a_ood) / 2, f"−{a_id - a_ood:.1f}", fontsize=8.5, color=INK2, va="center")
         ax.set_xticks(range(len(conns)))
-        ax.set_xticklabels([LABELS[c] for c in conns], fontsize=8.5)
+        ax.set_xticklabels([label(c) for c in conns], fontsize=8.5)
         ax.set_xlim(-0.6, len(conns) - 0.3)
         ax.set_title(TASK_TITLES.get(task, task), pad=10)
         ax.set_ylim(0, 105)
@@ -111,7 +127,7 @@ def id_vs_ood(df, path):
 def paired_delta(df, path):
     """Per-seed difference in worst-group accuracy vs the MLP baseline (same task, same seed)."""
     tasks = ordered(df.task.unique(), list(TASK_TITLES))
-    others = [c for c in ("qformer", "bottleneck", "bottleneck_fixed") if c in set(df.connector)]
+    others = [c for c in ordered(df.connector.unique(), CONNECTORS) if c != "mlp"]
     piv = df.pivot_table(index=["task", "seed"], columns="connector", values="worst_group_acc")
     if "mlp" not in piv or not others:
         return
@@ -126,8 +142,8 @@ def paired_delta(df, path):
             if not len(d):
                 continue
             x = i + (j - (len(others) - 1) / 2) * width
-            ax.bar(x, d.mean(), width * 0.85, color=COLORS[c], alpha=0.9, zorder=2,
-                   label=LABELS[c].replace("\n", " ") if i == 0 else None)
+            ax.bar(x, d.mean(), width * 0.85, color=color(c), alpha=0.9, zorder=2,
+                   label=label(c).replace("\n", " ") if i == 0 else None)
             ax.scatter(np.full(len(d), x), d, s=14, color=INK, alpha=0.55, zorder=3, linewidths=0)
             lo, hi = min(lo, d.min(), d.mean()), max(hi, d.max(), d.mean())
             ax.text(x + width * 0.47, d.mean(), f" {d.mean():+.1f}", ha="left", va="center", fontsize=8.5,

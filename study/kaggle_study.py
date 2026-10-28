@@ -13,6 +13,7 @@ import argparse
 import glob
 import os
 import queue
+import shlex
 import shutil
 import subprocess
 import sys
@@ -111,6 +112,8 @@ def main():
                         help="separate stage-1 alignment per seed, so seed variance covers both stages")
     parser.add_argument("--vision_model", default="google/siglip-base-patch16-224")
     parser.add_argument("--features", default="features.npy", help="cached feature file name (one per encoder)")
+    parser.add_argument("--stage3", default="", help="comma list of dfr,jtt: retrain the connector after each run")
+    parser.add_argument("--stage3_epochs", type=int, default=3)
     parser.add_argument("--run_tag", default="", help="suffix for the runs folder, e.g. _frozen")
     parser.add_argument("--prepare_only", action="store_true",
                         help="build tasks + features, export features/metadata to --export_dir/data and stop")
@@ -183,8 +186,14 @@ def main():
             assert sh([py, "study/train_task.py", "--llm", args.llm, "--connector", c, "--task_dir",
                        f"data/tasks/{tasks[0]}", "--align_ckpt", os.path.join(d, "connector.pt"),
                        "--run_dir", d, "--epochs", "1", "--max_train_samples", "32",
-                       "--max_eval_samples", "64"] + ckpt,
+                       "--max_eval_samples", "64", "--save_adapter"] + ckpt,
                       gpu=0, log=log) == 0, f"smoke train failed ({c})"
+            for st, mode in (("dfr", "val_balanced"), ("jtt", "jtt")):
+                if st in args.stage3.split(","):
+                    assert sh([py, "study/train_task.py", "--llm", args.llm, "--connector", c, "--task_dir",
+                               f"data/tasks/{tasks[0]}", "--init_from", os.path.join(d, "adapter.pt"), "--train_on", mode,
+                               "--run_dir", os.path.join(d, st), "--epochs", "1", "--max_train_samples", "32",
+                               "--max_eval_samples", "64"] + ckpt, gpu=0, log=log) == 0, f"smoke {st} failed ({c})"
         shutil.rmtree(os.path.join(runs, "smoke"), ignore_errors=True)
 
     pool = Pool(args.gpus, start, args.total_budget_min, args.job_budget_min)
@@ -211,13 +220,30 @@ def main():
             for c in connectors:
                 d = os.path.join(runs, task, c, f"s{seed}")
                 os.makedirs(d, exist_ok=True)
-                task_jobs.append((f"{task}/{c}/s{seed}", [
-                    py, "study/train_task.py", "--llm", args.llm, "--connector", c,
-                    "--task_dir", f"data/tasks/{task}", "--align_ckpt", os.path.join(align_dir(c, seed), "connector.pt"),
-                    "--run_dir", d, "--seed", str(seed), "--epochs", str(args.epochs),
-                    "--time_budget_min", str(args.job_budget_min - 10)] + ckpt +
-                    (["--freeze_llm"] if args.freeze_llm else []),
-                    os.path.join(d, "results.json"), os.path.join(d, "train.log")))
+                base = [py, "study/train_task.py", "--llm", args.llm, "--connector", c,
+                        "--task_dir", f"data/tasks/{task}", "--align_ckpt", os.path.join(align_dir(c, seed), "connector.pt"),
+                        "--run_dir", d, "--seed", str(seed), "--epochs", str(args.epochs),
+                        "--time_budget_min", str(args.job_budget_min - 10)] + ckpt + \
+                       (["--freeze_llm"] if args.freeze_llm else [])
+                stages = [s for s in args.stage3.split(",") if s]
+                if not stages:
+                    task_jobs.append((f"{task}/{c}/s{seed}", base, os.path.join(d, "results.json"),
+                                      os.path.join(d, "train.log")))
+                    continue
+                # base run (skipped if already done), then connector-only retraining from its adapter
+                steps = [] if os.path.exists(os.path.join(d, "adapter.pt")) else [base + ["--save_adapter"]]
+                mode = {"dfr": "val_balanced", "jtt": "jtt"}
+                for st in stages:
+                    d3 = os.path.join(runs, task, f"{c}_{st}", f"s{seed}")
+                    os.makedirs(d3, exist_ok=True)
+                    steps.append([py, "study/train_task.py", "--llm", args.llm, "--connector", c,
+                                  "--task_dir", f"data/tasks/{task}", "--init_from", os.path.join(d, "adapter.pt"),
+                                  "--train_on", mode[st], "--run_dir", d3, "--seed", str(seed),
+                                  "--epochs", str(args.stage3_epochs)] + ckpt)
+                chain = " && ".join(" ".join(shlex.quote(x) for x in cmd) for cmd in steps)
+                last = os.path.join(runs, task, f"{c}_{stages[-1]}", f"s{seed}")
+                task_jobs.append((f"{task}/{c}/s{seed}+{'+'.join(stages)}", ["bash", "-c", chain],
+                                  os.path.join(last, "results.json"), os.path.join(d, "train.log")))
     pool.run(task_jobs, on_done=export)
 
     # 5. aggregate

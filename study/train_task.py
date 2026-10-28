@@ -48,6 +48,14 @@ def main():
     parser.add_argument("--time_budget_min", type=float, default=0)
     parser.add_argument("--max_train_samples", type=int, default=0, help="debug only")
     parser.add_argument("--freeze_llm", action="store_true", help="no LoRA: only the connector trains")
+    parser.add_argument("--save_adapter", action="store_true",
+                        help="save the selected (val WGA) LoRA + connector weights as adapter.pt for stage 3")
+    parser.add_argument("--init_from", default=None, help="adapter.pt of a trained run: stage-3 connector retraining")
+    parser.add_argument("--train_on", choices=["train", "val_balanced", "jtt"], default="train",
+                        help="stage 3: val_balanced = retrain the connector on a group-balanced half of validation "
+                             "(DFR-style; the other half selects); jtt = retrain on the training set with the "
+                             "initial model's errors upweighted (no group labels)")
+    parser.add_argument("--jtt_upweight", type=int, default=20)
     parser.add_argument("--max_eval_samples", type=int, default=0, help="cap val/test sets (smoke tests only)")
     args = parser.parse_args()
 
@@ -78,12 +86,44 @@ def main():
     val_set = cap(TaskDataset(spec, "val", template=0))
     vision_dim = train_set.features.shape[-1]
 
+    def subset(ds, idx):
+        ds.indices, ds.y, ds.group = (np.asarray(x)[idx] for x in (ds.indices, ds.y, ds.group))
+        return ds
+
+    stage3 = {}
+    if args.train_on == "val_balanced":  # DFR-style: fit on a balanced half of val, select on the other half
+        rng = np.random.default_rng(args.seed)
+        perm = rng.permutation(len(val_set.indices))
+        fit, sel = perm[: len(perm) // 2], perm[len(perm) // 2:]
+        groups_fit = val_set.group[fit]
+        n = np.bincount(groups_fit, minlength=4)[np.bincount(groups_fit, minlength=4) > 0].min()
+        fit = np.concatenate([rng.choice(fit[groups_fit == g], n, replace=False) for g in np.unique(groups_fit)])
+        train_set = subset(TaskDataset(spec, "val", seed=args.seed), fit)
+        val_set = subset(val_set, sel)
+        stage3 = {"mode": "val_balanced", "n_fit": int(len(fit)), "n_select": int(len(sel))}
+
     model = StudyVLM(args.llm, args.connector, builder.before_ids, vision_dim=vision_dim, dtype=args.dtype,
                      lora_rank=args.lora_rank, gradient_checkpointing=args.gradient_checkpointing, device=device,
                      use_lora=not args.freeze_llm,
                      mlp_pool=args.mlp_pool, quantize_4bit=not args.no_4bit)
     if args.align_ckpt:
         model.connector.load_state_dict(torch.load(args.align_ckpt, map_location="cpu"))
+    if args.init_from:  # stage 3: start from a trained run and retrain only the connector
+        state = torch.load(args.init_from, map_location="cpu")
+        unexpected = model.load_state_dict(state, strict=False).unexpected_keys
+        assert not unexpected, f"adapter keys not in model: {unexpected[:3]}"
+        print(f"stage 3: loaded {len(state)} tensors from {args.init_from}", flush=True)
+        for p in model.decoder.parameters():
+            p.requires_grad = False
+    if args.train_on == "jtt":  # errors of the initial model on the training set, upweighted
+        probe_set = subset(TaskDataset(spec, "train", template=0), np.arange(len(train_set.indices)))  # same rows
+        probe = DataLoader(probe_set, batch_size=args.batch_size * 2, num_workers=2)
+        res = evaluate(model, builder, probe, device, spec.group_names)
+        errors = np.where(res["preds"] != res["labels"])[0]
+        idx = np.concatenate([np.arange(len(train_set.indices))] + [errors] * (args.jtt_upweight - 1))
+        train_set = subset(train_set, idx)
+        stage3 = {"mode": "jtt", "n_errors": int(len(errors)), "upweight": args.jtt_upweight,
+                  "error_groups": np.bincount(res["groups"][errors], minlength=4).tolist()}
 
     lora_params = [p for n, p in model.decoder.named_parameters() if p.requires_grad]
     groups = [{"params": lora_params, "lr": args.lr}] if lora_params else []
@@ -124,13 +164,15 @@ def main():
             break
 
     # Test: every template, for both model-selection rules
-    results = {"args": vars(args), "connector_params": model.connector_param_count(), "history": history,
+    results = {"args": vars(args), "stage3": stage3, "connector_params": model.connector_param_count(), "history": history,
                "train_minutes": (time.time() - start) / 60, "test": {}}
     arrays = {}
     for rule, (score, state, epoch) in best.items():
         model.load_state_dict(state, strict=False)
         if rule == "wga":  # connector weights of the selected checkpoint (small; LoRA weights are not kept)
             torch.save(model.connector.state_dict(), os.path.join(args.run_dir, "connector.pt"))
+            if args.save_adapter:
+                torch.save(state, os.path.join(args.run_dir, "adapter.pt"))
         per_template = {}
         for t in range(len(spec.questions)):
             loader = DataLoader(cap(TaskDataset(spec, "test", template=t)), batch_size=args.batch_size * 2, num_workers=2)
