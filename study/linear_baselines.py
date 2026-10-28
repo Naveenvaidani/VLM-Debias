@@ -26,10 +26,21 @@ from src.study.data import TaskSpec, group_metrics
 CS = [0.01, 0.03, 0.1, 0.3, 1.0, 3.0]
 
 
-def pooled(spec, chunk=512):
+def pooled(spec, pool="mean", chunk=512):
+    """mean: average over patches (768-d). grid7: 2x2-average-pooled patch grid kept spatially (49 x 768),
+    the same tokens the MLP connector sees; meanmax: mean and max over patches concatenated."""
     feats = np.load(spec.features_path, mmap_mode="r")
-    return np.concatenate([np.asarray(feats[i:i + chunk], dtype=np.float32).mean(1)
-                           for i in range(0, len(feats), chunk)])
+
+    def one(x):
+        if pool == "mean":
+            return x.mean(1)
+        if pool == "meanmax":
+            return np.concatenate([x.mean(1), x.max(1)], 1)
+        side = int(round(x.shape[1] ** 0.5))
+        g = x.reshape(len(x), side // 2, 2, side // 2, 2, -1).mean((2, 4))
+        return g.reshape(len(x), -1)
+
+    return np.concatenate([one(np.asarray(feats[i:i + chunk], dtype=np.float32)) for i in range(0, len(feats), chunk)])
 
 
 def balanced_idx(groups, rng, n=None):
@@ -47,12 +58,13 @@ def main():
     parser.add_argument("--tasks_dir", default="data/tasks")
     parser.add_argument("--tasks", default="waterbirds,watermark_p0.95")
     parser.add_argument("--seeds", type=int, default=3)
+    parser.add_argument("--pools", default="mean", help="comma list of mean,meanmax,grid7")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
     rows = []
-    for task in args.tasks.split(","):
+    for task, pool in [(t, p) for t in args.tasks.split(",") for p in args.pools.split(",")]:
         spec = TaskSpec(os.path.join(args.tasks_dir, task))
-        x = pooled(spec)
+        x = pooled(spec, pool)
         meta = spec.meta
         y = meta["y"].to_numpy()
         g = (2 * meta["y"] + meta["a"]).to_numpy()
@@ -78,14 +90,14 @@ def main():
                 c = best_c(idx)
                 pred = fit(x[idx], y[idx], c, seed).predict(x[te])
                 m = group_metrics(pred, y[te], g[te], spec.group_names)
-                rows.append({"task": task, "method": name, "seed": seed, "C": c, "n_train": len(idx),
+                rows.append({"task": task, "features": pool, "method": name, "seed": seed, "C": c, "n_train": len(idx),
                              **{k: m[k] for k in ("avg_acc", "worst_group_acc", "acc_id", "acc_ood")}})
-                print(f"{task} {name} s{seed}: wga {m['worst_group_acc']:.3f} avg {m['avg_acc']:.3f} (C={c}, n={len(idx)})",
+                print(f"{task} {pool} {name} s{seed}: wga {m['worst_group_acc']:.3f} avg {m['avg_acc']:.3f} (C={c}, n={len(idx)})",
                       flush=True)
     df = pd.DataFrame(rows)
     os.makedirs(args.out, exist_ok=True)
     df.to_csv(os.path.join(args.out, "linear_baselines.csv"), index=False)
-    summary = df.groupby(["task", "method"])[["worst_group_acc", "avg_acc"]].agg(["mean", "std"]).mul(100).round(1)
+    summary = df.groupby(["task", "features", "method"])[["worst_group_acc", "avg_acc"]].agg(["mean", "std"]).mul(100).round(1)
     print(summary.to_string())
     with open(os.path.join(args.out, "linear_baselines.md"), "w") as f:
         f.write("# Linear baselines on frozen SigLIP features (mean-pooled), test %, mean ± s.d. over seeds\n\n")

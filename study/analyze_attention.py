@@ -48,7 +48,26 @@ def main():
                      "uniform_share": float(mask.mean()),
                      "attention_entropy": float(entropy.mean())})
     df = pd.DataFrame(rows)
+    # sensitivity: the watermark's exact box varies per image, so repeat with several corner regions
+    sens = []
+    for path in sorted(glob.glob(os.path.join(args.runs_dir, "watermark_p*", "*", "s*", "arrays.npz"))):
+        a = np.load(path)
+        if f"{args.rule}_attention" not in a:
+            continue
+        att = a[f"{args.rule}_attention"].astype(np.float32)
+        att = att / att.sum(1, keepdims=True)
+        marked = (a["groups"] % 2) == 1
+        for r in (1, 2, 3):
+            for c in (6, 8, 10, 14):
+                m = corner_mask(r, c)
+                share = att[:, m].sum(1)
+                sens.append({"connector": path.split(os.sep)[-3], "rows": r, "cols": c,
+                             "ratio_marked_vs_unmarked": float(share[marked].mean() / share[~marked].mean())})
+    sens = pd.DataFrame(sens).groupby(["connector", "rows", "cols"]).ratio_marked_vs_unmarked.mean().unstack("cols")
     os.makedirs(args.out, exist_ok=True)
+    sens.round(2).to_csv(os.path.join(args.out, "attention_watermark_sensitivity.csv"))
+    print("attention on the corner, marked / unmarked images, for different corner regions (rows x cols):")
+    print(sens.round(2).to_string(), "\n")
     df.to_csv(os.path.join(args.out, "attention_watermark.csv"), index=False)
     summary = df.groupby("connector")[["corner_share_marked", "corner_share_unmarked", "attention_entropy"]].agg(
         ["mean", "std"]).round(3)
