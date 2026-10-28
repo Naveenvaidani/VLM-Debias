@@ -111,6 +111,58 @@ batch 16: 4.0 / 2.5 / 1.7 s per step for MLP / Q-Former / bottleneck after pooli
 196 → 49 and dropping gradient checkpointing (MLP was 13.7 s before); `study/bench_speed.py`
 measures this.
 
+## Related work and where this study stands
+
+Literature check (October 2026): Google Scholar, OpenAlex (covers Springer, Elsevier, IEEE, ACM, ACL,
+AAAI and arXiv), forward citations of the closest papers, and full reads of the five nearest. No
+paper we found compares connector designs for shortcut reliance in LLM-based VLMs. Numbers below are
+as reported by each paper, on their own setups, so they are context rather than a like-for-like ranking.
+
+### Shortcuts in vision-language models
+
+| Work | What they did | Models | Data | Reported result |
+| :--- | :--- | :--- | :--- | :--- |
+| Bleeker et al., 2024 (arXiv 2402.17510) | Inject synthetic per-pair shortcuts (MNIST digit in image + number in caption) into contrastive training; mitigate with latent target decoding (LTD) or implicit feature modification (IFM) | CLIP (fine-tuned), VSE++ | Flickr30k, MS-COCO retrieval | Flickr30k recall sum: VSE++ 409.0 without shortcuts, 3.4 with them, 274.6 with LTD; CLIP 543.5 without, 436 with, 464 with LTD, 495 with IFM |
+| SpurLens (arXiv 2503.08884) | Automatic detection of spurious cues in multimodal LLMs | LLaVA and other MLLMs, zero-shot | Waterbirds and others | LLaVA per-group accuracy: waterbird on land 13.2%, waterbird on water 59.3%, landbird groups 77.4% and 99.8% |
+| SpuriVerse (arXiv 2506.18322) | Benchmark of 124 spurious correlations mined from real VQA data | Large VLMs | SpuriVerse | Fine-tuning on spurious cases trades off accuracy on ordinary samples |
+| PURGE (arXiv 2608.29996) | Unlearning to remove object-background correlations | LLaVA-1.6-7B, Qwen3-VL-8B, Qwen3.5-9B | Object-background benchmarks | Connector treated as fixed |
+| MD3 / MAD (ICLR 2026 submission, OpenReview NTbAH4UD6K) | GPT-4o "critic agents" rewrite biased answers into ~50k debiased reasoning chains, then fine-tune MLLMs | LLaVA-v1.5-7B, LLaVA-Llama-3-8B, Llama-3.2-11B-Vision | VQA-CP, VQA-CE, GQA-OOD; Waterbirds on ResNet-50 | VQA-CP (LLaVA-v1.5-7B): 63.98 → 68.83. Waterbirds WGA (ResNet-50): ERM 63.7, GroupDRO 89.9, DFR 90.2, MOO 91.8, MAD 93.6 |
+| Scaling VLMs Is Not Enough (arXiv 2607.28211) | 194 contrastive models, 16 families; which design factors predict robustness | OpenCLIP models | ImageNet, CelebA, UrbanCars | Data size and curation matter more than scale; connector type not studied |
+
+### Connector design
+
+| Work | What they did | Reported result | Shortcuts measured? |
+| :--- | :--- | :--- | :--- |
+| Modality Integration Rate (arXiv 2410.07167) | Alignment quality of LLaVA-1.5 with an MLP vs a Q-Former connector | MLP clearly outperforms Q-Former after instruction tuning | No |
+| Rethinking Projector Training (arXiv 2610.18598) | What projector alignment learns; training-free PORTAL projector | Alignment is coarse; 10-20% of the 558k pairs recover most gains; PORTAL matches a trained MLP with ~135x fewer alignment FLOPs | No |
+| The Gate Always Closes (Farazi et al., arXiv 2607.23335) | Learnable gates for injecting signals into frozen VLMs, across five designs | Every gated pathway ends up behaviourally closed; recommends fixed injection | No |
+| Honeybee, TokenPacker (IJCV 2025), Cambrian-1 | Locality-aware and efficient projectors | Benchmark accuracy and token efficiency | No |
+
+### Group-robustness baselines (Waterbirds worst-group accuracy, ResNet-50)
+
+| Method | Uses group labels in training | WGA | Source |
+| :--- | :--- | :---: | :--- |
+| ERM | No | 63.7 | as reported in MD3 |
+| JTT | Only for model selection | 86.7 | Liu et al., 2021 |
+| GroupDRO | Yes | 89.9 | as reported in MD3 |
+| DFR | Small group-balanced set | 90.2 | as reported in MD3 |
+| **This repo, MLP projector (Qwen3.5-4B, connector study)** | Only for model selection | **74.5 ± 1.5** | 3 seeds |
+| **This repo, MLP + group-balanced sampling (PR #1 run)** | Yes | **82.8** | 1 seed |
+
+### Where this study stands out
+
+- **Question nobody isolated:** with the LLM, vision features, data and budget held fixed, does the
+  connector (MLP, Q-Former, cross-attention) change how much a generative VLM relies on a shortcut?
+  Prior shortcut work studies contrastive models (Bleeker; scaling study) or whole MLLMs (SpurLens,
+  SpuriVerse, PURGE, MD3); prior connector work measures benchmark accuracy, not robustness.
+- **Group-level evaluation of generative VLMs:** worst-group accuracy, ID-to-OOD gap, a held-out question
+  phrasing, and two checkpoint-selection rules, over seeds.
+- **A mechanism, not only a score:** the gated cross-attention connector both attends to the watermark
+  (16.7% of attention when present vs 6.1% when absent) and keeps its gate shut (0.0005), linking the
+  gate-suppression effect of Farazi et al. to shortcut reliance, which they did not measure.
+- **The honest headline is a near-null result for MLP vs Q-Former**, consistent with MD3's and the
+  scaling study's view that data and training, not architecture, are the main lever.
+
 ## Setup
 
 | Component | Choice |
