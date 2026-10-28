@@ -241,6 +241,34 @@ def build_waterbirds_task(out, data_dir):
                {"shortcut": "background", "p": 0.95})
 
 
+def build_celeba_task(out, celeba_root, n_train, n_val, rng):
+    """CelebA, the standard group-robustness setup (Sagawa et al., 2020): y = Blond_Hair, a = Male.
+    Official partitions; the full test set is kept, train and val are subsampled with group proportions
+    preserved (val keeps at least 100 images per group) to fit the compute budget."""
+    attr = pd.read_csv(os.path.join(celeba_root, "list_attr_celeba.csv"))
+    part = pd.read_csv(os.path.join(celeba_root, "list_eval_partition.csv"))
+    df = attr.merge(part, on="image_id")
+    df["y"] = (df["Blond_Hair"] == 1).astype(int)
+    df["a"] = (df["Male"] == 1).astype(int)
+    img_dir = next(d for d in (os.path.join(celeba_root, "img_align_celeba", "img_align_celeba"),
+                               os.path.join(celeba_root, "img_align_celeba")) if os.path.isdir(d))
+    rows = []
+    for split, code, n in (("train", 0, n_train), ("val", 1, n_val), ("test", 2, None)):
+        d = df[df.partition == code]
+        if n and n < len(d):
+            take = []
+            for (y, a), grp in d.groupby(["y", "a"]):
+                k = max(round(n * len(grp) / len(d)), 100 if split == "val" else 1)
+                take.append(grp.loc[rng.permutation(grp.index)[:min(k, len(grp))]])
+            d = pd.concat(take)
+        rows += [{"img_id": r.image_id, "image": os.path.join(img_dir, r.image_id), "y": int(r.y), "a": int(r.a),
+                  "split": split} for r in d.itertuples()]
+    questions = ["Does this person have blond hair?", "Is this person's hair blond?",
+                 "Would you describe this person's hair as blond?"]
+    write_task(out, "celeba", questions, YN, ["not blond / female", "not blond / male", "blond / female",
+                                              "blond / male"], rows, {"shortcut": "gender", "attribute": "Male"})
+
+
 def build_captions(coco, out, n, exclude, rng):
     ids = [i for i in coco.ids if coco.captions.get(i) and i not in exclude]
     ids = list(rng.permutation(ids)[:n])
@@ -267,6 +295,9 @@ def main():
     parser.add_argument("--n_captions", type=int, default=10000)
     parser.add_argument("--only", default="waterbirds,cooccur,watermark,typographic",
                         help="comma list of task families to build (captions are always built)")
+    parser.add_argument("--celeba_root", default=None, help="folder with list_attr_celeba.csv (Kaggle celeba-dataset)")
+    parser.add_argument("--celeba_train", type=int, default=20000)
+    parser.add_argument("--celeba_val", type=int, default=5000)
     parser.add_argument("--download_missing", action="store_true", help="fetch COCO images by URL (dev only)")
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
@@ -280,6 +311,9 @@ def main():
         used |= build_cooccur_task(coco, args.out, args, rng)
     if "waterbirds" in only:
         build_waterbirds_task(args.out, args.data_dir)
+    if "celeba" in only:
+        assert args.celeba_root, "--celeba_root is required for the celeba task"
+        build_celeba_task(args.out, args.celeba_root, args.celeba_train, args.celeba_val, rng)
     build_captions(coco, args.out, args.n_captions, used, rng)
 
 

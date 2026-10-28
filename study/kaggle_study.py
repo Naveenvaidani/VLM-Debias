@@ -91,6 +91,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--llm", default="Qwen/Qwen3.5-4B")
     parser.add_argument("--coco_root", default="/kaggle/input/coco-2017-dataset/coco2017")
+    parser.add_argument("--celeba_root", default=None)
     parser.add_argument("--tasks", default="waterbirds,cooccur,watermark_p0.95,typographic_p0.95")
     parser.add_argument("--connectors", default=",".join(CONNECTORS))
     parser.add_argument("--seeds", type=int, default=3)
@@ -150,7 +151,8 @@ def main():
         assert sh([py, "scripts/prepare_waterbirds.py"]) == 0
     if not os.path.exists(os.path.join(ROOT, "data", "tasks", "captions", "metadata.csv")):
         families = sorted({t.split("_p")[0] for t in tasks})
-        assert sh([py, "study/build_tasks.py", "--coco_root", args.coco_root, "--only", ",".join(families)]) == 0
+        assert sh([py, "study/build_tasks.py", "--coco_root", args.coco_root, "--only", ",".join(families)] +
+                  (["--celeba_root", args.celeba_root] if args.celeba_root else [])) == 0
     assert sh([py, "study/cache_features.py", "--tasks_dir", "data/tasks", "--vision_model", args.vision_model,
                "--out_name", args.features], gpu=0) == 0
     if args.prepare_only:
