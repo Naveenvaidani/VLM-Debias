@@ -39,6 +39,10 @@ def main():
     parser.add_argument("--mlp_pool", type=int, default=1, help="avg-pool MLP patch tokens (2 -> 196 to 49)")
     parser.add_argument("--no_4bit", action="store_true", help="fp16 weights instead of NF4 (faster if it fits)")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--ltd_weight", type=float, default=0.0,
+                        help="latent target decoding (Bleeker et al., 2024): the image-side representation must "
+                             "predict a sentence embedding of the caption; weight of that cosine loss")
+    parser.add_argument("--ltd_encoder", default="sentence-transformers/all-MiniLM-L6-v2")
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -57,6 +61,30 @@ def main():
                      gradient_checkpointing=args.gradient_checkpointing, device=device,
                      mlp_pool=args.mlp_pool, quantize_4bit=not args.no_4bit, use_lora=False)
     params = list(model.connector.parameters())
+    ltd = None
+    if args.ltd_weight:  # frozen sentence encoder + a small head that is discarded after alignment
+        from transformers import AutoModel
+        ltd_tok = AutoTokenizer.from_pretrained(args.ltd_encoder)
+        ltd_enc = AutoModel.from_pretrained(args.ltd_encoder).to(device).eval()
+        ltd_head = torch.nn.Linear(model.llm_dim, ltd_enc.config.hidden_size).to(device)
+        params += list(ltd_head.parameters())
+
+        @torch.no_grad()
+        def caption_embedding(caps):
+            enc = ltd_tok(caps, padding=True, truncation=True, max_length=64, return_tensors="pt").to(device)
+            h = ltd_enc(**enc).last_hidden_state
+            m = enc["attention_mask"].unsqueeze(-1).float()
+            return (h * m).sum(1) / m.sum(1)
+
+        def visual_summary(feats):
+            """Mean of what the connector adds from the image: its tokens (prefix connectors) or the
+            visual context it injects into the chat-header tokens (cross-attention connectors)."""
+            if model.connector.kind == "prefix":
+                return model.connector(feats.float())[0].mean(1)
+            text = model.embed(model.before_ids).unsqueeze(0).expand(feats.shape[0], -1, -1).float()
+            return (model.connector(feats.float(), text)[0] - text).mean(1)
+
+        ltd = (caption_embedding, visual_summary, ltd_head)
     optimizer = torch.optim.AdamW(params, lr=args.lr, weight_decay=0.0)
     scheduler = get_cosine_schedule_with_warmup(optimizer, int(0.03 * args.steps), args.steps)
     scaler = torch.amp.GradScaler("cuda") if args.dtype == "fp16" and str(device).startswith("cuda") else None
@@ -73,6 +101,10 @@ def main():
                 hidden, _, _ = model(feats.to(device), b["after_ids"], b["after_mask"])
                 logits, target = model.logits_at(hidden, b["labels"])
             loss = F.cross_entropy(logits, target, ignore_index=-100)
+            if ltd is not None:
+                caption_embedding, visual_summary, ltd_head = ltd
+                pred = ltd_head(visual_summary(feats.to(device)))
+                loss = loss + args.ltd_weight * (1 - F.cosine_similarity(pred, caption_embedding(list(caps))).mean())
             optimizer.zero_grad(set_to_none=True)
             if scaler is not None:
                 scaler.scale(loss).backward()

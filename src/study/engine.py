@@ -18,7 +18,14 @@ def step_loss(model, builder: PromptBuilder, feats, y, templates, device):
     with autocast(device, model.compute_dtype):
         hidden, attn, _ = model(feats.to(device, non_blocking=True), b["after_ids"], b["after_mask"])
         logits, target = model.logits_at(hidden, b["labels"], one_per_row=True)
-    return F.cross_entropy(logits, target)
+    loss = F.cross_entropy(logits, target)
+    w = getattr(model, "attn_entropy_weight", 0.0)
+    if w and attn is not None:
+        # 1 - H(A)/log(P): penalise attention that collapses onto a few patches (as in DualGroundingLoss)
+        a = attn.float().clamp_min(1e-8)
+        entropy = -(a * a.log()).sum(-1) / np.log(a.shape[-1])
+        loss = loss + w * (1 - entropy.mean())
+    return loss
 
 
 def train_epoch(model, builder, loader, optimizer, scheduler, scaler, device, grad_clip=1.0) -> float:

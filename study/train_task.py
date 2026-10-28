@@ -56,6 +56,13 @@ def main():
                              "(DFR-style; the other half selects); jtt = retrain on the training set with the "
                              "initial model's errors upweighted (no group labels)")
     parser.add_argument("--jtt_upweight", type=int, default=20)
+    parser.add_argument("--balanced_sampling", action="store_true",
+                        help="sample training images inversely to their group size (uses group labels)")
+    parser.add_argument("--attn_entropy_weight", type=float, default=0.0,
+                        help="penalise low connector-attention entropy (Q-Former / cross-attention only)")
+    parser.add_argument("--instruction", default="",
+                        help="text put before every question, e.g. to tell the model to ignore the background; "
+                             "with --epochs 0 and --init_from it only re-evaluates a trained model")
     parser.add_argument("--max_eval_samples", type=int, default=0, help="cap val/test sets (smoke tests only)")
     args = parser.parse_args()
 
@@ -68,6 +75,8 @@ def main():
     os.makedirs(args.run_dir, exist_ok=True)
     spec = TaskSpec(args.task_dir)
     tok = AutoTokenizer.from_pretrained(args.llm)
+    if args.instruction:
+        spec.questions = [f"{args.instruction} {q}" for q in spec.questions]
     builder = PromptBuilder(tok, spec.questions, spec.answers)
     if is_xla(get_device(args.device)):
         builder.pad_to = max(len(a) for a in builder.after_ids) + 1
@@ -134,13 +143,22 @@ def main():
     else:  # bitsandbytes optimizers are CUDA-only
         optimizer = torch.optim.AdamW(param_groups, weight_decay=0.01)
     g = torch.Generator().manual_seed(args.seed)
-    train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, generator=g, num_workers=2)
+    if args.balanced_sampling:
+        counts = np.bincount(train_set.group, minlength=4)
+        weights = torch.tensor(1.0 / counts[train_set.group], dtype=torch.double)
+        sampler = torch.utils.data.WeightedRandomSampler(weights, len(weights), replacement=True, generator=g)
+        train_loader = DataLoader(train_set, batch_size=args.batch_size, sampler=sampler, num_workers=2)
+    else:
+        train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, generator=g, num_workers=2)
+    model.attn_entropy_weight = args.attn_entropy_weight
     val_loader = DataLoader(val_set, batch_size=args.batch_size * 2, num_workers=2)
-    total_steps = args.epochs * len(train_loader)
+    total_steps = max(1, args.epochs * len(train_loader))
     scheduler = get_cosine_schedule_with_warmup(optimizer, int(0.05 * total_steps), total_steps)
     scaler = torch.amp.GradScaler("cuda") if args.dtype == "fp16" and str(device).startswith("cuda") else None
 
     best = {"wga": (-1.0, None, 0), "avg": (-1.0, None, 0)}  # rule -> (val score, state, epoch)
+    if args.epochs == 0:  # evaluation only (e.g. a prompt instruction on a trained model)
+        best = {rule: (0.0, model.trainable_state_dict(), 0) for rule in best}
     history, stale, start = [], 0, time.time()
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
