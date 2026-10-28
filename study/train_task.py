@@ -28,7 +28,7 @@ from src.study.vlm import StudyVLM
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--llm", required=True)
-    parser.add_argument("--connector", choices=["mlp", "qformer", "bottleneck"], required=True)
+    parser.add_argument("--connector", choices=["mlp", "qformer", "bottleneck", "bottleneck_fixed"], required=True)
     parser.add_argument("--task_dir", required=True)
     parser.add_argument("--align_ckpt", default=None, help="stage-1 connector weights (recommended)")
     parser.add_argument("--run_dir", required=True)
@@ -96,7 +96,9 @@ def main():
         loss = train_epoch(model, builder, train_loader, optimizer, scheduler, scaler, device)
         val = evaluate(model, builder, val_loader, device, spec.group_names)["metrics"]
         minutes = (time.time() - t0) / 60
+        gate = getattr(model.connector, "gate", None)
         history.append({"epoch": epoch, "minutes": minutes, "train_loss": loss,
+                        "gate_tanh": float(torch.tanh(gate.float()).item()) if gate is not None else None,
                         **{f"val_{k}": v for k, v in val.items()}})
         print(f"[{os.path.basename(args.run_dir)}] epoch {epoch} ({minutes:.1f} min) loss {loss:.4f} | "
               f"val avg {val['avg_acc']:.4f} wga {val['worst_group_acc']:.4f}", flush=True)
@@ -116,6 +118,8 @@ def main():
     arrays = {}
     for rule, (score, state, epoch) in best.items():
         model.load_state_dict(state, strict=False)
+        if rule == "wga":  # connector weights of the selected checkpoint (small; LoRA weights are not kept)
+            torch.save(model.connector.state_dict(), os.path.join(args.run_dir, "connector.pt"))
         per_template = {}
         for t in range(len(spec.questions)):
             loader = DataLoader(cap(TaskDataset(spec, "test", template=t)), batch_size=args.batch_size * 2, num_workers=2)

@@ -26,7 +26,7 @@ CAPTION_PROMPT = ["Describe this image briefly."]
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--llm", required=True)
-    parser.add_argument("--connector", choices=["mlp", "qformer", "bottleneck"], required=True)
+    parser.add_argument("--connector", choices=["mlp", "qformer", "bottleneck", "bottleneck_fixed"], required=True)
     parser.add_argument("--captions_dir", default="./data/tasks/captions")
     parser.add_argument("--out", required=True)
     parser.add_argument("--steps", type=int, default=1200, help="optimizer steps (equal for all connectors)")

@@ -25,7 +25,7 @@ QUESTIONS = ["Is the bird in this image a waterbird?", "Does this photo show a w
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--llm", default="Qwen/Qwen3.5-4B")
-    parser.add_argument("--connector", choices=["mlp", "qformer", "bottleneck"], default="mlp")
+    parser.add_argument("--connector", choices=["mlp", "qformer", "bottleneck", "bottleneck_fixed"], default="mlp")
     parser.add_argument("--mlp_pool", type=int, default=1)
     parser.add_argument("--no_4bit", action="store_true")
     parser.add_argument("--gradient_checkpointing", action="store_true")

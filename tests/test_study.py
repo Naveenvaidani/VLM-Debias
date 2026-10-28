@@ -49,6 +49,15 @@ class TestStudy(unittest.TestCase):
         fused, _ = conn(torch.randn(1, 196, 64), text)
         self.assertTrue(torch.allclose(fused, text))
 
+    def test_fixed_gate_bottleneck_identity_and_open(self):
+        conn = build_connector("bottleneck_fixed", 64, 32)
+        text = torch.randn(1, 5, 32)
+        fused, _ = conn(torch.randn(1, 196, 64), text)
+        self.assertTrue(torch.allclose(fused, text))
+        self.assertNotIn("gate", dict(conn.named_parameters()))
+        fused.sum().backward()
+        self.assertGreater(conn.out_proj.weight.grad.abs().sum().item(), 0)
+
     def test_prompt_builder_labels_only_targets(self):
         pb = PromptBuilder(FakeTokenizer(), ["is there a dog", "any dog at all"], ["No", "Yes"])
         b = pb.answer_batch([0, 1], [1, 0])

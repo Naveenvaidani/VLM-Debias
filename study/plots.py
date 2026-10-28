@@ -13,9 +13,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-CONNECTORS = ["mlp", "qformer", "bottleneck"]
-LABELS = {"mlp": "MLP projector", "qformer": "Q-Former", "bottleneck": "Cross-attn\nbottleneck"}
-COLORS = {"mlp": "#2a78d6", "qformer": "#eb6834", "bottleneck": "#1baf7a"}
+CONNECTORS = ["mlp", "qformer", "bottleneck", "bottleneck_fixed"]
+LABELS = {"mlp": "MLP projector", "qformer": "Q-Former", "bottleneck": "Cross-attn\nbottleneck",
+          "bottleneck_fixed": "Cross-attn\n(fixed gate)"}
+COLORS = {"mlp": "#2a78d6", "qformer": "#eb6834", "bottleneck": "#1baf7a", "bottleneck_fixed": "#7a5bd6"}
 TASK_TITLES = {"waterbirds": "Background\n(Waterbirds)", "cooccur": "Co-occurrence\n(COCO)",
                "watermark_p0.95": "Watermark\n(synthetic)", "typographic_p0.95": "Text in image\n(synthetic)"}
 INK, INK2, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#fcfcfb"
@@ -110,7 +111,7 @@ def id_vs_ood(df, path):
 def paired_delta(df, path):
     """Per-seed difference in worst-group accuracy vs the MLP baseline (same task, same seed)."""
     tasks = ordered(df.task.unique(), list(TASK_TITLES))
-    others = [c for c in ("qformer", "bottleneck") if c in set(df.connector)]
+    others = [c for c in ("qformer", "bottleneck", "bottleneck_fixed") if c in set(df.connector)]
     piv = df.pivot_table(index=["task", "seed"], columns="connector", values="worst_group_acc")
     if "mlp" not in piv or not others:
         return

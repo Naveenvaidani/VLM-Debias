@@ -146,7 +146,7 @@ def main():
         for path in glob.glob(os.path.join(runs, "**", "*"), recursive=True):
             rel = os.path.relpath(path, runs)
             if os.path.isfile(path) and (path.endswith((".json", ".npz", ".log", ".md", ".csv", ".png")) or \
-                    (path.endswith("connector.pt") and "/align/" in path)):
+                    (path.endswith("connector.pt") and ("/align/" in path or "bottleneck" in path))):
                 dst = os.path.join(args.export_dir, tag, rel)
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copy(path, dst)

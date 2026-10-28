@@ -64,17 +64,26 @@ class QFormerConnector(nn.Module):
 
 class CrossAttnBottleneck(nn.Module):
     """Text tokens query the patches in a reduced attention space (attn_dim) and add the result
-    to their own embedding through tanh(gate), gate initialised at 0."""
+    to their own embedding through tanh(gate), gate initialised at 0.
+
+    gate="fixed" drops the learnable gate (scale 1) and zero-initialises out_proj instead, so the
+    connector still starts as the identity but the optimiser cannot shut the visual pathway."""
     kind = "fuse"
 
-    def __init__(self, vision_dim: int, llm_dim: int, attn_dim: int = 1024, num_heads: int = 8):
+    def __init__(self, vision_dim: int, llm_dim: int, attn_dim: int = 1024, num_heads: int = 8,
+                 gate: str = "learned"):
         super().__init__()
         self.norm_text = nn.LayerNorm(llm_dim)
         self.norm_kv = nn.LayerNorm(vision_dim)
         self.q_proj = nn.Linear(llm_dim, attn_dim)
         self.attn = nn.MultiheadAttention(attn_dim, num_heads, kdim=vision_dim, vdim=vision_dim, batch_first=True)
         self.out_proj = nn.Linear(attn_dim, llm_dim)
-        self.gate = nn.Parameter(torch.zeros(1))
+        if gate == "learned":
+            self.gate = nn.Parameter(torch.zeros(1))
+        else:
+            self.register_buffer("gate", torch.full((1,), float("inf")))  # tanh(inf) = 1
+            nn.init.zeros_(self.out_proj.weight)
+            nn.init.zeros_(self.out_proj.bias)
 
     def forward(self, patches: torch.Tensor, text: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         kv = self.norm_kv(patches)
@@ -83,7 +92,8 @@ class CrossAttnBottleneck(nn.Module):
         return text + torch.tanh(self.gate) * self.out_proj(attended), attn  # attn: [B, T, P]
 
 
-CONNECTORS = {"mlp": MLPProjector, "qformer": QFormerConnector, "bottleneck": CrossAttnBottleneck}
+CONNECTORS = {"mlp": MLPProjector, "qformer": QFormerConnector, "bottleneck": CrossAttnBottleneck,
+              "bottleneck_fixed": lambda v, l: CrossAttnBottleneck(v, l, gate="fixed")}
 
 
 def build_connector(name: str, vision_dim: int, llm_dim: int, mlp_pool: int = 1) -> nn.Module:

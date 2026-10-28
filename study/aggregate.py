@@ -79,7 +79,7 @@ def main():
         # paired differences vs the MLP baseline (same task, same seed)
         piv = d.pivot_table(index=["task", "seed"], columns="connector", values="worst_group_acc")
         diffs = []
-        for c in ("qformer", "bottleneck"):
+        for c in ("qformer", "bottleneck", "bottleneck_fixed"):
             if c in piv and "mlp" in piv:
                 delta = (piv[c] - piv["mlp"]).dropna()
                 for task, v in delta.groupby(level=0):
@@ -94,7 +94,7 @@ def main():
     # figure: WGA per task and connector (wga selection), mean ± std over seeds
     d = df[df.rule == "wga"]
     tasks = sorted(d.task.unique())
-    conns = [c for c in ("mlp", "qformer", "bottleneck") if c in set(d.connector)]
+    conns = [c for c in ("mlp", "qformer", "bottleneck", "bottleneck_fixed") if c in set(d.connector)]
     fig, ax = plt.subplots(figsize=(max(6, 2.2 * len(tasks)), 4.2), facecolor="#fcfcfb")
     width = 0.8 / len(conns)
     for i, c in enumerate(conns):
