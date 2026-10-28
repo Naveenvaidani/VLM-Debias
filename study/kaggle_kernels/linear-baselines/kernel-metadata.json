@@ -1,0 +1,4 @@
+{"id": "jeyadevr/vlm-shortcut-linear-baselines", "title": "VLM Shortcut Linear Baselines", "code_file": "vlm-shortcut-linear-baselines.py",
+ "language": "python", "kernel_type": "script", "is_private": true, "enable_gpu": false, "enable_tpu": false,
+ "enable_internet": true, "dataset_sources": [], "kernel_sources": ["jeyadevr/vlm-shortcut-data-prep"],
+ "competition_sources": [], "model_sources": []}

@@ -45,6 +45,7 @@ def main():
     parser.add_argument("--no_4bit", action="store_true", help="fp16 weights instead of NF4 (faster if it fits)")
     parser.add_argument("--time_budget_min", type=float, default=0)
     parser.add_argument("--max_train_samples", type=int, default=0, help="debug only")
+    parser.add_argument("--freeze_llm", action="store_true", help="no LoRA: only the connector trains")
     parser.add_argument("--max_eval_samples", type=int, default=0, help="cap val/test sets (smoke tests only)")
     args = parser.parse_args()
 
@@ -72,14 +73,15 @@ def main():
 
     model = StudyVLM(args.llm, args.connector, builder.before_ids, vision_dim=vision_dim, dtype=args.dtype,
                      lora_rank=args.lora_rank, gradient_checkpointing=args.gradient_checkpointing, device=device,
+                     use_lora=not args.freeze_llm,
                      mlp_pool=args.mlp_pool, quantize_4bit=not args.no_4bit)
     if args.align_ckpt:
         model.connector.load_state_dict(torch.load(args.align_ckpt, map_location=device))
 
     import bitsandbytes as bnb
     lora_params = [p for n, p in model.decoder.named_parameters() if p.requires_grad]
-    optimizer = bnb.optim.PagedAdamW8bit([
-        {"params": lora_params, "lr": args.lr},
+    groups = [{"params": lora_params, "lr": args.lr}] if lora_params else []
+    optimizer = bnb.optim.PagedAdamW8bit(groups + [
         {"params": list(model.connector.parameters()), "lr": args.connector_lr},
     ], weight_decay=0.01)
     g = torch.Generator().manual_seed(args.seed)

@@ -106,6 +106,10 @@ def main():
     parser.add_argument("--no_4bit", action="store_true", help="fp16 LLM weights instead of NF4")
     parser.add_argument("--data_from", default=None,
                         help="prepared data/ dir from a data-prep session (skips building tasks and features)")
+    parser.add_argument("--freeze_llm", action="store_true", help="train the connector only (no LoRA on the LLM)")
+    parser.add_argument("--align_per_seed", action="store_true",
+                        help="separate stage-1 alignment per seed, so seed variance covers both stages")
+    parser.add_argument("--run_tag", default="", help="suffix for the runs folder, e.g. _frozen")
     parser.add_argument("--prepare_only", action="store_true",
                         help="build tasks + features, export features/metadata to --export_dir/data and stop")
     parser.add_argument("--resume_from", default=None,
@@ -114,6 +118,7 @@ def main():
     args = parser.parse_args()
     py, start = sys.executable, time.time()
     tag = llm_tag(args.llm)
+    tag += args.run_tag
     runs = os.path.join(ROOT, "runs_study", tag)
     os.makedirs(runs, exist_ok=True)
     ckpt = ["--gradient_checkpointing"] if args.gradient_checkpointing else []
@@ -180,14 +185,19 @@ def main():
 
     pool = Pool(args.gpus, start, args.total_budget_min, args.job_budget_min)
 
-    # 3. stage 1 alignment
+    # 3. stage 1 alignment (one per connector, or one per connector and seed)
+    def align_dir(c, seed):
+        return os.path.join(runs, "align", c, f"s{seed}") if args.align_per_seed else os.path.join(runs, "align", c)
+
     align_jobs = []
-    for c in connectors:
-        d = os.path.join(runs, "align", c)
-        os.makedirs(d, exist_ok=True)
-        align_jobs.append((f"align/{c}", [py, "study/align.py", "--llm", args.llm, "--connector", c, "--out", d,
-                                          "--steps", str(args.align_steps)] + ckpt,
-                           os.path.join(d, "connector.pt"), os.path.join(d, "align.log")))
+    for seed in (range(args.seed_start, args.seeds) if args.align_per_seed else [0]):
+        for c in connectors:
+            d = align_dir(c, seed)
+            os.makedirs(d, exist_ok=True)
+            align_jobs.append((os.path.relpath(d, runs), [
+                py, "study/align.py", "--llm", args.llm, "--connector", c, "--out", d,
+                "--steps", str(args.align_steps), "--seed", str(seed)] + ckpt,
+                os.path.join(d, "connector.pt"), os.path.join(d, "align.log")))
     pool.run(align_jobs, on_done=export)
 
     # 4. stage 2 task runs (seed-major order, so partial sessions still cover every config)
@@ -199,9 +209,10 @@ def main():
                 os.makedirs(d, exist_ok=True)
                 task_jobs.append((f"{task}/{c}/s{seed}", [
                     py, "study/train_task.py", "--llm", args.llm, "--connector", c,
-                    "--task_dir", f"data/tasks/{task}", "--align_ckpt", os.path.join(runs, "align", c, "connector.pt"),
+                    "--task_dir", f"data/tasks/{task}", "--align_ckpt", os.path.join(align_dir(c, seed), "connector.pt"),
                     "--run_dir", d, "--seed", str(seed), "--epochs", str(args.epochs),
-                    "--time_budget_min", str(args.job_budget_min - 10)] + ckpt,
+                    "--time_budget_min", str(args.job_budget_min - 10)] + ckpt +
+                    (["--freeze_llm"] if args.freeze_llm else []),
                     os.path.join(d, "results.json"), os.path.join(d, "train.log")))
     pool.run(task_jobs, on_done=export)
 
