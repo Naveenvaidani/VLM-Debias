@@ -118,6 +118,8 @@ def main():
     parser.add_argument("--instruction", default="Answer based only on the main object; ignore the background "
                                                   "and any overlaid text or watermarks.")
     parser.add_argument("--balanced_sampling", action="store_true")
+    parser.add_argument("--connector_lr", type=float, default=None, help="stage-2 connector learning rate")
+    parser.add_argument("--lora_lr", type=float, default=None, help="stage-2 LoRA learning rate")
     parser.add_argument("--attn_entropy_weight", type=float, default=0.0)
     parser.add_argument("--align_ltd", type=float, default=0.0, help="LTD weight for stage-1 alignment")
     parser.add_argument("--stage3_epochs", type=int, default=3)
@@ -239,6 +241,8 @@ def main():
                         "--time_budget_min", str(args.job_budget_min - 10)] + ckpt + \
                        (["--freeze_llm"] if args.freeze_llm else []) + \
                        (["--balanced_sampling"] if args.balanced_sampling else []) + \
+                       (["--connector_lr", str(args.connector_lr)] if args.connector_lr else []) + \
+                       (["--lr", str(args.lora_lr)] if args.lora_lr else []) + \
                        (["--attn_entropy_weight", str(args.attn_entropy_weight)] if args.attn_entropy_weight else [])
                 stages = [s for s in args.stage3.split(",") if s]
                 if not stages:
