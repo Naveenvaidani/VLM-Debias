@@ -296,7 +296,7 @@ def main():
     parser.add_argument("--only", default="waterbirds,cooccur,watermark,typographic",
                         help="comma list of task families to build (captions are always built)")
     parser.add_argument("--celeba_root", default=None, help="folder with list_attr_celeba.csv (Kaggle celeba-dataset)")
-    parser.add_argument("--celeba_train", type=int, default=20000)
+    parser.add_argument("--celeba_train", type=int, default=8000)
     parser.add_argument("--celeba_val", type=int, default=5000)
     parser.add_argument("--download_missing", action="store_true", help="fetch COCO images by URL (dev only)")
     parser.add_argument("--seed", type=int, default=0)
