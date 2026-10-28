@@ -69,8 +69,8 @@ def main():
         y = meta["y"].to_numpy()
         g = (2 * meta["y"] + meta["a"]).to_numpy()
         split = {s: np.where(meta["split"] == s)[0] for s in ("train", "val", "test")}
-        scaler = StandardScaler().fit(x[split["train"]])
-        x = scaler.transform(x)
+        scaler = StandardScaler(copy=False).fit(x[split["train"]])
+        x = scaler.transform(x).astype(np.float32, copy=False)  # in place: spatial features are ~1.8 GB
         te = split["test"]
         for seed in range(args.seeds):
             rng = np.random.default_rng(seed)
@@ -96,10 +96,12 @@ def main():
                       flush=True)
     df = pd.DataFrame(rows)
     os.makedirs(args.out, exist_ok=True)
-    df.to_csv(os.path.join(args.out, "linear_baselines.csv"), index=False)
+    tag = "" if args.pools == "mean" and args.tasks == "waterbirds,watermark_p0.95" else \
+        "_" + "_".join(args.pools.split(",")) + "_" + "_".join(args.tasks.split(","))
+    df.to_csv(os.path.join(args.out, f"linear_baselines{tag}.csv"), index=False)
     summary = df.groupby(["task", "features", "method"])[["worst_group_acc", "avg_acc"]].agg(["mean", "std"]).mul(100).round(1)
     print(summary.to_string())
-    with open(os.path.join(args.out, "linear_baselines.md"), "w") as f:
+    with open(os.path.join(args.out, f"linear_baselines{tag}.md"), "w") as f:
         f.write("# Linear baselines on frozen SigLIP features (mean-pooled), test %, mean ± s.d. over seeds\n\n")
         f.write(summary.to_markdown())
 

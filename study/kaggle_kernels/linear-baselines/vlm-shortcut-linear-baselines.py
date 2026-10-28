@@ -15,5 +15,7 @@ data = subprocess.run("find -L /kaggle/input -path '*tasks/captions/metadata.csv
                       text=True).stdout.split()[0]
 tasks_dir = os.path.dirname(os.path.dirname(data))
 run(f"rm -rf {WORK} && git clone --depth 1 -b study/connector-shortcuts https://github.com/Naveenvaidani/VLM-Debias.git {WORK}")
-run(f"{sys.executable} study/linear_baselines.py --tasks_dir {tasks_dir} --tasks waterbirds,watermark_p0.95 --pools mean,meanmax,grid7 "
-    f"--out /kaggle/working/results", cwd=WORK)
+for task in ("waterbirds", "watermark_p0.95"):  # one process per task and pooling keeps memory low
+    for pool in ("mean", "meanmax", "grid7"):
+        run(f"{sys.executable} study/linear_baselines.py --tasks_dir {tasks_dir} --tasks {task} --pools {pool} "
+            f"--out /kaggle/working/results", cwd=WORK)
