@@ -23,13 +23,13 @@ def load_encoder(name, device):
     return AutoImageProcessor.from_pretrained(name), enc
 
 
-def cache_dir(task_dir, processor, encoder, device, batch_size, layers):
+def cache_dir(task_dir, processor, encoder, device, batch_size, layers, out_name="features.npy"):
     meta = pd.read_csv(os.path.join(task_dir, "metadata.csv"))
     size = encoder.config.image_size
     n_patches = (size // encoder.config.patch_size) ** 2
     outs = {}
     for layer in layers:
-        name = "features.npy" if layer == -1 else f"features_layer{layer}.npy"
+        name = (out_name if layer == -1 else f"features_layer{layer}.npy")
         path = os.path.join(task_dir, name)
         if os.path.exists(path):
             continue
@@ -60,13 +60,14 @@ def main():
     parser.add_argument("--tasks_dir", default="./data/tasks")
     parser.add_argument("--vision_model", default="google/siglip-base-patch16-224")
     parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--out_name", default="features.npy", help="e.g. features_siglip-large.npy")
     parser.add_argument("--layers", type=lambda s: [int(x) for x in s.split(",")], default=[-1],
                         help="-1 = last layer; e.g. -1,6 also caches hidden_states[6]")
     args = parser.parse_args()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     processor, encoder = load_encoder(args.vision_model, device)
     for task_dir in sorted(glob.glob(os.path.join(args.tasks_dir, "*", "metadata.csv"))):
-        cache_dir(os.path.dirname(task_dir), processor, encoder, device, args.batch_size, args.layers)
+        cache_dir(os.path.dirname(task_dir), processor, encoder, device, args.batch_size, args.layers, args.out_name)
 
 
 if __name__ == "__main__":

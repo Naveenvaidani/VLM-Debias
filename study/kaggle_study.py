@@ -109,6 +109,8 @@ def main():
     parser.add_argument("--freeze_llm", action="store_true", help="train the connector only (no LoRA on the LLM)")
     parser.add_argument("--align_per_seed", action="store_true",
                         help="separate stage-1 alignment per seed, so seed variance covers both stages")
+    parser.add_argument("--vision_model", default="google/siglip-base-patch16-224")
+    parser.add_argument("--features", default="features.npy", help="cached feature file name (one per encoder)")
     parser.add_argument("--run_tag", default="", help="suffix for the runs folder, e.g. _frozen")
     parser.add_argument("--prepare_only", action="store_true",
                         help="build tasks + features, export features/metadata to --export_dir/data and stop")
@@ -119,6 +121,7 @@ def main():
     py, start = sys.executable, time.time()
     tag = llm_tag(args.llm)
     tag += args.run_tag
+    os.environ["STUDY_FEATURES"] = args.features  # read by src/study/data.py in every child process
     runs = os.path.join(ROOT, "runs_study", tag)
     os.makedirs(runs, exist_ok=True)
     ckpt = ["--gradient_checkpointing"] if args.gradient_checkpointing else []
@@ -135,10 +138,11 @@ def main():
     if not os.path.exists(os.path.join(ROOT, "data", "tasks", "captions", "metadata.csv")):
         families = sorted({t.split("_p")[0] for t in tasks})
         assert sh([py, "study/build_tasks.py", "--coco_root", args.coco_root, "--only", ",".join(families)]) == 0
-    assert sh([py, "study/cache_features.py", "--tasks_dir", "data/tasks"], gpu=0) == 0
+    assert sh([py, "study/cache_features.py", "--tasks_dir", "data/tasks", "--vision_model", args.vision_model,
+               "--out_name", args.features], gpu=0) == 0
     if args.prepare_only:
         for path in glob.glob(os.path.join(ROOT, "data", "tasks", "*", "*")):
-            if path.endswith((".npy", ".csv", ".json")):
+            if path.endswith((args.features, ".csv", ".json")):
                 dst = os.path.join(args.export_dir, "data", os.path.relpath(path, os.path.join(ROOT, "data")))
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copy(path, dst)

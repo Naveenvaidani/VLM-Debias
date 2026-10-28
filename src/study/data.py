@@ -18,6 +18,9 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
+# which cached feature file to read (STUDY_FEATURES=features_siglip-large.npy for another encoder)
+FEATURES = os.environ.get("STUDY_FEATURES", "features.npy")
+
 SPLITS = ("train", "val", "test")
 TRAIN_TEMPLATES = (0, 1)  # the last template is held out from training, to test phrasing generalisation
 
@@ -32,7 +35,7 @@ class TaskSpec:
         self.answers: List[str] = spec["answers"]
         self.group_names: List[str] = spec["group_names"]
         self.meta = pd.read_csv(os.path.join(task_dir, "metadata.csv"))
-        self.features_path = os.path.join(task_dir, "features.npy")
+        self.features_path = os.path.join(task_dir, FEATURES)
 
 
 class TaskDataset(Dataset):
@@ -129,7 +132,7 @@ class CaptionDataset(Dataset):
     """Image-caption pairs for connector alignment (stage 1). One random caption per visit."""
     def __init__(self, caption_dir: str, seed: int = 0):
         self.meta = pd.read_csv(os.path.join(caption_dir, "metadata.csv"))
-        self.features = np.load(os.path.join(caption_dir, "features.npy"), mmap_mode="r")
+        self.features = np.load(os.path.join(caption_dir, FEATURES), mmap_mode="r")
         self.captions = [json.loads(c) for c in self.meta["captions"]]
         self.rng = np.random.default_rng(seed)
 
