@@ -32,6 +32,7 @@ def train_epoch(model, builder, loader, optimizer, scheduler, scaler, device, gr
     model.train()
     params = [p for p in model.parameters() if p.requires_grad]
     total = 0.0
+    gate_grads = model.gate_grads = []  # |d loss / d gate| per step (learned-gate connectors only)
     for feats, y, _, t in tqdm(loader, desc="train", leave=False):
         optimizer.zero_grad(set_to_none=True)
         loss = step_loss(model, builder, feats, y, t, device)
@@ -48,6 +49,9 @@ def train_epoch(model, builder, loader, optimizer, scheduler, scaler, device, gr
         scheduler.step()
         step_done(device)
         total += loss.item()
+        gate = getattr(model.connector, "gate", None)
+        if isinstance(gate, torch.nn.Parameter) and gate.grad is not None:
+            gate_grads.append(abs(float(gate.grad)))
     return total / max(len(loader), 1)
 
 

@@ -93,6 +93,7 @@ def main():
     # train mode is required: HF models skip gradient checkpointing in eval mode (from_pretrained default)
     model.train()
     losses, step, start = [], 0, time.time()
+    gate_trace = []
     bar = tqdm(total=args.steps, desc=f"align {args.connector}")
     while step < args.steps:
         for feats, caps in loader:
@@ -119,6 +120,10 @@ def main():
             scheduler.step()
             step_done(device)
             losses.append(loss.item())
+            gate = getattr(model.connector, "gate", None)
+            if isinstance(gate, torch.nn.Parameter) and step % 10 == 0:  # learned gate: value and gradient
+                gate_trace.append({"step": step, "gate": float(gate.detach()), "tanh": float(torch.tanh(gate.detach())),
+                                   "grad": float(gate.grad) if gate.grad is not None else None})
             step += 1
             bar.update(1)
             if step % 50 == 0:
@@ -130,7 +135,7 @@ def main():
     with open(os.path.join(args.out, "align.json"), "w") as f:
         json.dump({"args": vars(args), "connector_params": model.connector_param_count(),
                    "minutes": (time.time() - start) / 60, "final_loss": sum(losses[-50:]) / min(50, len(losses)),
-                   "loss_curve": losses[::10]}, f, indent=2)
+                   "loss_curve": losses[::10], "gate_trace": gate_trace}, f, indent=2)
     print(f"aligned {args.connector}: final caption loss {sum(losses[-50:]) / min(50, len(losses)):.3f}")
 
 

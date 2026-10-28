@@ -168,6 +168,7 @@ def main():
         gate = getattr(model.connector, "gate", None)
         history.append({"epoch": epoch, "minutes": minutes, "train_loss": loss,
                         "gate_tanh": float(torch.tanh(gate.float()).item()) if gate is not None else None,
+                        "gate_grad_abs_mean": float(np.mean(model.gate_grads)) if getattr(model, "gate_grads", None) else None,
                         **{f"val_{k}": v for k, v in val.items()}})
         print(f"[{os.path.basename(args.run_dir)}] epoch {epoch} ({minutes:.1f} min) loss {loss:.4f} | "
               f"val avg {val['avg_acc']:.4f} wga {val['worst_group_acc']:.4f}", flush=True)
