@@ -17,8 +17,9 @@ import pandas as pd
 
 METRICS = [("avg_acc", "Avg"), ("worst_group_acc", "WGA"), ("acc_id", "ID"), ("acc_ood", "OOD"),
            ("rsr", "RSR"), ("balanced_acc", "Bal."), ("generative_acc", "Gen.")]
-SERIES = {"mlp": "#2a78d6", "qformer": "#eb6834", "bottleneck": "#1baf7a"}
-LABELS = {"mlp": "MLP projector", "qformer": "Q-Former", "bottleneck": "Cross-attn bottleneck"}
+SERIES = {"mlp": "#2a78d6", "qformer": "#eb6834", "bottleneck": "#1baf7a", "bottleneck_fixed": "#7a5bd6"}
+LABELS = {"mlp": "MLP projector", "qformer": "Q-Former", "bottleneck": "Cross-attn bottleneck",
+          "bottleneck_fixed": "Cross-attn, fixed gate"}
 
 
 def bootstrap_wga(preds, labels, groups, n=1000, seed=0):

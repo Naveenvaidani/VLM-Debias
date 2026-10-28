@@ -61,39 +61,57 @@ features, same data, same training budget) and swaps only the vision-language co
 
 - **MLP projector** (LLaVA-style), 2x2-pooled patches, 49 image tokens, 8.5M parameters
 - **Q-Former** (BLIP-2-style), 32 learned queries, 11.4M parameters
-- **Cross-attention bottleneck** (this repo's design, no image tokens), 8.9M parameters
+- **Cross-attention bottleneck, learned gate** (this repo's design, no image tokens; Flamingo-style
+  zero-initialised tanh gate), 8.9M parameters
+- **Cross-attention bottleneck, fixed gate**: same, but the gate is fixed open and the output layer is
+  zero-initialised instead, so it still starts as the identity but the optimiser cannot shut it
 
 Each connector is first aligned on 10k COCO captions (300 steps, LLM frozen), then trained for 4 epochs
 on two shortcut tasks: **Waterbirds** (background shortcut; official splits, test n = 5,794) and
 **Watermark** (COCO images where a corner watermark predicts "is there a dog?" 95% of the time in
-training; our own group-balanced val/test, test n = 2,400). 3 seeds per configuration, 18 runs in total, on Kaggle 2x T4.
+training; our own group-balanced val/test, test n = 2,400). 3 seeds per configuration, 24 runs in
+total, on Kaggle 2x T4.
 
 ### Test worst-group accuracy (mean ± s.d. over 3 seeds, checkpoint chosen by validation WGA)
 
-| Task | MLP projector | Q-Former | Cross-attn bottleneck |
-| :--- | :---: | :---: | :---: |
-| Waterbirds | **74.5 ± 1.5** | 71.7 ± 2.5 | 62.1 ± 14.9 |
-| Watermark | 63.6 ± 4.4 | **68.6 ± 4.1** | 50.3 ± 16.1 |
+| Task | MLP projector | Q-Former | Cross-attn, learned gate | Cross-attn, fixed gate |
+| :--- | :---: | :---: | :---: | :---: |
+| Waterbirds | **74.5 ± 1.5** | 71.7 ± 2.5 | 62.1 ± 14.9 | 73.5 ± 0.3 |
+| Watermark | 63.6 ± 4.4 | 68.6 ± 4.1 | 50.3 ± 16.1 | **69.6 ± 8.9** |
 
-| Task | Avg acc (MLP / Q-Former / bottleneck) | ID → OOD gap in points (MLP / Q-Former / bottleneck) |
+| Task | ID → OOD gap in points (MLP / Q-Former / learned gate / fixed gate) | Avg acc (same order) |
 | :--- | :---: | :---: |
-| Waterbirds | 90.4 / 87.6 / 83.0 | 17.0 / 21.0 / 27.2 |
-| Watermark | 84.9 / 87.3 / 79.7 | 27.4 / 21.6 / 37.0 |
+| Waterbirds | 17.0 / 21.0 / 27.2 / 21.5 | 90.4 / 87.6 / 83.0 / 87.7 |
+| Watermark | 27.4 / 21.6 / 37.0 / 22.3 | 84.9 / 87.3 / 79.7 / 86.6 |
+
+### Reference points on the same frozen SigLIP features (no LLM)
+
+Logistic regression on mean-pooled features, 3 seeds ([`results_study/linear_baselines.md`](results_study/linear_baselines.md)):
+
+| Method | Waterbirds WGA | Watermark WGA |
+| :--- | :---: | :---: |
+| Linear probe, ERM on the biased training set | 62.0 ± 0.0 | 46.5 ± 2.5 |
+| DFR: probe retrained on a group-balanced half of validation | **84.2 ± 1.5** | **85.1 ± 1.3** |
+| Probe on a group-balanced subsample of training | 84.3 ± 3.0 | 84.7 ± 1.4 |
 
 What the numbers say:
 
-- **No connector removes the shortcut.** The best Waterbirds result (MLP, 74.5) is in the range of plain
-  ERM in the literature (about 73 with a ResNet-50); group-aware methods such as DFR or GroupDRO reach 91-93.
-- **MLP and Q-Former are close.** Q-Former is 2.8 points lower on Waterbirds (lower on all 3 seeds) and
-  5.0 points higher on Watermark (inside the seed spread).
-- **The cross-attention bottleneck relies on the shortcut most and is unstable.** It has the largest
-  ID-to-OOD gap on both tasks, and one seed per task collapsed (45.1 and 32.2 WGA).
-- **It attends to the watermark.** When the watermark is present, the bottleneck puts 16.7% of its
-  attention on the watermark corner, against 6.1% when it is absent and 8.2% for uniform attention;
-  Q-Former shifts less (11.6% vs 7.7%). See [`results_study/attention_watermark.csv`](results_study/attention_watermark.csv).
-- **Its learnable gate stays shut.** The zero-initialised tanh gate is 0.0005 after caption alignment,
-  matching the gate-suppression effect reported by Farazi et al. (2026, arXiv 2607.23335). A fixed-gate
-  variant is being run to test whether the closed gate causes the shortcut reliance.
+- **The learned gate was the problem.** Fixing the gate open takes the cross-attention connector from
+  62.1 ± 14.9 to 73.5 ± 0.3 WGA on Waterbirds and from 50.3 ± 16.1 to 69.6 ± 8.9 on Watermark, removes the
+  collapsed seeds, and brings its ID-to-OOD gap in line with the other connectors. The learned gate stayed
+  at 0.0005 after alignment, the gate-suppression effect reported by Farazi et al. (2026, arXiv
+  2607.23335); with the gate shut the connector passes almost no visual signal and the model is left with
+  the easiest cue.
+- **Once the gate is fixed, connector design barely matters.** MLP, Q-Former and the fixed-gate connector
+  are within a few points of each other on both tasks (Q-Former is 2.8 points below MLP on Waterbirds on
+  all 3 seeds; the Watermark differences are inside the seed spread).
+- **The VLMs beat a linear probe on the same features but stay far below DFR.** Every working connector is
+  12-23 points above the ERM probe, yet 10-20 points below DFR, which only retrains a linear layer on a
+  few balanced examples. The information needed is in the features; the VLM does not use it.
+- **Attention on the shortcut does not by itself mean reliance on it.** Both cross-attention variants put
+  far more attention on the watermark corner when the watermark is present (learned gate 16.7% vs 6.1%,
+  fixed gate 18.2% vs 7.0%; uniform 8.2%), yet only the learned-gate variant fails. Q-Former shifts less
+  (11.6% vs 7.7%). See [`results_study/attention_watermark.csv`](results_study/attention_watermark.csv).
 - **The held-out question phrasing** gives the same WGA as the training phrasings to within 1-2 points.
 
 Full tables, including checkpoint selection without group labels: [`results_study/summary.md`](results_study/summary.md);
@@ -148,6 +166,7 @@ as reported by each paper, on their own setups, so they are context rather than 
 | DFR | Small group-balanced set | 90.2 | as reported in MD3 |
 | **This repo, MLP projector (Qwen3.5-4B, connector study)** | Only for model selection | **74.5 ± 1.5** | 3 seeds |
 | **This repo, MLP + group-balanced sampling (PR #1 run)** | Yes | **82.8** | 1 seed |
+| **This repo, DFR on frozen SigLIP-base features** | Small group-balanced set | **84.2 ± 1.5** | 3 seeds |
 
 ### Where this study stands out
 
@@ -157,10 +176,13 @@ as reported by each paper, on their own setups, so they are context rather than 
   SpuriVerse, PURGE, MD3); prior connector work measures benchmark accuracy, not robustness.
 - **Group-level evaluation of generative VLMs:** worst-group accuracy, ID-to-OOD gap, a held-out question
   phrasing, and two checkpoint-selection rules, over seeds.
-- **A mechanism, not only a score:** the gated cross-attention connector both attends to the watermark
-  (16.7% of attention when present vs 6.1% when absent) and keeps its gate shut (0.0005), linking the
-  gate-suppression effect of Farazi et al. to shortcut reliance, which they did not measure.
-- **The honest headline is a near-null result for MLP vs Q-Former**, consistent with MD3's and the
+- **A mechanism with a fix:** a learnable injection gate stays shut (0.0005), and that alone turns a
+  cross-attention connector from on-par to the most shortcut-reliant and unstable; fixing the gate open
+  restores it (+11.4 and +19.3 WGA points). This links the gate-suppression effect of Farazi et al. to
+  shortcut reliance, which they did not measure.
+- **Reference points on the same features:** a linear ERM probe and DFR bracket every VLM, showing how
+  much of the gap is the model's, not the features'.
+- **Once that pitfall is avoided, connector type is a near-null factor**, consistent with MD3's and the
   scaling study's view that data and training, not architecture, are the main lever.
 
 ## Setup

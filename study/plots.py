@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 CONNECTORS = ["mlp", "qformer", "bottleneck", "bottleneck_fixed"]
-LABELS = {"mlp": "MLP projector", "qformer": "Q-Former", "bottleneck": "Cross-attn\nbottleneck",
+LABELS = {"mlp": "MLP\nprojector", "qformer": "Q-Former", "bottleneck": "Cross-attn\n(learned gate)",
           "bottleneck_fixed": "Cross-attn\n(fixed gate)"}
 COLORS = {"mlp": "#2a78d6", "qformer": "#eb6834", "bottleneck": "#1baf7a", "bottleneck_fixed": "#7a5bd6"}
 TASK_TITLES = {"waterbirds": "Background\n(Waterbirds)", "cooccur": "Co-occurrence\n(COCO)",
@@ -46,7 +46,7 @@ def bars_per_task(df, metric, ylabel, title, path, ylim=(0, 105)):
     """One panel per task; bars = mean over seeds, dots = individual seeds, label = mean."""
     tasks = ordered(df.task.unique(), list(TASK_TITLES))
     conns = ordered(df.connector.unique(), CONNECTORS)
-    fig, axes = plt.subplots(1, len(tasks), figsize=(3.4 * len(tasks), 4.4), sharey=True, squeeze=False)
+    fig, axes = plt.subplots(1, len(tasks), figsize=(max(3.4, 1.15 * len(conns)) * len(tasks), 4.6), sharey=True, squeeze=False)
     rng = np.random.default_rng(0)
     for ax, task in zip(axes[0], tasks):
         for i, c in enumerate(conns):
@@ -80,7 +80,7 @@ def id_vs_ood(df, path):
     tasks = ordered(df.task.unique(), list(TASK_TITLES))
     conns = ordered(df.connector.unique(), CONNECTORS)
     g = df.groupby(["task", "connector"])[["acc_id", "acc_ood"]].mean().reset_index()
-    fig, axes = plt.subplots(1, len(tasks), figsize=(3.4 * len(tasks), 4.0), sharey=True, squeeze=False)
+    fig, axes = plt.subplots(1, len(tasks), figsize=(max(3.4, 1.15 * len(conns)) * len(tasks), 4.2), sharey=True, squeeze=False)
     for ax, task in zip(axes[0], tasks):
         for i, c in enumerate(conns):
             row = g[(g.task == task) & (g.connector == c)]
