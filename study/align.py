@@ -79,15 +79,7 @@ def main():
             m = enc["attention_mask"].unsqueeze(-1).float()
             return (h * m).sum(1) / m.sum(1)
 
-        def visual_summary(feats):
-            """Mean of what the connector adds from the image: its tokens (prefix connectors) or the
-            visual context it injects into the chat-header tokens (cross-attention connectors)."""
-            if model.connector.kind == "prefix":
-                return model.connector(feats.float())[0].mean(1)
-            text = model.embed(model.before_ids).unsqueeze(0).expand(feats.shape[0], -1, -1).float()
-            return (model.connector(feats.float(), text)[0] - text).mean(1)
-
-        ltd = (caption_embedding, visual_summary, ltd_head)
+        ltd = (caption_embedding, ltd_head)
     optimizer = torch.optim.AdamW(params, lr=args.lr, weight_decay=0.0)
     scheduler = get_cosine_schedule_with_warmup(optimizer, int(0.03 * args.steps), args.steps)
     scaler = torch.amp.GradScaler("cuda") if args.dtype == "fp16" and str(device).startswith("cuda") else None
@@ -106,8 +98,9 @@ def main():
                 logits, target = model.logits_at(hidden, b["labels"])
             loss = F.cross_entropy(logits, target, ignore_index=-100)
             if ltd is not None:
-                caption_embedding, visual_summary, ltd_head = ltd
-                pred = ltd_head(visual_summary(feats.to(device)))
+                caption_embedding, ltd_head = ltd
+                # mean of what the connector added from the image in this forward pass (no second pass)
+                pred = ltd_head(model.last_visual.float().mean(1))
                 loss = loss + args.ltd_weight * (1 - F.cosine_similarity(pred, caption_embedding(list(caps))).mean())
             optimizer.zero_grad(set_to_none=True)
             if scaler is not None:

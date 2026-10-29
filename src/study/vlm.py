@@ -122,9 +122,11 @@ class StudyVLM(nn.Module):
             img_ones = torch.ones((b, img.shape[1]), dtype=after_mask.dtype, device=after_mask.device)
             mask = torch.cat([ones, img_ones, after_mask], dim=1)
             offset = n_before + img.shape[1]
+            self.last_visual = img  # what the connector adds from the image (reused by the LTD loss)
         else:
             text = torch.cat([before, after], dim=1)
             embeds, attn = self.connector(patches.float(), text.float())
+            self.last_visual = (embeds - text.float())[:, :n_before]  # injected visual context, header tokens
             mask = torch.cat([ones, after_mask], dim=1)
             offset = n_before
         hidden = self.decoder(inputs_embeds=embeds.to(self.compute_dtype), attention_mask=mask,
