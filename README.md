@@ -69,8 +69,8 @@ features, same data, same training budget) and swaps only the vision-language co
 Each connector is first aligned on 10k COCO captions (300 steps, LLM frozen), then trained for 4 epochs
 on two shortcut tasks: **Waterbirds** (background shortcut; official splits, test n = 5,794) and
 **Watermark** (COCO images where a corner watermark predicts "is there a dog?" 95% of the time in
-training; our own group-balanced val/test, test n = 2,400). 3 seeds per configuration, 24 runs in
-total, on Kaggle 2x T4.
+training; our own group-balanced val/test, test n = 2,400). 3 seeds per configuration (5 for MLP and Q-Former, 13–15 for the learned/fixed gate comparison),
+on Kaggle 2x T4.
 
 ### Test worst-group accuracy (mean ± s.d. over 3 seeds, checkpoint chosen by validation WGA)
 
@@ -128,6 +128,25 @@ session, training on the next; a follow-up session resumes from saved results). 
 batch 16: 4.0 / 2.5 / 1.7 s per step for MLP / Q-Former / bottleneck after pooling MLP tokens
 196 → 49 and dropping gradient checkpointing (MLP was 13.7 s before); `study/bench_speed.py`
 measures this.
+
+## Pre-declared hypotheses (main result)
+
+Tested on all available seeds, learned vs fixed gate on Qwen3.5-4B, paired by seed
+([`results_study/hypotheses.md`](results_study/hypotheses.md), script `study/hypotheses.py`):
+
+| Task | Seeds | Learned gate | Fixed gate | Gain (95% CI) | H1 paired t p | H2 variance p | Collapsed seeds (< 50) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| Waterbirds | 15 | 63.6 ± 10.4 | 74.2 ± 3.4 | +10.6 [+5.3, +16.0] | 4e-4 | 9e-5 | 2 / 0 |
+| Watermark | 13 | 41.4 ± 19.0 | 65.2 ± 10.4 | +23.8 [+12.5, +35.1] | 3e-4 | 0.02 | 8 / 0 |
+
+- **H1 (fixed > learned gate): confirmed** on both tasks (one-sided α = 0.025).
+- **H2 (learned gate less stable): confirmed** on both tasks.
+- The gate mechanism is logged directly: the learned gate stays near zero and its gradient flips sign every step.
+- It replicates on a second LLM (Phi-4-mini, 3 seeds): fixed > learned on both tasks.
+
+**Connector type (MLP vs Q-Former), five seeds:** no significant difference on either task
+(Waterbirds 74.4 vs 72.8, p = 0.23; Watermark 66.2 vs 69.2, p = 0.40;
+[`results_study/five_seed_mlp_qformer.md`](results_study/five_seed_mlp_qformer.md)).
 
 ## Related work and where this study stands
 
