@@ -88,6 +88,7 @@ def bars_per_task(df, metric, ylabel, title, path, ylim=(0, 105)):
              fontsize=8.5, color=INK2)
     fig.tight_layout(rect=(0, 0.04, 1, 0.95), w_pad=2.5)
     fig.savefig(path, dpi=200)
+    fig.savefig(path.replace(".png", ".pdf"))  # vector copy for the paper
     plt.close(fig)
 
 
@@ -121,6 +122,7 @@ def id_vs_ood(df, path):
                  x=0.01, ha="left", fontsize=12.5, color=INK, y=0.99)
     fig.tight_layout(rect=(0, 0.07, 1, 0.95), w_pad=2.5)
     fig.savefig(path, dpi=200)
+    fig.savefig(path.replace(".png", ".pdf"))  # vector copy for the paper
     plt.close(fig)
 
 
@@ -161,6 +163,7 @@ def paired_delta(df, path):
     style(ax)
     fig.tight_layout(rect=(0, 0, 1, 0.93))
     fig.savefig(path, dpi=200)
+    fig.savefig(path.replace(".png", ".pdf"))  # vector copy for the paper
     plt.close(fig)
 
 
