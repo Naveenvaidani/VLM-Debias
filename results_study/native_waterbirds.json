@@ -1,0 +1,63 @@
+{
+  "llm": "Qwen/Qwen3.5-4B",
+  "task": "waterbirds",
+  "n": 5794,
+  "per_template": {
+    "0": {
+      "avg_acc": 0.7758025543665861,
+      "acc[landbird / land]": 0.9991130820399113,
+      "acc[landbird / water]": 0.9849223946784922,
+      "acc[waterbird / land]": 0.0,
+      "acc[waterbird / water]": 0.03271028037383177,
+      "worst_group_acc": 0.0,
+      "acc_id": 0.7849499482222989,
+      "acc_ood": 0.7666551605108733,
+      "delta_ood": 0.018294787711425564,
+      "rsr": 0.023306948109058867,
+      "balanced_acc": 0.5041864392730588,
+      "positive_rate": 0.009837763203313773
+    },
+    "1": {
+      "avg_acc": 0.7714877459440801,
+      "acc[landbird / land]": 0.9889135254988913,
+      "acc[landbird / water]": 0.9791574279379157,
+      "acc[waterbird / land]": 0.03582554517133956,
+      "acc[waterbird / water]": 0.014018691588785047,
+      "worst_group_acc": 0.014018691588785047,
+      "acc_id": 0.772868484639282,
+      "acc_ood": 0.7701070072488782,
+      "delta_ood": 0.002761477390403888,
+      "rsr": 0.0035730236712818507,
+      "balanced_acc": 0.5044787975492329,
+      "positive_rate": 0.01794960303762513
+    },
+    "2": {
+      "avg_acc": 0.7783914394200897,
+      "acc[landbird / land]": 1.0,
+      "acc[landbird / water]": 1.0,
+      "acc[waterbird / land]": 0.0,
+      "acc[waterbird / water]": 0.0,
+      "worst_group_acc": 0.0,
+      "acc_id": 0.7783914394200897,
+      "acc_ood": 0.7783914394200897,
+      "delta_ood": 0.0,
+      "rsr": 0.0,
+      "balanced_acc": 0.5,
+      "positive_rate": 0.0
+    }
+  },
+  "mean_over_templates": {
+    "avg_acc": 0.7752272465769187,
+    "acc[landbird / land]": 0.996008869179601,
+    "acc[landbird / water]": 0.9880266075388026,
+    "acc[waterbird / land]": 0.01194184839044652,
+    "acc[waterbird / water]": 0.01557632398753894,
+    "worst_group_acc": 0.004672897196261682,
+    "acc_id": 0.7787366240938902,
+    "acc_ood": 0.771717869059947,
+    "delta_ood": 0.007018755033943151,
+    "rsr": 0.008959990593446905,
+    "balanced_acc": 0.5028884122740972,
+    "positive_rate": 0.0092624554136463
+  }
+}
