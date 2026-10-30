@@ -1,4 +1,5 @@
-"""Kaggle GPU kernel: Qwen3.5-4B with its own vision tower, zero-shot, on the Waterbirds test set."""
+"""Kaggle GPU kernel: Qwen3.5-4B with its own vision tower, zero-shot on Waterbirds (first phrasing), raw and
+calibrated (answer threshold chosen on validation)."""
 import os
 import subprocess
 import sys
@@ -21,5 +22,5 @@ run(f"pip freeze > {EXPORT}/environment.txt; git -C {WORK} rev-parse HEAD >> {EX
 run(f"{sys.executable} scripts/prepare_waterbirds.py", cwd=WORK)
 run(f"{sys.executable} -c \"import sys; sys.path.insert(0, 'study'); import build_tasks; "
     f"build_tasks.build_waterbirds_task('data/tasks', 'data')\"", cwd=WORK)
-run(f"{sys.executable} study/native_vlm.py --llm Qwen/Qwen3.5-4B --task_dir data/tasks/waterbirds --out {EXPORT}",
+run(f"{sys.executable} study/native_vlm.py --llm Qwen/Qwen3.5-4B --task_dir data/tasks/waterbirds --templates 0 --out {EXPORT}",
     cwd=WORK)
