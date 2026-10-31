@@ -1,0 +1,9 @@
+# Pairwise connector comparisons (test WGA, wga selection)
+
+Difference A - B in points; 95% CI from 2000 stratified bootstrap resamples of the test set (CI) and of seeds plus test images (hierarchical); p-values two-sided; significance uses the hierarchical p-value, Holm-corrected within each task.
+
+| task   | A                | B                |   wga_A |   wga_B |   diff_pp |   ci_low_pp |   ci_high_pp |   p_bootstrap |   p_paired_t_seeds |   n_seeds |   hier_ci_low_pp |   hier_ci_high_pp |   p_hierarchical |   p_equivalence_tost | equivalent_within_margin   |   p_hier_holm | significant_0.05   |
+|:-------|:-----------------|:-----------------|--------:|--------:|----------:|------------:|-------------:|--------------:|-------------------:|----------:|-----------------:|------------------:|-----------------:|---------------------:|:---------------------------|--------------:|:-------------------|
+| celeba | bottleneck       | bottleneck_fixed |    36.3 |    49.3 |     -12.9 |       -17.8 |         -7.8 |         0     |              0.961 |         2 |            -24.4 |              19.9 |            0.725 |               0.4545 | False                      |         0.725 | False              |
+| celeba | bottleneck       | mlp              |    36.3 |    54.3 |     -18   |       -22.4 |        -13.6 |         0     |              0.293 |         4 |            -41   |               6.2 |            0.159 |               0.863  | False                      |         0.477 | False              |
+| celeba | bottleneck_fixed | mlp              |    49.3 |    54.3 |      -5   |        -8.7 |         -1.4 |         0.003 |              0.508 |         2 |             -3.5 |              17   |            0.261 |               0.7425 | False                      |         0.522 | False              |

@@ -32,3 +32,6 @@ Thumbs.db
 *.npy
 /runs_dev/
 /runs_study/
+
+# Kaggle downloads and orchestration state (local only)
+kaggle_out/
