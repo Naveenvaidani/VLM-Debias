@@ -13,7 +13,7 @@ controlled **Watermark** task and **CelebA**, with **Qwen3.5-4B** and **Phi-4-mi
 | **Answer** | Yes for the gate: initialised at zero, it never opens (tanh α peaks below 0.01 and ends ≈ 0.0005) and the model relies on the shortcut. Fixing it raises worst-group accuracy by **+10.6** (Waterbirds) and **+23.8** points (Watermark), d_z = 1.10 and 1.27, p < 0.001, with label-free model selection and unpaired tests too. Once the gate is fixed, no significant difference between connector types was found (equivalence not established). |
 | **Fix** | Retrain only the connector on a small group-balanced set (connector-DFR): **89.6 ± 0.5** worst-group accuracy on Watermark. |
 | **Scale** | 2 LLMs · 2 encoders · 3 tasks · 4 connectors · 200+ training runs on Kaggle T4s |
-| **Paper kit** | Literature review, methodology, results and discussion, 94 verified references: [`paper/`](paper/) |
+| **Paper kit** | Literature review, methodology, results and discussion, 101 verified references: [`paper/`](paper/) |
 
 **Keywords:** shortcut learning · spurious correlations · group robustness · worst-group accuracy · vision-language
 models · multimodal LLM · connector / projector design · Q-Former · gated cross-attention · Flamingo gate ·
@@ -25,7 +25,7 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
 
 - [Key findings](#key-findings)
 - [Study design](#study-design): [Research question and hypotheses](#research-question-and-hypotheses) · [Tasks and datasets](#tasks-and-datasets) · [Connectors](#connectors) · [Training protocol](#training-protocol) · [Metrics](#metrics) · [Statistics](#statistics)
-- [Results](#results): [1. Connector comparison, Qwen3.5-4B, SigLIP-base](#1-connector-comparison-qwen35-4b-siglip-base) · [2. Gate hypotheses](#2-gate-hypotheses-paired-by-seed) · [3. Second LLM](#3-second-llm-phi-4-mini-5-seeds) · [4. Vision encoder scale](#4-vision-encoder-scale-siglip-base-vs-siglip-large-waterbirds) · [5. Fixes](#5-fixes-connector-dfr-balanced-sampling-linear-dfr) · [6. CelebA](#6-celeba-blond_hair-vs-male-official-partitions-train-subsampled-to-8k) · [7. Ablations](#7-ablations-waterbirds-mlp-unless-noted) · [8. Reference points](#8-reference-points) · [9. Seed ensembles](#9-seed-ensembles-average-the-3-seeds-answer-probabilities) · [10. Linear probes on frozen SigLIP-base features, by pooling](#10-linear-probes-on-frozen-siglip-base-features-by-pooling-3-seeds) · [11. Attention on the watermark](#11-attention-on-the-watermark-watermark-task-3-seeds) · [12. Failure analysis](#12-failure-analysis-hardest-group-per-connector-3-seeds) · [13. Compute cost](#13-compute-cost-one-t4-batch-16-qwen35-4b-nf4) · [14. Gates in released Flamingo-style models](#14-gates-in-released-flamingo-style-models-idefics) · [15. More plots of the 3-seed connector comparison](#15-more-plots-of-the-3-seed-connector-comparison) · [16. Robustness checks for reviewers](#16-robustness-checks-for-reviewers)
+- [Results](#results): [1. Connector comparison, Qwen3.5-4B, SigLIP-base](#1-connector-comparison-qwen35-4b-siglip-base) · [2. Gate hypotheses](#2-gate-hypotheses-paired-by-seed) · [3. Second LLM](#3-second-llm-phi-4-mini-5-seeds) · [4. Vision encoder scale](#4-vision-encoder-scale-siglip-base-vs-siglip-large-waterbirds) · [5. Fixes](#5-fixes-connector-dfr-balanced-sampling-linear-dfr) · [6. CelebA](#6-celeba-blond_hair-vs-male-official-partitions-train-subsampled-to-8k) · [7. Ablations](#7-ablations-waterbirds-mlp-unless-noted) · [8. Reference points](#8-reference-points) · [9. Seed ensembles](#9-seed-ensembles-average-the-3-seeds-answer-probabilities) · [10. Linear probes on frozen SigLIP-base features, by pooling](#10-linear-probes-on-frozen-siglip-base-features-by-pooling-3-seeds) · [11. Attention on the watermark](#11-attention-on-the-watermark-watermark-task-3-seeds) · [12. Failure analysis](#12-failure-analysis-hardest-group-per-connector-3-seeds) · [13. Compute cost](#13-compute-cost-one-t4-batch-16-qwen35-4b-nf4) · [14. Gates in released models](#14-gates-in-released-models-with-tanh-gated-cross-attention-idefics-llama-32-vision) · [15. More plots of the 3-seed connector comparison](#15-more-plots-of-the-3-seed-connector-comparison) · [16. Robustness checks for reviewers](#16-robustness-checks-for-reviewers)
 - [Observations](#observations)
 - [FAQ](#faq)
 - [Related work and where this study stands](#related-work-and-where-this-study-stands)
@@ -59,8 +59,9 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
    fixed-gate connector from 72.5 to **89.6 ± 0.5** WGA (5 seeds) and beats MLP + DFR (81.2) and a linear DFR
    probe on the same features (85.1). On Waterbirds it gives no gain (73.9 → 74.1).
 6. **Off-the-shelf VLMs are no better.** Qwen3.5-4B with its own vision tower, zero-shot and calibrated on
-   validation, reaches only **35.5%** WGA on Waterbirds. In released IDEFICS-80B checkpoints, **9 of 20** gated
-   cross-attention layers have |tanh α| < 0.05, so near-shut gates also occur at scale.
+   validation, reaches only **35.5%** WGA on Waterbirds. In released checkpoints, near-shut gates are common:
+   **9 of 20** IDEFICS-80B layers and **every** Llama 3.2 Vision layer (8/8 at 11B, 20/20 at 90B) have
+   |tanh α| < 0.05.
 
 ![Main result: worst-group accuracy per connector, every seed shown](docs/figures/final/main_connectors.png)
 
@@ -313,16 +314,28 @@ seed-specific errors on top ([`failure_analysis.csv`](results_study/failure_anal
 The fixed-gate cross-attention connector matches MLP robustness at about half the time and memory
 ([`compute_table.csv`](results_study/compute_table.csv)).
 
-### 14. Gates in released Flamingo-style models (IDEFICS)
+### 14. Gates in released models with tanh-gated cross-attention (IDEFICS, Llama 3.2 Vision)
 
-Read straight from the Hugging Face checkpoints (only the gate tensors are downloaded):
+Read straight from the Hugging Face checkpoints with HTTP range requests (only the gate tensors are downloaded;
+[`study/pretrained_gates.py`](study/pretrained_gates.py)). Llama 3.2 Vision is read from the ungated `unsloth`
+mirrors of Meta's weights.
 
-| Model | Cross-attn gate, mean \|tanh α\| | Layers with \|tanh α\| < 0.05 |
-| :--- | :---: | :---: |
-| IDEFICS-9B / 9B-instruct | 0.114 / 0.115 | 1 of 8 |
-| IDEFICS-80B / 80B-instruct | 0.068 / 0.067 | **9 of 20** |
+| Model | Cross-attention gate, mean \|tanh α\| (min–max) | Layers with \|tanh α\| < 0.05 | Dense / MLP gate, mean |
+| :--- | :---: | :---: | :---: |
+| IDEFICS-9B / 9B-instruct | 0.114 / 0.115 | 1 of 8 | 0.289 / 0.292 |
+| IDEFICS-80B / 80B-instruct | 0.068 / 0.067 | **9 of 20** | 0.257 / 0.257 |
+| Llama 3.2 11B Vision / Instruct | 0.004 / 0.003 (0.001–0.012) | **8 of 8** | 0.041 / 0.037 |
+| Llama 3.2 90B Vision Instruct | 0.001 (0.000–0.003) | **20 of 20** | 0.013 |
 
-Near-shut cross-attention gates also occur at 80B scale ([`pretrained_gates.md`](results_study/pretrained_gates.md)).
+- **The near-shut regime is the norm in Llama 3.2 Vision.** Its attention gates are as small as our learned
+  gate after alignment (≈ 0.0005–0.001), and they grow with depth (11B: 0.001 at layer 3 to 0.009 at layer 38).
+- **The caveat matters.** Llama 3.2 Vision clearly uses the image, so in a fully trained model a small gate is
+  offset by large cross-attention outputs. A gate value alone does not show how much visual signal passes.
+- **What we measure instead:** the injection ratio and the pathway-ablation test (round 4/5), not the gate
+  parameter alone. Whether these small gates make the released models more shortcut-prone is not tested here.
+
+Per-layer values: [`pretrained_gates.md`](results_study/pretrained_gates.md),
+[`pretrained_gates.json`](results_study/pretrained_gates.json).
 
 ### 15. More plots of the 3-seed connector comparison
 
@@ -383,6 +396,8 @@ Phi-4-mini Waterbirds 0.011 (all < 0.025); Phi-4-mini Watermark 0.044 fails (5 s
 | Gate left out of gradient clipping; raw pre-clip gradients logged (learned gate, 3 seeds) | running (round 5) |
 | No weight decay on the gate (learned gate, 2 seeds) | running (round 5) |
 | Shortcut strength p = 0.9 / 0.99 on Watermark (MLP, both gates, 3 seeds) | queued (round 5) |
+| Per-layer gated cross-attention (layers 0/8/16/24, Flamingo / Llama 3.2 layout), learned vs fixed, 5 seeds | queued (round 6) |
+| Full-precision LLM (fp16 weights), learned vs fixed gate, 3 seeds | queued (round 6) |
 
 ## Observations
 
@@ -493,12 +508,13 @@ Everything needed to write the journal paper from this repository:
 | Introduction (CARS five-paragraph funnel) | [`paper/INTRODUCTION.md`](paper/INTRODUCTION.md) |
 | Literature review: background, themes, contradictions, gaps, bridge to hypotheses | [`docs/LITERATURE.md`](docs/LITERATURE.md) |
 | Synthesis matrix of 88 papers (objective, finding, limitation, use) | [`paper/literature_matrix.csv`](paper/literature_matrix.csv) |
-| 94 verified references (arXiv API / Crossref), 25 journal articles | [`paper/references.bib`](paper/references.bib) (built by [`paper/build_refs.py`](paper/build_refs.py)) |
+| 101 verified references (arXiv API / Crossref), 26 journal articles | [`paper/references.bib`](paper/references.bib) (built by [`paper/build_refs.py`](paper/build_refs.py)) |
 | Methodology: design, data, variables, power analysis, tests, assumptions, validity, ethics | [`paper/METHODOLOGY.md`](paper/METHODOLOGY.md) |
 | Results (per hypothesis, effect sizes) and discussion (mechanism, implications, limitations) | [`paper/RESULTS_DISCUSSION.md`](paper/RESULTS_DISCUSSION.md) |
 | Claims and structure | [`paper/OUTLINE.md`](paper/OUTLINE.md) |
 | What was changed for reviewers, why, and where (plain-language log) | [`docs/REVIEW_HARDENING.md`](docs/REVIEW_HARDENING.md) |
-| Reviewer pre-submission checklist (30 likely concerns, status of each) | [`paper/SUBMISSION_CHECKLIST.md`](paper/SUBMISSION_CHECKLIST.md) |
+| Novelty: closest prior work, our claims, what we do not claim | [`docs/NOVELTY.md`](docs/NOVELTY.md) |
+| Reviewer pre-submission checklist (38 likely concerns, status of each) | [`paper/SUBMISSION_CHECKLIST.md`](paper/SUBMISSION_CHECKLIST.md) |
 
 ## Reproduce
 

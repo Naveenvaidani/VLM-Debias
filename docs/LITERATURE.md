@@ -47,7 +47,11 @@ framing yields testable predictions.
 - Flamingo-style models add `tanh(α)·CrossAttn(text, image)` to the language stream, with `α` initialised at
   zero so that the pretrained LLM is unchanged at the start [alayrac2022flamingo].
 - The same zero-initialised, learnable scaling is used in unimodal networks to stabilise training
-  [bachlechner2021rezero].
+  [bachlechner2021rezero], in LLaMA-Adapter's zero-gated prompts [zhang2024llamaadapter; gao2023llamaadapterv2],
+  and in released VLMs: IDEFICS and Llama 3.2 Vision (separate attention and MLP gates in 8 of 40 layers)
+  [grattafiori2024llama3]. Its estimation theory is analysed in [diep2025zeroinit].
+- Flamingo reports that its gates grow from zero over 500k steps, and that removing them costs 4.2 points
+  [alayrac2022flamingo].
 - A gate is *closed* when `|tanh α| ≈ 0`.
 
 ## 2. Thematic synthesis
@@ -128,6 +132,14 @@ jin2025efficientmllm], but no design study measures them.
   [farazi2026gate] recommend fixed injection.
 - Their consequence for **what the model relies on** was not measured.
 
+**C4. Modality imbalance.**
+- Multimodal networks greedily learn one modality and under-fit the other [wu2022greedy]. Which modality wins
+  depends on initialisation [huang2022modality].
+- Gradient or feature modulation reduces the imbalance [peng2022balanced; wei2025onthefly].
+- This literature studies late-fusion classifiers. It does not identify an architectural component of
+  LLM-based VLMs as the cause, and it does not measure spurious-group robustness. A shut injection gate is a
+  concrete instance of a modality being under-used.
+
 ### Theme D — Methodological standards for comparing deep models
 
 **Seeds.**
@@ -150,7 +162,8 @@ jin2025efficientmllm], but no design study measures them.
 | Question | Camp 1 | Camp 2 | Why they disagree | What this study does |
 | :--- | :--- | :--- | :--- | :--- |
 | Does connector type matter? | Yes: MLP aligns better than Q-Former [huang2024mir]; locality matters [cha2024honeybee] | Little: connector type has small effect vs tokens and resolution [mckinzie2024mm1] | Different outcomes (alignment metric vs benchmark), different budgets | Fixes everything else and measures *group robustness* over many seeds: MLP vs Q-Former not significant (5 seeds) |
-| Is cross-attention a good injection? | Yes with frozen backbones [laurencon2024matters]; used at frontier scale [grattafiori2024llama3] | Learnable gates close [farazi2026gate] | Gate dynamics are rarely logged; outcomes are averages over seeds | Logs the gate and tests learned vs fixed gate head-to-head (H1, H2) |
+| Is cross-attention a good injection? | Yes with frozen backbones [laurencon2024matters]; used at frontier scale [grattafiori2024llama3]; gates grow over long training [alayrac2022flamingo] | Learnable gates end up behaviourally closed [farazi2026gate] | Training length differs (500k vs short adaptation); gate dynamics are rarely logged; outcomes are averages over seeds | Logs the gate and tests learned vs fixed gate head-to-head (H1, H2), input-level and per-layer, 300 and 3,000 alignment steps |
+| Is under-use of a modality an optimisation or an architecture problem? | Optimisation: greedy learning, modality competition [wu2022greedy; huang2022modality] | Fixable by modulating gradients [peng2022balanced; wei2025onthefly] | Studied in late-fusion classifiers only | Isolates one architectural component (the gate) and shows its effect on worst-group accuracy |
 | Where do MLLM failures come from? | Visual encoder [tong2024eyes] | Data, not scale [sarridis2026scaling]; mapping between modalities [zhang2024oodmllm] | Each study varies one component | Varies the connector and the encoder separately: the gate effect persists across LLMs; a larger encoder masks it |
 | Does attention reveal shortcut use? | Explanations can find spurious groups [chakraborty2024exmap; lapuschkin2019clever] | Attention is not explanation [jain2019attention] | Attention ≠ causal use | Both gate variants attend to the watermark equally; only one relies on it |
 | Is more capacity safer? | Bigger encoders help MLLMs [tong2024cambrian] | Overparameterisation can worsen reliance [sagawa2020overparam] | Different metrics (average vs worst-group) | SigLIP-large raises WGA for all connectors, but the gate still closes |
@@ -160,14 +173,16 @@ jin2025efficientmllm], but no design study measures them.
 
 1. **Theoretical gap (missing mechanism).** The feature–readout view [izmailov2022feature; kirichenko2023dfr]
    has no account of the *transmission* stage between features and readout. Gate closure [farazi2026gate] is a
-   candidate mechanism, but it has never been linked to shortcut reliance.
+   candidate mechanism, but it has never been linked to shortcut reliance. Modality-imbalance work
+   [wu2022greedy; huang2022modality] describes the under-use of one modality, but not in LLM-based VLMs, not
+   through a specific component, and not in terms of spurious groups.
 2. **Methodological gap.**
    - Connector studies [mckinzie2024mm1; karamcheti2024prismatic; huang2024mir] use average benchmark accuracy
      and typically one seed.
    - Robustness studies of VLMs [hosseini2025spurlens; yang2025spuriverse; sarker2026purge] do not vary the
      architecture.
-   - No work combines group metrics, pre-declared hypotheses and seed-level statistics for a connector
-     comparison.
+   - No work combines group metrics, stated hypotheses tested on new seeds, and seed-level statistics for a
+     connector comparison.
 3. **Empirical gap.**
    - The evidence on cross-attention injection conflicts [laurencon2024matters; farazi2026gate].
    - The evidence on connector type conflicts [huang2024mir; mckinzie2024mm1].

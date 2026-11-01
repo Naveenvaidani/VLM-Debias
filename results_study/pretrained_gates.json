@@ -1006,5 +1006,653 @@
   "n": 1,
   "alpha_mean": 0.07470703125,
   "tanh_abs_mean": 0.07456836104393005
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.3.cross_attn_attn_gate",
+  "layer": 3,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": 0.000568389892578125,
+  "tanh_abs_mean": 0.0005683898343704641
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.3.cross_attn_mlp_gate",
+  "layer": 3,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.005126953125,
+  "tanh_abs_mean": 0.0051269084215164185
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.13.cross_attn_attn_gate",
+  "layer": 13,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": 0.00179290771484375,
+  "tanh_abs_mean": 0.001792905735783279
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.13.cross_attn_mlp_gate",
+  "layer": 13,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.024658203125,
+  "tanh_abs_mean": 0.024653205648064613
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.8.cross_attn_attn_gate",
+  "layer": 8,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": 0.001434326171875,
+  "tanh_abs_mean": 0.0014343251241371036
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.8.cross_attn_mlp_gate",
+  "layer": 8,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.0179443359375,
+  "tanh_abs_mean": 0.017942409962415695
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.18.cross_attn_attn_gate",
+  "layer": 18,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.00201416015625,
+  "tanh_abs_mean": 0.002014157362282276
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.18.cross_attn_mlp_gate",
+  "layer": 18,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.0299072265625,
+  "tanh_abs_mean": 0.02989831380546093
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.23.cross_attn_attn_gate",
+  "layer": 23,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.0027618408203125,
+  "tanh_abs_mean": 0.0027618338353931904
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.23.cross_attn_mlp_gate",
+  "layer": 23,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.03125,
+  "tanh_abs_mean": 0.031239831820130348
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.28.cross_attn_attn_gate",
+  "layer": 28,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.00567626953125,
+  "tanh_abs_mean": 0.005676208529621363
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.28.cross_attn_mlp_gate",
+  "layer": 28,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.0400390625,
+  "tanh_abs_mean": 0.04001767933368683
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.33.cross_attn_attn_gate",
+  "layer": 33,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": 0.0089111328125,
+  "tanh_abs_mean": 0.008910897187888622
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.33.cross_attn_mlp_gate",
+  "layer": 33,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.07470703125,
+  "tanh_abs_mean": 0.07456836104393005
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.38.cross_attn_attn_gate",
+  "layer": 38,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.01214599609375,
+  "tanh_abs_mean": 0.012145399115979671
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision",
+  "param": "language_model.model.layers.38.cross_attn_mlp_gate",
+  "layer": 38,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.107421875,
+  "tanh_abs_mean": 0.10701057314872742
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.3.cross_attn_attn_gate",
+  "layer": 3,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": 0.000545501708984375,
+  "tanh_abs_mean": 0.0005455016507767141
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.3.cross_attn_mlp_gate",
+  "layer": 3,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.006256103515625,
+  "tanh_abs_mean": 0.006256022024899721
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.13.cross_attn_attn_gate",
+  "layer": 13,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": 0.00138092041015625,
+  "tanh_abs_mean": 0.0013809194788336754
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.13.cross_attn_mlp_gate",
+  "layer": 13,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.018798828125,
+  "tanh_abs_mean": 0.018796613439917564
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.8.cross_attn_attn_gate",
+  "layer": 8,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": 0.001190185546875,
+  "tanh_abs_mean": 0.0011901849647983909
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.8.cross_attn_mlp_gate",
+  "layer": 8,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.01519775390625,
+  "tanh_abs_mean": 0.015196583233773708
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.18.cross_attn_attn_gate",
+  "layer": 18,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.0015716552734375,
+  "tanh_abs_mean": 0.00157165399286896
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.18.cross_attn_mlp_gate",
+  "layer": 18,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.0218505859375,
+  "tanh_abs_mean": 0.021847108379006386
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.23.cross_attn_attn_gate",
+  "layer": 23,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.002227783203125,
+  "tanh_abs_mean": 0.0022277794778347015
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.23.cross_attn_mlp_gate",
+  "layer": 23,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.0269775390625,
+  "tanh_abs_mean": 0.02697099559009075
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.28.cross_attn_attn_gate",
+  "layer": 28,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.004364013671875,
+  "tanh_abs_mean": 0.0043639857321977615
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.28.cross_attn_mlp_gate",
+  "layer": 28,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.038330078125,
+  "tanh_abs_mean": 0.038311317563056946
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.33.cross_attn_attn_gate",
+  "layer": 33,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": 0.006744384765625,
+  "tanh_abs_mean": 0.00674428278580308
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.33.cross_attn_mlp_gate",
+  "layer": 33,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.068359375,
+  "tanh_abs_mean": 0.06825309246778488
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.38.cross_attn_attn_gate",
+  "layer": 38,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.008544921875,
+  "tanh_abs_mean": 0.00854471419006586
+ },
+ {
+  "model": "unsloth/Llama-3.2-11B-Vision-Instruct",
+  "param": "language_model.model.layers.38.cross_attn_mlp_gate",
+  "layer": 38,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.09765625,
+  "tanh_abs_mean": 0.09734698385000229
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.3.cross_attn_attn_gate",
+  "layer": 3,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.00011587142944335938,
+  "tanh_abs_mean": 0.00011587142944335938
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.3.cross_attn_mlp_gate",
+  "layer": 3,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.00109100341796875,
+  "tanh_abs_mean": 0.0010910029523074627
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.8.cross_attn_attn_gate",
+  "layer": 8,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.00013446807861328125,
+  "tanh_abs_mean": 0.00013446807861328125
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.8.cross_attn_mlp_gate",
+  "layer": 8,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.00176239013671875,
+  "tanh_abs_mean": 0.0017623883904889226
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.13.cross_attn_attn_gate",
+  "layer": 13,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.00018596649169921875,
+  "tanh_abs_mean": 0.00018596649169921875
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.13.cross_attn_mlp_gate",
+  "layer": 13,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.00244140625,
+  "tanh_abs_mean": 0.0024414013605564833
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.18.cross_attn_attn_gate",
+  "layer": 18,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": 0.0002593994140625,
+  "tanh_abs_mean": 0.0002593994140625
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.18.cross_attn_mlp_gate",
+  "layer": 18,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.0027618408203125,
+  "tanh_abs_mean": 0.0027618338353931904
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.23.cross_attn_attn_gate",
+  "layer": 23,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.0003643035888671875,
+  "tanh_abs_mean": 0.00036430355976335704
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.23.cross_attn_mlp_gate",
+  "layer": 23,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.0047607421875,
+  "tanh_abs_mean": 0.004760706331580877
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.28.cross_attn_attn_gate",
+  "layer": 28,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.0003814697265625,
+  "tanh_abs_mean": 0.00038146969745866954
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.28.cross_attn_mlp_gate",
+  "layer": 28,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.006591796875,
+  "tanh_abs_mean": 0.006591701414436102
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.33.cross_attn_attn_gate",
+  "layer": 33,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.0004024505615234375,
+  "tanh_abs_mean": 0.00040245053241960704
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.33.cross_attn_mlp_gate",
+  "layer": 33,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.006988525390625,
+  "tanh_abs_mean": 0.006988411769270897
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.38.cross_attn_attn_gate",
+  "layer": 38,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.0003833770751953125,
+  "tanh_abs_mean": 0.00038337704609148204
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.38.cross_attn_mlp_gate",
+  "layer": 38,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.006134033203125,
+  "tanh_abs_mean": 0.006133956369012594
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.43.cross_attn_attn_gate",
+  "layer": 43,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.0003814697265625,
+  "tanh_abs_mean": 0.00038146969745866954
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.43.cross_attn_mlp_gate",
+  "layer": 43,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.005523681640625,
+  "tanh_abs_mean": 0.005523625295609236
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.48.cross_attn_attn_gate",
+  "layer": 48,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": 0.000530242919921875,
+  "tanh_abs_mean": 0.0005302428617142141
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.48.cross_attn_mlp_gate",
+  "layer": 48,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.006927490234375,
+  "tanh_abs_mean": 0.006927379406988621
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.53.cross_attn_attn_gate",
+  "layer": 53,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.0006103515625,
+  "tanh_abs_mean": 0.0006103515042923391
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.53.cross_attn_mlp_gate",
+  "layer": 53,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.00897216796875,
+  "tanh_abs_mean": 0.00897192768752575
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.58.cross_attn_attn_gate",
+  "layer": 58,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.000762939453125,
+  "tanh_abs_mean": 0.0007629393367096782
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.58.cross_attn_mlp_gate",
+  "layer": 58,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.0108642578125,
+  "tanh_abs_mean": 0.010863830335438251
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.63.cross_attn_attn_gate",
+  "layer": 63,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.00091552734375,
+  "tanh_abs_mean": 0.0009155270527116954
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.63.cross_attn_mlp_gate",
+  "layer": 63,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.013427734375,
+  "tanh_abs_mean": 0.013426927849650383
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.68.cross_attn_attn_gate",
+  "layer": 68,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.00109100341796875,
+  "tanh_abs_mean": 0.0010910029523074627
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.68.cross_attn_mlp_gate",
+  "layer": 68,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.0166015625,
+  "tanh_abs_mean": 0.01660003699362278
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.73.cross_attn_attn_gate",
+  "layer": 73,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": 0.00131988525390625,
+  "tanh_abs_mean": 0.0013198844389989972
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.73.cross_attn_mlp_gate",
+  "layer": 73,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.0198974609375,
+  "tanh_abs_mean": 0.019894834607839584
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.78.cross_attn_attn_gate",
+  "layer": 78,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": -0.00142669677734375,
+  "tanh_abs_mean": 0.0014266958460211754
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.78.cross_attn_mlp_gate",
+  "layer": 78,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.02392578125,
+  "tanh_abs_mean": 0.023921215906739235
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.83.cross_attn_attn_gate",
+  "layer": 83,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": 0.00168609619140625,
+  "tanh_abs_mean": 0.0016860945615917444
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.83.cross_attn_mlp_gate",
+  "layer": 83,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": 0.0279541015625,
+  "tanh_abs_mean": 0.027946822345256805
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.88.cross_attn_attn_gate",
+  "layer": 88,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": 0.00189971923828125,
+  "tanh_abs_mean": 0.0018997170263901353
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.88.cross_attn_mlp_gate",
+  "layer": 88,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.0311279296875,
+  "tanh_abs_mean": 0.03111787885427475
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.93.cross_attn_attn_gate",
+  "layer": 93,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": 0.0023651123046875,
+  "tanh_abs_mean": 0.0023651078809052706
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.93.cross_attn_mlp_gate",
+  "layer": 93,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.03515625,
+  "tanh_abs_mean": 0.03514177352190018
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.98.cross_attn_attn_gate",
+  "layer": 98,
+  "kind": "cross_attn_attn_gate",
+  "n": 1,
+  "alpha_mean": 0.0026092529296875,
+  "tanh_abs_mean": 0.0026092471089214087
+ },
+ {
+  "model": "unsloth/Llama-3.2-90B-Vision-Instruct",
+  "param": "language_model.model.layers.98.cross_attn_mlp_gate",
+  "layer": 98,
+  "kind": "cross_attn_mlp_gate",
+  "n": 1,
+  "alpha_mean": -0.029296875,
+  "tanh_abs_mean": 0.02928849682211876
  }
 ]

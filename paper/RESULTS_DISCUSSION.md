@@ -106,8 +106,13 @@ present (uniform share 8.2%):
 
 Yet only the learned gate fails.
 
-**Released checkpoints.** In IDEFICS-80B, 9 of 20 gated cross-attention layers have |tanh α| < 0.05; in
-IDEFICS-9B, 1 of 8.
+**Released checkpoints.** Gates with |tanh α| < 0.05:
+- IDEFICS-80B: 9 of 20 cross-attention layers. IDEFICS-9B: 1 of 8.
+- Llama 3.2 Vision: all of them. Mean |tanh α| is 0.003 at 11B (8 of 8 layers) and 0.001 at 90B (20 of 20).
+  Values rise with depth (0.001 at layer 3 to 0.009 at layer 38 in 11B).
+- These fully trained models clearly use the image, so a small gate there must be offset by large
+  cross-attention outputs. The gate parameter alone is therefore not a measure of transmitted signal, which is
+  why we add the injection ratio and the ablation test.
 
 ### R4. Connector type, once the gate is fixed
 
@@ -221,6 +226,19 @@ readings (9 of 20 layers below 0.05 after full training) show that near-shut gat
 Flamingo also reports that removing the gate costs 4.2 points and destabilises training. Our fixed gate is not
 "no gate": the output layer is zero-initialised, so the model still starts as the pretrained LLM, and no
 instability was observed.
+
+**Relation to modality imbalance.** A gate that stays shut is a concrete, architectural instance of the
+greedy under-use of one modality [wu2022greedy] and of modality competition, in which the winner depends on
+initialisation [huang2022modality]. That account predicts the seed lottery we observe (H2). Prior work fixes
+imbalance by modulating gradients [peng2022balanced; wei2025onthefly]. Here, fixing one component removes the
+problem at no cost, and the consequence is measured as worst-group accuracy rather than average accuracy.
+
+**If the gate is shut, how is the visual shortcut learned?** The watermark and the background are themselves
+visual, so some image signal must reach the LLM. A gate of ≈ 0.0005 passes little unless the output layer grows
+to offset it. Our account is that the narrow residual pathway carries the strongest, most linearly available cue
+and loses the finer object evidence. The injection ratio and the pathway ablation (rounds 4–5) test this
+directly. If ablation sends the learned-gate model to chance, the pathway is narrow but open. If it changes
+nothing, the pathway is behaviourally closed and the shortcut comes from elsewhere.
 
 **Behavioural closure.** [farazi2026gate] define a pathway as closed when ablating it at inference leaves
 accuracy unchanged, even when the gate nominally passes 30–45% of the signal. Our gate value is a parameter

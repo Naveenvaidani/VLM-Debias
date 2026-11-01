@@ -18,7 +18,11 @@ import requests
 from huggingface_hub import HfApi, hf_hub_url
 
 REPOS = ["HuggingFaceM4/idefics-9b", "HuggingFaceM4/idefics-9b-instruct", "HuggingFaceM4/idefics-80b",
-         "HuggingFaceM4/idefics-80b-instruct"]
+         "HuggingFaceM4/idefics-80b-instruct",
+         # Llama 3.2 Vision: tanh-gated cross-attention (attention and MLP gate, zero-initialised) in 8 of 40
+         # (11B) or 20 of 100 (90B) text layers; ungated mirrors of the Meta weights
+         "unsloth/Llama-3.2-11B-Vision", "unsloth/Llama-3.2-11B-Vision-Instruct",
+         "unsloth/Llama-3.2-90B-Vision-Instruct"]
 GATE = re.compile(r"(alpha|gate)", re.I)
 DTYPES = {"F32": np.float32, "F16": np.float16, "BF16": "bf16"}
 
@@ -40,16 +44,18 @@ def read_tensor(url, base, meta):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", required=True)
+    parser.add_argument("--repos", default=",".join(REPOS))
     args = parser.parse_args()
+    repos = args.repos.split(",")
     api, rows = HfApi(), []
-    for repo in REPOS:
+    for repo in repos:
         files = [s.rfilename for s in api.model_info(repo).siblings if s.rfilename.endswith(".safetensors")]
         for fname in files:
             url = hf_hub_url(repo, fname)
             header, base = read_header(url)
             for key, meta in header.items():
-                if key == "__metadata__" or not GATE.search(key.split(".")[-1]):
-                    continue
+                if key == "__metadata__" or not GATE.search(key.split(".")[-1]) or "vision" in key:
+                    continue  # injection gates only (Llama 3.2's vision encoder has its own internal gates)
                 v = read_tensor(url, base, meta)
                 layer = re.search(r"\.(\d+)\.", key)
                 rows.append({"model": repo, "param": key, "layer": int(layer.group(1)) if layer else -1,
@@ -59,9 +65,9 @@ def main():
     os.makedirs(args.out, exist_ok=True)
     with open(os.path.join(args.out, "pretrained_gates.json"), "w") as f:
         json.dump(rows, f, indent=1)
-    lines = ["# Gate values of released Flamingo-style models (|tanh(alpha)|, mean over each tensor)\n",
+    lines = ["# Gate values of released models with tanh-gated cross-attention (|tanh(alpha)|, mean over each tensor)\n",
              "| Model | Gate | Layers | Mean | Min | Max | Layers with < 0.05 |", "|---|---|---|---|---|---|---|"]
-    for repo in REPOS:
+    for repo in repos:
         for kind in sorted({r["kind"] for r in rows if r["model"] == repo}):
             v = np.array([r["tanh_abs_mean"] for r in rows if r["model"] == repo and r["kind"] == kind])
             lines.append(f"| {repo} | {kind} | {len(v)} | {v.mean():.3f} | {v.min():.3f} | {v.max():.3f} | "

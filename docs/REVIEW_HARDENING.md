@@ -110,7 +110,7 @@ with and without the gate.
   Models"*.
 
 **References** ([`paper/references.bib`](../paper/references.bib)):
-- all 94 entries now have full author lists, fetched from arXiv / Crossref by
+- all 101 entries now have full author lists, fetched from arXiv / Crossref by
   [`paper/fetch_authors.py`](../paper/fetch_authors.py);
 - the first author of each entry is cross-checked against the verified record;
 - the Places database (Zhou et al., TPAMI 2018) was added for the licence statement.
@@ -130,3 +130,42 @@ with and without the gate.
   generative multiple-choice protocol rather than our two-answer readout.
 - **Multi-layer injection:** a per-layer gated block, as in Flamingo.
 - **Scale and precision:** a larger or full-precision LLM (T4 memory).
+
+---
+
+## 8. Third pass: choosing among the "still open" items, and the novelty check
+
+The four open items were weighed against the papers and against what a T4 can run:
+
+| Option | Decision | Reason |
+| :--- | :--- | :--- |
+| Gate in every layer, as in Flamingo | **Done (round 6)** | Answers the biggest scope objection directly. Flamingo places a gated block every 4th–7th layer; Llama 3.2 Vision every 5th (layers 3, 8, …, 38 of 40). `xattn_deep` puts a gated block before layers 0, 8, 16 and 24 of 32, parameter-matched to the input-level block. |
+| Larger / full-precision LLM | **Done in part (round 6)** | A 7–8B model does not train on a T4. An fp16-weight (no 4-bit) replication of the gate comparison does, and it removes the "only quantised" objection. |
+| Force a released IDEFICS model's gates open | **Not pursued; replaced** | A trained model has adapted to its gate values, so forcing them open is a distribution shift, and any accuracy change is uninterpretable. Instead the released gates were *read*, now including Llama 3.2 Vision. |
+| SpuriVerse | **Not pursued (future work)** | It is open-ended multiple-choice VQA (1,364 questions). Our models are trained per task with a two-answer readout, so they cannot be scored on it without a different protocol. |
+
+**New result from reading released checkpoints.** Every cross-attention gate in Llama 3.2 Vision is near zero:
+- 11B: mean |tanh α| = 0.003, all 8 layers below 0.012;
+- 90B: mean 0.001, all 20 layers below 0.003.
+
+These models plainly use the image, so a small gate there is offset by large cross-attention outputs. That is
+why the paper reports the injected signal and the ablation test, not the gate parameter alone.
+
+**Novelty check** (full write-up in [`docs/NOVELTY.md`](NOVELTY.md)). The searches found no prior work that
+manipulates the VLM connector's gate with everything else fixed and measures shortcut reliance. Three bodies
+of work must be cited and distinguished, and now are, with verified references (101 in total):
+
+| Prior work | How we distinguish ourselves |
+| :--- | :--- |
+| **Zero-initialised gating:** Flamingo; LLaMA-Adapter V1/V2; the theory of zero-initialised attention (Diep et al., 2025) | We do not claim the gate. We claim its controlled effect on what the model relies on. |
+| **Gate closure:** Farazi et al., 2026 | They measure relational accuracy. We measure worst-group accuracy and seed variance, and the connector is the only variable. |
+| **Modality imbalance:** Wu et al., ICML 2022; Huang et al., ICML 2022; Peng et al., CVPR 2022; Wei et al., TPAMI 2025 | The shut gate is a concrete architectural instance of modality under-use, in LLM-based VLMs, measured on spurious groups. Modality competition predicts our seed lottery. |
+
+The literature review (theme C4), the introduction (¶3) and the discussion (D2) were updated to match.
+
+**Other corrections in this pass.**
+- The literature matrix said Flamingo did not analyse gate dynamics. That was wrong: its appendix shows the
+  gates growing. Corrected.
+- A bug caught before any GPU time was spent: with gradient checkpointing, the per-layer hooks lost the image
+  features when layers were recomputed in the backward pass. Fixed, then tested on CPU with gradient
+  checkpointing on.

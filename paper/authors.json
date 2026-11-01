@@ -363,6 +363,18 @@
   "Yates, Andrew",
   "Rijke, Maarten de"
  ],
+ "zhang2024llamaadapter": [
+  "Zhang, Renrui",
+  "Han, Jiaming",
+  "Liu, Chris",
+  "Gao, Peng",
+  "Zhou, Aojun",
+  "Hu, Xiangfei",
+  "Yan, Shilin",
+  "Lu, Pan",
+  "Li, Hongsheng",
+  "Qiao, Yu"
+ ],
  "karamcheti2024prismatic": [
   "Karamcheti, Siddharth",
   "Nair, Suraj",
@@ -940,12 +952,6 @@
   "Kolesnikov, Alexander",
   "Beyer, Lucas"
  ],
- "dettmers2023qlora": [
-  "Dettmers, Tim",
-  "Pagnoni, Artidoro",
-  "Holtzman, Ari",
-  "Zettlemoyer, Luke"
- ],
  "tong2024cambrian": [
   "Tong, Shengbang",
   "Brown, Ellis",
@@ -962,12 +968,36 @@
   "LeCun, Yann",
   "Xie, Saining"
  ],
+ "diep2025zeroinit": [
+  "Diep, Nghiem T.",
+  "Nguyen, Huy",
+  "Nguyen, Chau",
+  "Le, Minh",
+  "Nguyen, Duy M. H.",
+  "Sonntag, Daniel",
+  "Niepert, Mathias",
+  "Ho, Nhat"
+ ],
  "bachlechner2021rezero": [
   "Bachlechner, Thomas",
   "Majumder, Bodhisattwa Prasad",
   "Mao, Huanru Henry",
   "Cottrell, Garrison W.",
   "McAuley, Julian"
+ ],
+ "gao2023llamaadapterv2": [
+  "Gao, Peng",
+  "Han, Jiaming",
+  "Zhang, Renrui",
+  "Lin, Ziyi",
+  "Geng, Shijie",
+  "Zhou, Aojun",
+  "Zhang, Wei",
+  "Lu, Pan",
+  "He, Conghui",
+  "Yue, Xiangyu",
+  "Li, Hongsheng",
+  "Qiao, Yu"
  ],
  "mckinzie2024mm1": [
   "McKinzie, Brandon",
@@ -1036,23 +1066,18 @@
   "Turza, Mahbub Ahmed",
   "Rahman, Shafin"
  ],
- "jain2019attention": [
-  "Jain, Sarthak",
-  "Wallace, Byron C."
+ "huang2022modality": [
+  "Huang, Yu",
+  "Lin, Junyang",
+  "Zhou, Chang",
+  "Yang, Hongxia",
+  "Huang, Longbo"
  ],
- "henderson2018matters": [
-  "Henderson, Peter",
-  "Islam, Riashat",
-  "Bachman, Philip",
-  "Pineau, Joelle",
-  "Precup, Doina",
-  "Meger, David"
- ],
- "chen2016checkpoint": [
-  "Chen, Tianqi",
-  "Xu, Bing",
-  "Zhang, Chiyuan",
-  "Guestrin, Carlos"
+ "wu2022greedy": [
+  "Wu, Nan",
+  "Jastrzębski, Stanisław",
+  "Cho, Kyunghyun",
+  "Geras, Krzysztof J."
  ],
  "li2025tokenpacker": [
   "Li, Wentong",
@@ -1063,10 +1088,6 @@
   "Qin, Jie",
   "Zhu, Jianke",
   "Zhang, Lei"
- ],
- "wiegreffe2019attention": [
-  "Wiegreffe, Sarah",
-  "Pinter, Yuval"
  ],
  "dosovitskiy2021vit": [
   "Dosovitskiy, Alexey",
@@ -1179,6 +1200,34 @@
  "picard2021seed": [
   "Picard, David"
  ],
+ "dettmers2023qlora": [
+  "Dettmers, Tim",
+  "Pagnoni, Artidoro",
+  "Holtzman, Ari",
+  "Zettlemoyer, Luke"
+ ],
+ "jain2019attention": [
+  "Jain, Sarthak",
+  "Wallace, Byron C."
+ ],
+ "henderson2018matters": [
+  "Henderson, Peter",
+  "Islam, Riashat",
+  "Bachman, Philip",
+  "Pineau, Joelle",
+  "Precup, Doina",
+  "Meger, David"
+ ],
+ "chen2016checkpoint": [
+  "Chen, Tianqi",
+  "Xu, Bing",
+  "Zhang, Chiyuan",
+  "Guestrin, Carlos"
+ ],
+ "wiegreffe2019attention": [
+  "Wiegreffe, Sarah",
+  "Pinter, Yuval"
+ ],
  "bouthillier2021variance": [
   "Bouthillier, Xavier",
   "Delaunay, Pierre",
@@ -1240,6 +1289,13 @@
   "Ross, Heather",
   "McIntosh, Chris"
  ],
+ "noohdani2024decompose": [
+  "Noohdani, Fahimeh Hosseini",
+  "Hosseini, Parsa",
+  "Parast, Aryan Yazdan",
+  "Araghi, Hamidreza Yaghoubi",
+  "Baghshah, Mahdieh Soleymani"
+ ],
  "chakraborty2024exmap": [
   "Chakraborty, Rwiddhi",
   "Sletten, Adrian",
@@ -1262,6 +1318,13 @@
   "Chen, Yiqiang",
   "Zeng, Wenjun",
   "Yu, Philip"
+ ],
+ "zhou2017places": [
+  "Zhou, Bolei",
+  "Lapedriza, Agata",
+  "Khosla, Aditya",
+  "Oliva, Aude",
+  "Torralba, Antonio"
  ],
  "zhou2018places": [
   "Zhou, Bolei",
@@ -1360,6 +1423,19 @@
   "Tan, Xin",
   "Ma, Lizhuang"
  ],
+ "peng2022balanced": [
+  "Peng, Xiaokang",
+  "Wei, Yake",
+  "Deng, Andong",
+  "Wang, Dong",
+  "Hu, Di"
+ ],
+ "wei2025onthefly": [
+  "Wei, Yake",
+  "Hu, Di",
+  "Du, Henghui",
+  "Wen, Ji-Rong"
+ ],
  "ding2023peft": [
   "Ding, Ning",
   "Qin, Yujia",
@@ -1403,19 +1479,5 @@
  ],
  "schuirmann1987tost": [
   "Schuirmann, Donald J."
- ],
- "noohdani2024decompose": [
-  "Hosseini Noohdani, Fahimeh",
-  "Hosseini, Parsa",
-  "Parast, Aryan Yazdan",
-  "Araghi, Hamidreza Yaghoubi",
-  "Baghshah, Mahdieh Soleymani"
- ],
- "zhou2017places": [
-  "Zhou, Bolei",
-  "Lapedriza, Agata",
-  "Khosla, Aditya",
-  "Oliva, Aude",
-  "Torralba, Antonio"
  ]
 }

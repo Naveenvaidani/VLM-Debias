@@ -40,10 +40,15 @@ However, these two lines of work have not met, which leaves three limitations.
    every connector study measures average accuracy rather than worst-group behaviour. Whether the component
    that decides *what visual information reaches the LLM* also decides *whether the model relies on a
    shortcut* is untested.
-2. **Conflicting evidence on gated cross-attention.** Cross-attention injection is used at frontier scale
-   [grattafiori2024llama3] and performs well with frozen backbones [laurencon2024matters]. Yet learnable
-   injection gates have been shown to close during training [farazi2026gate], and the consequence of a closed
-   gate for what the model relies on has never been measured.
+2. **Conflicting evidence on gated cross-attention.** Zero-initialised, learnable tanh gates are the standard
+   way to inject a new modality into a pretrained LLM: Flamingo, IDEFICS, LLaMA-Adapter and Llama 3.2 Vision
+   all use them [alayrac2022flamingo; zhang2024llamaadapter; grattafiori2024llama3]. Cross-attention
+   injection performs well with frozen backbones [laurencon2024matters]. Yet learnable injection gates can end
+   up behaviourally closed [farazi2026gate], and every attention gate in the released Llama 3.2 Vision
+   checkpoints is below 0.012. The consequence of a near-shut gate for *what the model relies on* has never
+   been measured. Work on modality imbalance shows that multimodal networks can greedily ignore a modality
+   [wu2022greedy; huang2022modality], but not which component of an LLM-based VLM causes it, nor what it does
+   to spurious-group robustness.
 3. **Results from too few seeds.** Comparisons rest on one or a few training runs, although seed variance
    alone can reverse conclusions in deep learning [henderson2018matters; bouthillier2021variance].
 
