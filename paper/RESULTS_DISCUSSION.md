@@ -379,8 +379,8 @@ Waterbirds.
 - Models are 4-bit and 4B parameters or smaller.
 - The encoder is frozen.
 - SigLIP-large Watermark has 2 seeds, CelebA 3–4, and the 8-epoch run 1 (extension running).
-- Every task is a binary question answered by the first token of the class word. The models are generative,
-  but open-ended answers (captioning, free-form VQA) are not evaluated.
+- The three classification tasks are binary questions answered by the first token of the class word. Open-ended
+  generation is tested only on a VQA-CP v2 subset (3 seeds, round 8), not on the full benchmark.
 - Runs are not bit-reproducible: same-seed reruns differ by 12.7 (learned) and 5.2 (fixed) WGA points on
   average, so seeds are treated as random replicates.
 - The learning-rate sweep and Group DRO have 2 seeds per setting and are descriptive.

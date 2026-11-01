@@ -70,6 +70,7 @@ Status as of 2026-11-01. "Done" = addressed in code, results or text; "Running" 
 | 53 | Binary first-token readout, not open-ended generation | Stated in limitations | Done |
 | 54 | 3,000-step alignment: learned-gate captioning loss diverged (2.0 → 7.9) | Reported; the run is now described as fragility under long training, not a clean test of the gate | Done |
 | 55 | Learned gate has *lower* 300-step caption loss than the fixed gate (≈ 2.7 vs 3.2) | Caption loss is not a measure of image use (captions are partly predictable from text); reported, and WGA/injection are the outcome measures | Done (text) |
+| 56 | No natural-image, open-ended benchmark | VQA-CP v2 subset: free-form generation, VQA accuracy, shifted answer priors, prior-answer rate, pathway ablation; learned vs fixed gate, 3 seeds (README §18) | Done (code, tests) · Running (round 8) |
 
 Optional, not queued: native zero-shot on CelebA and Watermark (needs task images on the account that runs it);
 gate excluded from clipping *and* no weight decay together; multi-layer injection.

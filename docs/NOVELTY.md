@@ -141,5 +141,6 @@ assumed.
 ## 5. Remaining optional strengthening
 
 - Gradient modulation (OGM-GE [peng2022balanced]) as a baseline next to the fixed gate.
-- A natural-image MLLM benchmark with a generative protocol (SpuriVerse, SpurLens).
+- A natural-image MLLM benchmark with a generative protocol: VQA-CP v2 added (round 8); SpuriVerse and SpurLens
+  remain future work.
 - Larger LLMs (7–8B) at 4-bit, if a larger GPU becomes available.

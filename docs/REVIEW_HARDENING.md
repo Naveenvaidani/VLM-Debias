@@ -276,3 +276,31 @@ documents now present this run as evidence of fragility, not as a clean test tha
 drop. At 300 steps the learned gate even reaches a *lower* caption loss than the fixed gate (≈ 2.7 vs 3.2),
 which shows caption loss does not measure whether the image is used.
 
+## 15. Open-ended benchmark on natural images: VQA-CP v2
+
+Concern: every task so far is a two-answer question read from one token, and one task is synthetic. A TPAMI or
+IJCV reviewer would ask for free-form answers on natural images.
+
+What was chosen and why:
+- **VQA-CP v2** [agrawal2018vqacp] is the standard benchmark for shortcut reliance in open-ended VQA, already
+  in our reference list. Train and test have different answer priors per question type, so answering from the
+  question alone fails. It uses natural COCO images, and its shortcut is on the *text* side, which tests the gate
+  mechanism from the other direction: a gate that lets little image signal through should push the model to
+  the question prior.
+- Chosen over SpuriVerse (multiple-choice, 1,364 questions, no training split) because our models are trained
+  per task.
+
+What was built (code read first, then extended; nothing in the existing pipeline changed):
+- `src/study/vqa.py`: prompts with a different question per sample, greedy generation, the official
+  leave-one-annotator-out VQA accuracy with standard answer normalisation, accuracy per answer type, and the rate
+  of answering with the training prior.
+- `study/build_vqacp.py`: an image-disjoint subset (8k train, 1k validation, 2k in-distribution test from the
+  VQA-CP train split; 3k from the VQA-CP test split), with alignment-caption images kept out of evaluation.
+- `study/train_vqa.py`: the same LLM, features, LoRA and alignment as the other tasks; model selection on
+  in-distribution validation only; evaluation with and without the visual pathway.
+- 5 new unit tests and a CPU smoke run of all three connector types; the prompt format was checked with the
+  real Qwen3.5 tokenizer.
+- Data: the original VQA-CP host was unreachable, so the JSONs come from a public Kaggle mirror, verified
+  against the published split sizes.
+- Kaggle job `r8-vqacp` (learned vs fixed gate, 3 seeds, pinned library versions) is running.
+

@@ -38,6 +38,7 @@ validity and ethics. Each step follows the "action → justification → citatio
 | Waterbirds | CUB-200 birds on Places backgrounds [wah2011cub; zhou2018places], official splits [sagawa2020groupdro] | background (land / water) | landbird / waterbird | 4,795 | 1,199 | 5,794 |
 | Watermark (ours) | MS-COCO images [lin2014coco] | stock-photo text watermark in the corner | dog present | 4,800 (95% shortcut-aligned) | 1,200 (group-balanced) | 2,400 (group-balanced) |
 | CelebA | CelebA, official partitions [liu2015celeba] | gender (Male) | Blond_Hair | 8,000 (stratified subsample) | 5,000 (≥ 100 per group) | full official test |
+| VQA-CP v2 (open-ended) | VQA-CP v2 [agrawal2018vqacp] on COCO images | question-type answer prior (text side) | free-form answer | 8,000 questions from the VQA-CP train split | 1,000 (same split, in-distribution) | 2,000 in-distribution + 3,000 from the VQA-CP test split (shifted priors); image-disjoint |
 | Alignment captions | MS-COCO captions | – | – | 10,000 pairs | – | – |
 
 **Sampling.**
@@ -268,6 +269,9 @@ without correction and are not used as evidence for the hypotheses.
     both are for non-commercial research.
   - MS-COCO 2017 [lin2014coco]: annotations CC BY 4.0; images under Flickr terms of use.
   - CelebA [liu2015celeba]: non-commercial research purposes only.
+  - VQA-CP v2 [agrawal2018vqacp]: re-split of the VQA v2 annotations (CC BY 4.0) on COCO images. The JSON files
+    were taken from a public Kaggle mirror because the original host was unreachable; the mirror was checked
+    against the published split sizes (438,183 train and 219,928 test questions).
   - Models: Qwen3.5-4B (Apache-2.0), Phi-4-mini-instruct (MIT), SigLIP (Apache-2.0). Check each model card
     for the exact version used (`environment.txt`).
 - SigLIP was pre-trained on web data (WebLI) that may contain CUB, Places or COCO images; this affects every

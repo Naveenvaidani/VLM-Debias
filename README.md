@@ -25,7 +25,7 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
 
 - [Key findings](#key-findings)
 - [Study design](#study-design): [Research question and hypotheses](#research-question-and-hypotheses) · [Tasks and datasets](#tasks-and-datasets) · [Connectors](#connectors) · [Training protocol](#training-protocol) · [Metrics](#metrics) · [Statistics](#statistics)
-- [Results](#results): [1. Connector comparison, Qwen3.5-4B, SigLIP-base](#1-connector-comparison-qwen35-4b-siglip-base) · [2. Gate hypotheses](#2-gate-hypotheses-paired-by-seed) · [3. Second LLM](#3-second-llm-phi-4-mini-5-seeds) · [4. Vision encoder scale](#4-vision-encoder-scale-siglip-base-vs-siglip-large-waterbirds) · [5. Fixes](#5-fixes-connector-dfr-balanced-sampling-linear-dfr) · [6. CelebA](#6-celeba-blond_hair-vs-male-official-partitions-train-subsampled-to-8k) · [7. Ablations](#7-ablations-waterbirds-mlp-unless-noted) · [8. Reference points](#8-reference-points) · [9. Seed ensembles](#9-seed-ensembles-average-the-3-seeds-answer-probabilities) · [10. Linear probes on frozen SigLIP-base features, by pooling](#10-linear-probes-on-frozen-siglip-base-features-by-pooling-3-seeds) · [11. Attention on the watermark](#11-attention-on-the-watermark-watermark-task-3-seeds) · [12. Failure analysis](#12-failure-analysis-hardest-group-per-connector-3-seeds) · [13. Compute cost](#13-compute-cost-one-t4-batch-16-qwen35-4b-nf4) · [14. Gates in released models](#14-gates-in-released-models-with-tanh-gated-cross-attention-idefics-llama-32-vision) · [15. More plots of the 3-seed connector comparison](#15-more-plots-of-the-3-seed-connector-comparison) · [16. Robustness checks for reviewers](#16-robustness-checks-for-reviewers) · [17. Control experiments](#17-control-experiments-rounds-3-4)
+- [Results](#results): [1. Connector comparison, Qwen3.5-4B, SigLIP-base](#1-connector-comparison-qwen35-4b-siglip-base) · [2. Gate hypotheses](#2-gate-hypotheses-paired-by-seed) · [3. Second LLM](#3-second-llm-phi-4-mini-5-seeds) · [4. Vision encoder scale](#4-vision-encoder-scale-siglip-base-vs-siglip-large-waterbirds) · [5. Fixes](#5-fixes-connector-dfr-balanced-sampling-linear-dfr) · [6. CelebA](#6-celeba-blond_hair-vs-male-official-partitions-train-subsampled-to-8k) · [7. Ablations](#7-ablations-waterbirds-mlp-unless-noted) · [8. Reference points](#8-reference-points) · [9. Seed ensembles](#9-seed-ensembles-average-the-3-seeds-answer-probabilities) · [10. Linear probes on frozen SigLIP-base features, by pooling](#10-linear-probes-on-frozen-siglip-base-features-by-pooling-3-seeds) · [11. Attention on the watermark](#11-attention-on-the-watermark-watermark-task-3-seeds) · [12. Failure analysis](#12-failure-analysis-hardest-group-per-connector-3-seeds) · [13. Compute cost](#13-compute-cost-one-t4-batch-16-qwen35-4b-nf4) · [14. Gates in released models](#14-gates-in-released-models-with-tanh-gated-cross-attention-idefics-llama-32-vision) · [15. More plots of the 3-seed connector comparison](#15-more-plots-of-the-3-seed-connector-comparison) · [16. Robustness checks for reviewers](#16-robustness-checks-for-reviewers) · [17. Control experiments](#17-control-experiments-rounds-3-4) · [18. VQA-CP v2](#18-open-ended-answers-on-natural-images-vqa-cp-v2-running-round-8)
 - [Observations](#observations)
 - [FAQ](#faq)
 - [Related work and where this study stands](#related-work-and-where-this-study-stands)
@@ -415,6 +415,7 @@ Phi-4-mini Waterbirds 0.0086, Phi-4-mini Watermark 0.0086 (10 seeds). All four s
 | Group DRO seeds 2–3 (→ 4 per arm); connector LR seed 2 (→ 3 per setting) | running (round 7) |
 | SigLIP-large Watermark seeds 2–4 (→ 5 per arm) | running (round 7) |
 | CelebA learned seed 4, fixed seed 1 (→ 5 paired seeds) | running (round 7) |
+| VQA-CP v2 open-ended benchmark, learned vs fixed gate, 3 seeds | running (round 8) |
 
 ### 17. Control experiments (rounds 3-4)
 
@@ -433,6 +434,28 @@ Full tables, per-seed values and the code: [`results_study/extra_analyses.md`](r
 
 Still running: pathway ablation, gate excluded from clipping, no weight decay on the gate, shortcut strength
 p = 0.9 / 0.99 (round 5); per-layer gated cross-attention and fp16 LLM (round 6).
+
+### 18. Open-ended answers on natural images: VQA-CP v2 (running, round 8)
+
+The binary tasks read one answer token. To test whether the gate effect carries over to free-form generation on
+natural images, the study adds **VQA-CP v2** [agrawal2018vqacp], the standard benchmark for shortcut reliance in
+open-ended VQA. Its train and test splits have different answer distributions for every question type (for
+example, a colour question whose most common training answer is rare at test), so a model that answers from the
+question alone fails on test. This is a *text-side* shortcut (the language prior), complementing the visual
+shortcuts of Waterbirds, Watermark and CelebA, and it tests the mechanism directly: a gate that lets little
+visual signal through should push the model toward the question prior.
+
+| Setting | Value |
+| :--- | :--- |
+| Data | VQA-CP v2 on COCO images; subset of 8k training, 1k validation and 2k in-distribution test questions from the VQA-CP train split, 3k questions from the VQA-CP test split (shifted priors). Splits are image-disjoint, and alignment-caption images are kept out of every evaluation split |
+| Training | Same LLM, features, LoRA and alignment as the other tasks; target = the most common human answer (multi-token) |
+| Selection | Best in-distribution validation VQA accuracy (no OOD data, no group labels) |
+| Evaluation | Greedy free-form generation, VQA accuracy against the 10 human answers (leave-one-annotator-out); per answer type (yes/no, number, other); rate of answering with the training prior for the question type; the same with the visual pathway removed |
+| Arms | Learned vs fixed gate, 3 seeds (exploratory) |
+| Code | [`study/build_vqacp.py`](study/build_vqacp.py), [`study/train_vqa.py`](study/train_vqa.py), [`src/study/vqa.py`](src/study/vqa.py), job `study/kaggle_kernels/r8-vqacp` |
+
+Predictions: if the gate mechanism holds, the learned gate should score lower on the shifted-prior test split,
+answer with the training prior more often, and lose less when the visual pathway is removed.
 
 ## Observations
 
@@ -638,12 +661,13 @@ paper/                         paper kit: outline, introduction, methodology, re
   fall below 50% WGA.
 - Group DRO with group labels closes most of the gap. Fixing the gate needs no group labels and no extra cost,
   which is its practical advantage, not superior robustness to label-using methods.
-- Tasks: two natural-image tasks (Waterbirds, CelebA) and one synthetic (Watermark); no open-ended VQA
-  benchmark.
+- Tasks: two natural-image classification tasks (Waterbirds, CelebA), one synthetic (Watermark), and one
+  natural-image open-ended benchmark (VQA-CP v2 subset, 3 seeds, round 8); VQA-CP uses a subset, not the full
+  splits, so its numbers are not comparable to published VQA-CP results.
 - The fixed gate fell to 44.5 WGA in the single 8-epoch run; whether long training also hurts it is open.
 - CelebA trains on an 8k subsample, so its numbers are not comparable to full-data benchmarks.
 - Group DRO is a full-model baseline with 2 seeds; JTT only at the connector.
-- Every task is a binary question read out from the first answer token; open-ended generation is not evaluated.
+- The three classification tasks read out the first answer token; only VQA-CP tests open-ended generation.
 - Runs are not bit-reproducible (non-deterministic GPU kernels, `transformers` drift between jobs); see
   Reproducibility.
 - Injection is input-level (one gated block on the embeddings), not one per LM layer as in Flamingo, and
