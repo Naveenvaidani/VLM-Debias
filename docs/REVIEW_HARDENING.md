@@ -212,7 +212,7 @@ What a strict reviewer would still raise after §9, and what was done.
 
 | Concern | What we did |
 | :--- | :--- |
-| The open-gate control barely moves (tanh 0.995, gradient × 0.01), so it does not really test "learnable" | New connector `bottleneck_half`: learnable gate starting at tanh = 0.5 (gradient × 0.75), `out_proj` zero like the fixed gate. 5 seeds × 2 tasks running (Kaggle `account E/vlm-shortcut-r7-halfgate`). If it stays near 0.5 and matches the fixed gate, the harm is tied to starting at zero; if it drifts shut and loses accuracy, trainability itself is the problem. |
+| The open-gate control barely moves (tanh 0.995, gradient × 0.01), so it does not really test "learnable" | New connector `bottleneck_half`: learnable gate starting at tanh = 0.5 (gradient × 0.75), `out_proj` zero like the fixed gate. 5 seeds × 2 tasks running (Kaggle `vlm-shortcut-r7-halfgate`). If it stays near 0.5 and matches the fixed gate, the harm is tied to starting at zero; if it drifts shut and loses accuracy, trainability itself is the problem. |
 | The two arms differ in the output-layer initialisation too | This is forced: if the gate and the output layer both start at zero, neither gets a gradient and nothing trains. Now explained in METHODOLOGY, the README connector notes and the code. |
 | "Group DRO gets the same result, why bother?" | Group DRO needs group labels; fixing the gate needs none and costs nothing. Written into D8 and the abstract as "a label-free default", not as better than label-using methods. |
 | The fixed gate also fails on Phi-4-mini Watermark (6 of 10 seeds) | Stated plainly: the fixed gate removes one cause of failure, not all. |
@@ -220,7 +220,7 @@ What a strict reviewer would still raise after §9, and what was done.
 | Generality (one synthetic task, small 4-bit LLMs) | Two of three tasks are natural images (Waterbirds, CelebA), now said explicitly; fp16 and per-layer runs are in round 6. An open-ended VQA benchmark stays future work. |
 | Mechanism only correlational | Said in limitations; the pathway-ablation test (round 5) is the behavioural check. |
 
-Accounts and quota: gp1, gp2 and jeyadevr are close to their weekly 30 GPU-hours, so round 7 runs on account E (2 jobs), account C and account D (1 each).
+Accounts and quota: accounts A, B and the main account are close to their weekly 30 GPU-hours, so round 7 runs on account E (2 jobs), account C and account D (1 each).
 
 ## 11. Literature basis for the gate-initialisation controls
 
@@ -236,3 +236,16 @@ How they are used:
 - **Novelty sharpened.** That literature measures convergence and average accuracy in unimodal networks, where every branch sees the same input. We show that the same near-identity start costs robustness when the scaled branch is a modality's only path. This is added to LITERATURE (injection gates), NOVELTY (closest-work row, claims not made), METHODOLOGY §6 and RESULTS_DISCUSSION D7.
 
 References now 103.
+
+## 12. Sixth pass: statistics disclosure, reproducibility, and the novelty question
+
+| Concern | What we did |
+| :--- | :--- |
+| Phi-4-mini Watermark seeds 5–9 were added *after* the 5-seed test missed (p = 0.044), which slightly inflates false positives | Disclosed in METHODOLOGY, RESULTS (R1) and the README. The new seeds alone, as fresh data: +19.4 points, p = 0.023, 5 of 5 seeds favour the fixed gate. |
+| The "seed lottery" (H2) on Watermark rested on the F-test, which assumes normal data; the robust test gives p = 0.097 | Added Fisher's exact test on collapsed runs (WGA < 50): Watermark 10/15 vs 0/15, p = 1.0 × 10⁻⁴; Waterbirds 2/15 vs 0/15, p = 0.24. The claim is now worded per task. |
+| Too many p-values from controls | Only the four H1 tests (Holm) and H2 on Qwen are confirmatory; every control is labelled exploratory. |
+| "Average accuracy" differs from the reweighted average some Waterbirds papers report | Defined as the plain test mean, and flagged as not comparable. |
+| Kaggle scripts for rounds 3–7 were not in the repository | Copied to `study/kaggle_kernels/r3-*` … `r7-*`, with account names replaced by a placeholder. |
+| "The gate never opens" is not true at the highest learning rate (0.018) | Now "at the default learning rate". |
+| "Gating and VLM shortcuts are both studied; is this novel?" | Added the Gated Multimodal Unit [arevalo2017gmu] and RaVL [varma2024ravl], and a NOVELTY answer: the two literatures have not met; nobody manipulated a standard gate with everything else fixed and measured shortcut reliance. References now 105. |
+

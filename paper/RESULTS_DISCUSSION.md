@@ -47,8 +47,10 @@ literature → mechanism. Every number below comes from `results_study/` and can
 - *Waterbirds:* H1 is supported (+9.7, t(4) = 4.52, p = 0.005, d_z = 2.02).
 - *Watermark, 10 seeds:* H1 is supported (+25.5, 95% CI [8.2, 42.7], t(9) = 3.34, p = 0.0043,
   Wilcoxon p = 9.8 × 10⁻⁴, d_z = 1.06).
-  - With the first 5 seeds the gain (+31.6) missed α = 0.025 (p = 0.044). Seeds 5–9 were added to reach the
-    ≈ 10 seeds a power analysis asked for, before looking at them; fixed > learned in all five new seeds.
+  - With the first 5 seeds the gain (+31.6) missed α = 0.025 (p = 0.044). Seeds 5–9 were added *after* that
+    result, to reach the ≈ 10 seeds a power analysis asked for. Because the extension depended on the first
+    result, it is also tested on the new seeds alone, which are fresh data: +19.4, t(4) = 2.88, p = 0.023,
+    fixed > learned in 5 of 5.
   - The fixed gate is not robust on this task either: 6 of 10 fixed-gate seeds fall below 50% WGA (8 of 10
     learned). Phi-4-mini finds the watermark task harder with any gate.
 
@@ -72,15 +74,22 @@ With n = 5 the smallest attainable one-sided Wilcoxon p is 0.031, so the Wilcoxo
 - Test: one-sided F-test on seed variances, with the Brown–Forsythe test as a robust check, since learned-gate
   WGA is non-normal on Qwen Waterbirds (Shapiro–Wilk p = 0.003).
 
-**Verdict: supported for Qwen3.5-4B by the F-test; the robust test weakens Watermark.**
+**Verdict: supported for Qwen3.5-4B, by different tests on the two tasks.** The variance tests and a count of
+collapsed runs (Fisher's exact test, which assumes nothing about the distribution) are reported side by side
+(`results_study/extra_analyses.md` §1b).
 
-| Task | F-test | Brown–Forsythe (two-sided) | Reading |
-| :--- | :--- | :--- | :--- |
-| Waterbirds | F = 9.2, p = 8.6 × 10⁻⁵ | p = 0.045 | Supported |
-| Watermark | F = 3.1, p = 0.023 | not recomputed for 15 seeds | Supported by the F-test |
+| Task | F-test (one-sided) | Brown–Forsythe (two-sided) | Collapsed < 50, learned / fixed | Fisher exact (one-sided) | Reading |
+| :--- | :--- | :--- | :---: | :--- | :--- |
+| Waterbirds | F = 9.2, p = 8.6 × 10⁻⁵ | p = 0.045 | 2 / 15 vs 0 / 15 | p = 0.24 | More variable; collapses rare |
+| Watermark | F = 3.1, p = 0.023 | p = 0.097 | 10 / 15 vs 0 / 15 | p = 1.0 × 10⁻⁴ | Collapses far more often |
 
-- The learned gate collapses below 50% WGA in 2 of 15 and 10 of 15 seeds; the fixed gate never does.
-- For Phi-4-mini, neither variance test is significant (F p = 0.20 and 0.23).
+- On Waterbirds the learned gate spreads more but rarely collapses; on Watermark the spread test is weak but
+  collapses are frequent with the learned gate and absent with the fixed gate. The "seed lottery" claim rests
+  on the collapse count, which is the quantity a practitioner cares about.
+- Learned-gate WGA is non-normal on Waterbirds (Shapiro–Wilk p = 0.003), so the F-test there is backed by
+  Brown–Forsythe.
+- For Phi-4-mini no instability test is significant (F p = 0.20 and 0.23; collapses 0/0 and 8/6). H2 is not
+  claimed for Phi-4-mini.
 
 ### R3. Mechanism: the learned gate stays closed
 

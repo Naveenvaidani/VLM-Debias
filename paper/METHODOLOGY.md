@@ -74,7 +74,9 @@ validity and ethics. Each step follows the "action → justification → citatio
 The initial 3-seed design had power below 0.5 even for large effects. The gate comparison was therefore
 extended to **15 seeds per arm on both tasks**, enough for 80% power at d_z ≥ 0.8. Observed effects
 (Section 4 of the results) are d_z = 1.10 and 1.34, giving achieved power of 0.98 and > 0.99. Phi-4-mini
-Watermark (d_z ≈ 1.0, power 0.40 at 5 seeds) was extended to 10 seeds before its new seeds were examined.
+Watermark (d_z ≈ 1.0, power 0.40 at 5 seeds) was extended to 10 seeds *after* its 5-seed test missed
+α = 0.025 (p = 0.044). This data-dependent extension is disclosed, and the new seeds 5–9 are also tested on
+their own as fresh data (p = 0.023).
 
 ## 3. Variables and instrumentation
 
@@ -96,7 +98,9 @@ capacity as a rival explanation.
   - Mean over three question phrasings, one of them never seen in training.
   - Checkpoint chosen by validation WGA.
 - **Secondary:**
-  - average accuracy;
+  - average accuracy: the plain mean over test images. It is *not* reweighted to the training-group
+    frequencies, as some Waterbirds papers do [sagawa2020groupdro], so it is not directly comparable to their
+    "average accuracy";
   - ID and OOD accuracy and their gap [koh2021wilds];
   - balanced accuracy;
   - seed variance of WGA (H2);
@@ -162,10 +166,15 @@ capacity as a rival explanation.
 | Question | Test | Why this test |
 | :--- | :--- | :--- |
 | H1: fixed > learned gate | One-sided **paired t-test** over seeds, with a **Wilcoxon signed-rank** test as the assumption-free check [dror2018hitchhiker]; **Holm** correction across the four H1 cells (2 LLMs × 2 tasks); unpaired Welch and Mann–Whitney tests as checks | Seeds pair the two arms (same data order and initialisation), removing between-seed variance |
-| H2: learned gate more variable | One-sided **variance-ratio F-test**, with the **Brown–Forsythe** test as a robust check | The F-test is sensitive to non-normality; Brown–Forsythe is not |
+| H2: learned gate more variable | One-sided **variance-ratio F-test**, with the **Brown–Forsythe** test as a robust check, and **Fisher's exact test** on the number of collapsed runs (WGA < 50) | The F-test is sensitive to non-normality; Brown–Forsythe is not; the collapse count tests the practical claim directly |
 | Pairwise connector differences | **Stratified bootstrap** of test images (2,000 resamples) and a **hierarchical bootstrap** over seeds and images [efron1993bootstrap]; **Holm–Bonferroni** correction within each task [holm1979simple] | The hierarchical bootstrap covers training variance, not just test-sample noise |
 | "Connector type does not matter" | **Two one-sided tests (TOST)**, margin ±3 points [schuirmann1987tost] | A non-significant difference is not evidence of equivalence |
 | Effect size | Paired **Cohen's d_z** (mean difference / s.d. of differences), plus d_av for comparison across designs [cohen1988power] | p-values alone do not show practical importance |
+
+**Confirmatory vs exploratory.** Only the four H1 tests (2 LLMs × 2 tasks, Holm-corrected) and H2 on
+Qwen3.5-4B are confirmatory. Every control (open and half-open gate, learning rate, alignment length, Group DRO,
+injection ratio, SigLIP-large, CelebA, p-sweep, per-layer, fp16) is exploratory: its p-values are reported
+without correction and are not used as evidence for the hypotheses.
 
 **Hypothesis timeline (stated openly, since there is no public pre-registration).**
 - 28 Oct 2026: 3-seed pilot of all connectors, including the fixed gate (commit `2c948b4`).

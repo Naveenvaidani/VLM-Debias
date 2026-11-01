@@ -44,6 +44,9 @@ A connector that transmits too little visual signal forces the readout onto what
 framing yields testable predictions.
 
 **Injection gates.**
+- Gating to fuse modalities predates LLM-based VLMs: the Gated Multimodal Unit computes an input-dependent
+  sigmoid gate that mixes image and text representations and tracks the informative modality
+  [arevalo2017gmu]. It is evaluated on average accuracy, not on shortcut reliance.
 - Flamingo-style models add `tanh(α)·CrossAttn(text, image)` to the language stream, with `α` initialised at
   zero so that the pretrained LLM is unchanged at the start [alayrac2022flamingo].
 - The same zero-initialised, learnable scaling is used in unimodal networks to stabilise training:

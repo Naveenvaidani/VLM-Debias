@@ -10,10 +10,10 @@ controlled **Watermark** task and **CelebA**, with **Qwen3.5-4B** and **Phi-4-mi
 | | |
 | :--- | :--- |
 | **Question** | Does the connector, and specifically a learnable injection gate, decide how much a VLM relies on a shortcut? |
-| **Answer** | Yes for the gate: initialised at zero, it never opens (tanh α peaks below 0.01 and ends ≈ 0.0005) and the model relies on the shortcut. Fixing it raises worst-group accuracy by **+10.6** (Waterbirds) and **+25.2** points (Watermark), d_z = 1.10 and 1.34, p < 0.001, with label-free model selection and unpaired tests too. Once the gate is fixed, no significant difference between connector types was found (equivalence not established). |
+| **Answer** | Yes for the gate: initialised at zero, it never opens at the default learning rate (tanh α peaks below 0.01 and ends ≈ 0.0005) and the model relies on the shortcut. Fixing it raises worst-group accuracy by **+10.6** (Waterbirds) and **+25.2** points (Watermark), d_z = 1.10 and 1.34, p < 0.001, with label-free model selection and unpaired tests too. Once the gate is fixed, no significant difference between connector types was found (equivalence not established). |
 | **Fix** | Retrain only the connector on a small group-balanced set (connector-DFR): **89.6 ± 0.5** worst-group accuracy on Watermark. |
 | **Scale** | 2 LLMs · 2 encoders · 3 tasks · 4 connectors · 200+ training runs on Kaggle T4s |
-| **Paper kit** | Literature review, methodology, results and discussion, 103 verified references: [`paper/`](paper/) |
+| **Paper kit** | Literature review, methodology, results and discussion, 105 verified references: [`paper/`](paper/) |
 
 **Keywords:** shortcut learning · spurious correlations · group robustness · worst-group accuracy · vision-language
 models · multimodal LLM · connector / projector design · Q-Former · gated cross-attention · Flamingo gate ·
@@ -137,14 +137,14 @@ tanh = 0.995, which barely moves because its gradient is scaled by 0.01) and the
 | Prompting | Chat template; answer = first token of the class word; 2 training question phrasings, 1 held out for test |
 | Checkpoint selection | Best val worst-group accuracy (uses group labels); best val average accuracy reported as the label-free alternative |
 | Stage 3 (connector-only) | From the selected stage-2 model, LLM and LoRA frozen. DFR-style: group-balanced half of val, other half selects. JTT-style: training set with the stage-2 model's errors repeated 20x. 1 epoch |
-| Seeds | 15 (Waterbirds) and 13 (Watermark) per arm for the gate comparison, 5 for MLP vs Q-Former, Phi-4-mini and connector-DFR, 2–4 for follow-ups. A seed fixes data order, LoRA init and connector init, so the learned and fixed gate arms of one seed differ only in the gate. Watermark seeds 8 and 14 were never launched (session budget), not excluded; they are running now to equalise the arms at 15. Every finished run is reported |
+| Seeds | 15 per arm on both tasks for the gate comparison, 5 for MLP vs Q-Former, Phi-4-mini and connector-DFR, 2–4 for follow-ups. A seed fixes data order, LoRA init and connector init, so the learned and fixed gate arms of one seed differ only in the gate. Watermark seeds 8 and 14 were first missed (session budget), not excluded, and later run to equalise the arms at 15. Phi-4-mini Watermark seeds 5–9 were added after the 5-seed test missed α (disclosed; tested alone too). Every finished run is reported |
 | Hardware | Kaggle 2x NVIDIA T4 (16 GB); one job per GPU |
 
 ### Metrics
 
 - **Worst-group accuracy (WGA, primary):** the lowest accuracy over the four (label, shortcut) groups on the
   test set. It is the mean over three question phrasings, one held out from training.
-- **Average accuracy**, **ID accuracy** (groups where the shortcut agrees with the label), **OOD accuracy**
+- **Average accuracy** (plain mean over test images, not reweighted to training-group frequencies), **ID accuracy** (groups where the shortcut agrees with the label), **OOD accuracy**
   (groups where it disagrees) and the **ID − OOD gap**.
 - **Seed variance** of WGA (H2), and the learned gate value `tanh(α)` logged during alignment.
 
@@ -154,8 +154,10 @@ tanh = 0.995, which barely moves because its gradient is scaled by 0.01) and the
 - Pairwise comparisons ([`results_study/significance_wga.md`](results_study/significance_wga.md)): 95% intervals
   from 2,000 stratified bootstrap resamples of the test set, and a **hierarchical bootstrap** that also resamples
   seeds. Significance uses the hierarchical p-value with Holm-Bonferroni correction within each task.
-- The gate hypotheses were declared before the seed-extension runs and tested with one-sided paired t-tests,
-  Wilcoxon signed-rank tests and variance F-tests ([`study/hypotheses.py`](study/hypotheses.py)).
+- The gate hypotheses were formed after a 3-seed pilot, declared before the seed-extension runs, and tested with
+  one-sided paired t-tests, Wilcoxon signed-rank tests, variance F-tests and Fisher's exact test on collapsed
+  runs ([`study/hypotheses.py`](study/hypotheses.py), [`results_study/extra_analyses.md`](results_study/extra_analyses.md) §1b).
+- Confirmatory: the four H1 tests (Holm-corrected) and H2 on Qwen3.5-4B. Every control experiment is exploratory.
 - Apart from the gate (and DFR on Watermark), connector differences stay inside training variance.
 - Robustness of H1 to the test and to model selection (Welch, Mann–Whitney, label-free checkpoints):
   [`results_study/robustness_checks.md`](results_study/robustness_checks.md), from `study/robustness_checks.py`.
@@ -540,7 +542,7 @@ Everything needed to write the journal paper from this repository:
 | Introduction (CARS five-paragraph funnel) | [`paper/INTRODUCTION.md`](paper/INTRODUCTION.md) |
 | Literature review: background, themes, contradictions, gaps, bridge to hypotheses | [`docs/LITERATURE.md`](docs/LITERATURE.md) |
 | Synthesis matrix of 88 papers (objective, finding, limitation, use) | [`paper/literature_matrix.csv`](paper/literature_matrix.csv) |
-| 103 verified references (arXiv API / Crossref), 26 journal articles | [`paper/references.bib`](paper/references.bib) (built by [`paper/build_refs.py`](paper/build_refs.py)) |
+| 105 verified references (arXiv API / Crossref), 26 journal articles | [`paper/references.bib`](paper/references.bib) (built by [`paper/build_refs.py`](paper/build_refs.py)) |
 | Methodology: design, data, variables, power analysis, tests, assumptions, validity, ethics | [`paper/METHODOLOGY.md`](paper/METHODOLOGY.md) |
 | Results (per hypothesis, effect sizes) and discussion (mechanism, implications, limitations) | [`paper/RESULTS_DISCUSSION.md`](paper/RESULTS_DISCUSSION.md) |
 | Claims and structure | [`paper/OUTLINE.md`](paper/OUTLINE.md) |
@@ -614,6 +616,7 @@ paper/                         paper kit: outline, introduction, methodology, re
 | Control experiments: open gate, LR, 3k alignment, Group DRO, injection ratio, Holm | [`results_study/extra_analyses.md`](results_study/extra_analyses.md) | `study/extra_analyses.py`, `kaggle_out/r3_kernels`, `r4_kernels` |
 | Released IDEFICS gate values | [`results_study/pretrained_gates.md`](results_study/pretrained_gates.md) | `study/pretrained_gates.py` |
 | Figures | [`docs/figures/final/`](docs/figures/final) (PNG + PDF) | `study/final_figures.py` |
+| Kaggle job scripts for rounds 3–7 (controls) | – | [`study/kaggle_kernels/r3-*` … `r7-*`](study/kaggle_kernels) (set your own Kaggle username in `kernel-metadata.json`) |
 
 ## Limitations
 

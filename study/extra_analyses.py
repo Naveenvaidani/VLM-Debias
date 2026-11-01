@@ -98,7 +98,32 @@ def main():
         adj[i] = run_max
     for r, h in zip(rows, adj):
         L.append(f"| {r[0]} | {r[1]} | {r[2]} | {r[3]:+.1f} | {r[4]:.2f} ({r[5]}) | {r[6]:.2g} | {r[7]:.2f} | **{h:.2g}** |")
-    L += ["", f"All four cells survive Holm at one-sided α = 0.025: {all(h < 0.025 for h in adj)}.", ""]
+    L += ["", f"All four cells survive Holm at one-sided α = 0.025: {all(h < 0.025 for h in adj)}. These four "
+          "tests are the only confirmatory tests in the study; every other p-value below is exploratory.", ""]
+
+    # 1b. H2 with tests that do not assume normality, and the Phi-4-mini seed extension
+    L += ["## 1b. H2 (seed instability) without normality, and the Phi-4-mini seed extension", "",
+          "| LLM | Task | Seeds | Var F p (one-sided) | Brown–Forsythe p (two-sided) | Shapiro–Wilk p, learned | "
+          "Collapsed < 50 learned / fixed | Fisher exact p (one-sided) |",
+          "| :--- | :--- | :---: | ---: | ---: | ---: | :---: | ---: |"]
+    for llm, root in (("Qwen3.5-4B", a.h1), ("Phi-4-mini", a.phi)):
+        for t in TASKS:
+            rs = runs(os.path.join(root, t))
+            seeds, lo, fx = paired(rs, rs)
+            fp = stats.f.sf(np.var(lo, ddof=1) / np.var(fx, ddof=1), len(lo) - 1, len(fx) - 1)
+            bf = stats.levene(lo, fx, center="median").pvalue
+            cl, cf = int((lo < 50).sum()), int((fx < 50).sum())
+            fe = stats.fisher_exact([[cl, len(lo) - cl], [cf, len(fx) - cf]], alternative="greater").pvalue
+            L.append(f"| {llm} | {t} | {len(seeds)} | {fp:.2g} | {bf:.2g} | {stats.shapiro(lo).pvalue:.2g} | "
+                     f"{cl} / {cf} | {fe:.2g} |")
+    rs = runs(os.path.join(a.phi, "watermark_p0.95"))
+    new = [s for s in range(5, 10) if ("bottleneck", s) in rs and ("bottleneck_fixed", s) in rs]
+    d = np.array([wga(rs[("bottleneck_fixed", s)]) - wga(rs[("bottleneck", s)]) for s in new])
+    tt = stats.ttest_1samp(d, 0, alternative="greater")
+    L += ["", f"Phi-4-mini Watermark seeds 5–9 were added *after* the first five seeds gave p = 0.044, so the "
+          f"10-seed test involves a data-dependent extension. Tested on the new seeds alone (fresh data): "
+          f"{d.mean():+.1f} points, t({len(d) - 1}) = {tt.statistic:.2f}, p = {tt.pvalue:.3f} (one-sided); "
+          f"fixed > learned in {int((d > 0).sum())} of {len(d)} seeds.", ""]
 
     # 2. open gate
     L += ["## 2. Open gate: is it the initial value or the learnability?", "",

@@ -946,12 +946,6 @@
   "Zhao, Zhiwei",
   "Ma, Zhiyu"
  ],
- "zhai2023siglip": [
-  "Zhai, Xiaohua",
-  "Mustafa, Basil",
-  "Kolesnikov, Alexander",
-  "Beyer, Lucas"
- ],
  "tong2024cambrian": [
   "Tong, Shengbang",
   "Brown, Ellis",
@@ -1059,6 +1053,13 @@
   "Zhang, Weiming",
   "Yu, Nenghai"
  ],
+ "varma2024ravl": [
+  "Varma, Maya",
+  "Delbrouck, Jean-Benoit",
+  "Chen, Zhihong",
+  "Chaudhari, Akshay",
+  "Langlotz, Curtis"
+ ],
  "farazi2026gate": [
   "Farazi, Moshiur",
   "Ramasinghe, Sameera",
@@ -1086,6 +1087,12 @@
   "Cho, Kyunghyun",
   "Geras, Krzysztof J."
  ],
+ "arevalo2017gmu": [
+  "Arevalo, John",
+  "Solorio, Thamar",
+  "Montes-y-Gómez, Manuel",
+  "González, Fabio A."
+ ],
  "li2025tokenpacker": [
   "Li, Wentong",
   "Yuan, Yuqian",
@@ -1100,20 +1107,6 @@
   "De, Soham",
   "Smith, Samuel L."
  ],
- "dosovitskiy2021vit": [
-  "Dosovitskiy, Alexey",
-  "Beyer, Lucas",
-  "Kolesnikov, Alexander",
-  "Weissenborn, Dirk",
-  "Zhai, Xiaohua",
-  "Unterthiner, Thomas",
-  "Dehghani, Mostafa",
-  "Minderer, Matthias",
-  "Heigold, Georg",
-  "Gelly, Sylvain",
-  "Uszkoreit, Jakob",
-  "Houlsby, Neil"
- ],
  "groger2026rethinking": [
   "Gröger, Fabian",
   "Ouerghemi, Naël",
@@ -1122,6 +1115,12 @@
  ],
  "picard2021seed": [
   "Picard, David"
+ ],
+ "zhai2023siglip": [
+  "Zhai, Xiaohua",
+  "Mustafa, Basil",
+  "Kolesnikov, Alexander",
+  "Beyer, Lucas"
  ],
  "dettmers2023qlora": [
   "Dettmers, Tim",
@@ -1150,6 +1149,20 @@
  "wiegreffe2019attention": [
   "Wiegreffe, Sarah",
   "Pinter, Yuval"
+ ],
+ "dosovitskiy2021vit": [
+  "Dosovitskiy, Alexey",
+  "Beyer, Lucas",
+  "Kolesnikov, Alexander",
+  "Weissenborn, Dirk",
+  "Zhai, Xiaohua",
+  "Unterthiner, Thomas",
+  "Dehghani, Mostafa",
+  "Minderer, Matthias",
+  "Heigold, Georg",
+  "Gelly, Sylvain",
+  "Uszkoreit, Jakob",
+  "Houlsby, Neil"
  ],
  "hu2022lora": [
   "Hu, Edward J.",

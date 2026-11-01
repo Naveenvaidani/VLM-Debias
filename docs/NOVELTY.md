@@ -18,11 +18,12 @@ closest prior work it must be distinguished from.
 | **Flamingo** [alayrac2022flamingo] | Introduces tanh-gated cross-attention, gates initialised at 0, one block every 4th–7th LM layer. Gates grow over 500k steps. Removing the gate costs 4.2 points. | Whether a gate that stays small changes *what the model relies on*. No worst-group or shortcut evaluation. |
 | **IDEFICS** (HF M4) and **Llama 3.2 Vision** [grattafiori2024llama3] | The same zero-initialised tanh gates ship in released models: IDEFICS uses one gate per block; Llama 3.2 gates the attention and the MLP separately, in 8 of 40 layers (11B). | The gate values and their consequences are not reported. We read them from the checkpoints (README §14): every Llama 3.2 Vision attention gate is below 0.012 (11B) and 0.003 (90B), the same regime as our learned gate. |
 | **LLaMA-Adapter / V2** [zhang2024llamaadapter; gao2023llamaadapterv2] | A zero-initialised learnable gate injects adapter prompts, including visual ones, into a frozen LLM, to keep it intact early in training. | No analysis of gate values or of robustness. |
+| **Gated multimodal fusion** (GMU [arevalo2017gmu] and later dynamic gates) | An input-dependent gate learns how much each modality contributes to a fused representation, and improves average accuracy. | Late-fusion classifiers without an LLM; the gate is computed per sample, not a parameter that starts at zero; never evaluated for shortcut reliance, worst-group accuracy or seed variance. |
 | **ReZero / SkipInit / LayerScale** [bachlechner2021rezero; de2020skipinit; touvron2021cait] | Learnable residual scales initialised at 0 or a small ε make deep unimodal networks train stably; LayerScale shows the start value matters (ε beats 0). | Unimodal; outcome is convergence and average accuracy. The scaled branch is never a modality's only path, so the robustness cost of a near-zero start cannot appear. |
 | **Zero-initialised attention theory** [diep2025zeroinit] | Prompts and gating factors of zero-initialised attention can be estimated optimally (a mixture-of-experts view). | Estimation theory only; nothing on spurious correlations. |
 | **The Gate Always Closes** [farazi2026gate] | Across five gated designs in frozen VLMs, the gated pathway ends up *behaviourally* closed: ablating it at inference changes nothing. Recommends fixed injection. | Measures relational accuracy on GQA and VSR, not shortcut reliance, worst-group accuracy or seed variance. No controlled comparison with other connector types. |
 | **Modality imbalance** [wu2022greedy; huang2022modality; peng2022balanced; wei2025onthefly] | Multimodal networks greedily learn one modality and under-fit the other. Which modality wins depends on initialisation. Gradient modulation helps. | Late-fusion audio-visual or RGB-depth classifiers. No LLM-based VLMs, no connectors, no spurious-group evaluation. |
-| **Shortcuts in MLLMs** [hosseini2025spurlens; yang2025spuriverse; sarridis2026scaling; sarker2026purge] | MLLMs inherit spurious cues. SpurLens attributes them mostly to the vision encoder; scaling does not fix them; unlearning (PURGE, which also updates the projector) reduces them. | None isolates the connector as the manipulated variable with everything else fixed. |
+| **Shortcuts in VLMs and MLLMs** [varma2024ravl; hosseini2025spurlens; yang2025spuriverse; sarridis2026scaling; sarker2026purge] | VLMs and MLLMs inherit spurious cues. RaVL fixes them with a region-aware loss; SpurLens attributes them mostly to the vision encoder; scaling does not fix them; unlearning (PURGE, which also updates the projector) reduces them. | None isolates the connector as the manipulated variable with everything else fixed. |
 | **Connector comparisons** [mckinzie2024mm1; cha2024honeybee; karamcheti2024prismatic] | Connector type matters little for benchmark accuracy; locality matters for some tasks. | Average accuracy only; no group robustness. |
 
 ## 2. Our claims, worded to survive review
@@ -39,7 +40,7 @@ closest prior work it must be distinguished from.
 
 **C2. A learnable gate turns robustness into a seed lottery.**
 - *Evidence:* the learned gate collapses below 50% WGA in 2 of 15 and 10 of 15 seeds; the fixed gate never
-  does (H2, F-test p = 8.6 × 10⁻⁵).
+  does (Watermark Fisher exact p = 1.0 × 10⁻⁴; Waterbirds variance F-test p = 8.6 × 10⁻⁵, Brown–Forsythe 0.045).
 - *Link to theory:* this is the empirical counterpart of modality competition, where the winner depends on
   initialisation [huang2022modality].
 - *Gap filled:* no prior gate or connector study reports seed-level robustness.
@@ -81,6 +82,20 @@ Measured so far: the injection ratio is 3.5 for the learned gate vs 112 for the 
 is open but 15–35× weaker, and under Group DRO the same narrow pathway reaches ~70 WGA. If ablation sends the learned-gate model to chance, the pathway is open but narrow. If nothing changes, it is
 behaviourally closed and the shortcut is learned from elsewhere. Either way, the answer is reported, not
 assumed.
+
+**"Gating and shortcut learning are both well studied. What is new?"**
+- *Both halves are old, and we say so.* Gated fusion goes back to the GMU [arevalo2017gmu], zero-initialised
+  gates to ReZero, SkipInit and Flamingo; shortcuts in VLMs are documented by RaVL, SpurLens, SpuriVerse, the
+  scaling study and PURGE.
+- *The two literatures have not met.* Gating papers report convergence and average accuracy; shortcut papers
+  fix data, losses or unlearning and keep the architecture fixed. None asks whether a standard gate design
+  *causes* shortcut reliance.
+- *What we add:* a controlled manipulation (only the gate changes; LLM, features, data, budget and seeds are
+  fixed), a confirmatory test at 15 paired seeds with Holm correction, a second LLM, a seed-level outcome
+  (collapse rate), controls that isolate the zero start (open, half-open, learning rate, alignment length),
+  and a label-free, zero-cost design rule.
+- *What we do not claim:* a new architecture, a new fusion mechanism, or a new debiasing method that beats
+  label-using ones.
 
 **"Is this not just the modality-imbalance problem?"**
 - *What it shares:* it is a case of it, and we say so.
