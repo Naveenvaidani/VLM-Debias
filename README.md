@@ -338,8 +338,6 @@ The same plots with checkpoints chosen without group labels (validation average 
 - **Longer training is not a free win.** At 8 epochs the MLP gains and the fixed gate collapses on one seed;
   with one seed each this is a warning, not a result.
 
----
-
 ## FAQ
 
 **Why does a learnable gate hurt?** It is initialised at 0 so the pretrained LLM is untouched at the start. During
