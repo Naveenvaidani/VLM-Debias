@@ -174,15 +174,29 @@ capacity as a rival explanation.
 ## 6. Validity, reliability and ethics
 
 **Internal validity.**
-- One factor varies at a time, and the two gate arms are identical except for the trainability of `α`.
-- Pairing by seed controls initialisation and data order.
+- One factor varies at a time. The two gate arms share every parameter, but differ in two ways: whether `α`
+  trains, and where the zero initialisation sits (the learned gate starts with α = 0 and a default-initialised
+  `out_proj`; the fixed gate starts with tanh α = 1 and `out_proj` = 0). A third arm, a learnable gate
+  initialised open with `out_proj` = 0 (`bottleneck_open`), separates the two.
+- Pairing by seed controls initialisation and data order: a seed fixes the data order, the LoRA
+  initialisation and the connector initialisation, so learned and fixed gate runs of one seed differ only in
+  the gate. Because pairing is a design choice, unpaired Welch and Mann–Whitney tests are reported as well
+  (`results_study/robustness_checks.md`); they agree.
+- Model selection uses validation WGA (group labels), as is standard [sagawa2020groupdro; kirichenko2023dfr];
+  the label-free rule (best validation average accuracy) is reported for every run and gives a larger gate
+  effect.
+- Missing runs: Watermark seeds 8 and 14 were never launched because of the session budget; no finished run
+  was excluded. Both are being added so that each arm has 15 seeds.
 - Rival explanations are tested directly: capacity (identical parameters), token count (36-token
   ablation), encoder (SigLIP-large), LLM (Phi-4-mini) and training length (8 epochs).
 
 **Construct validity.**
 - Shortcut reliance is measured behaviourally, as WGA and the ID–OOD gap on test sets where the shortcut is
   broken, not inferred from attention. Attention is not explanation [jain2019attention].
-- The mechanism is measured directly: the logged gate value and its gradient.
+- The mechanism is measured directly: the logged gate value and its gradient and, from round 4, the injected
+  signal `‖tanh(α)·out_proj(attn)‖ / ‖e‖`, since a small gate can be offset by large output weights.
+- Worst-group accuracy is reported with average and in-distribution accuracy, so a robustness gain cannot hide
+  an accuracy loss.
 
 **External validity.**
 - Coverage:
@@ -208,3 +222,24 @@ capacity as a rival explanation.
 - CelebA contains face images and a binary gender attribute. It is used only as the standard
   group-robustness benchmark [sagawa2020groupdro]; no identity inference is performed.
 - Compute: about 150 T4 GPU-hours of task training across 222 logged runs (from `train_minutes`), plus data preparation, alignment and evaluation, on Kaggle free-tier accounts.
+
+## 7. Statements required at submission
+
+**Data availability.** Waterbirds, COCO 2017 and CelebA are public; the task-building scripts
+(`study/build_tasks.py`, `scripts/prepare_waterbirds.py`) regenerate every split deterministically. Per-run
+results (`results.json`, per-sample predictions in `arrays.npz`) are in `results_study/`.
+
+**Code availability.** All code, Kaggle kernels and exact package versions (`requirements-study.txt`, plus the
+`environment.txt` exported by every run) are at https://github.com/Naveenvaidani/VLM-Debias. A licence must
+be added before submission (author decision).
+
+**Use of generative AI.** Springer Nature, Elsevier and IEEE require authors to disclose AI assistance. A
+statement of the following kind is needed, adjusted to what the authors actually did: *"During this work the
+authors used an AI coding and writing assistant (Claude, Anthropic) to help write experiment code, run
+analyses and draft text. The authors reviewed and edited all content and take full responsibility for it."*
+AI tools cannot be listed as authors.
+
+**Competing interests and funding.** To be completed by the authors.
+
+**Author contributions (CRediT).** To be completed by the authors.
+

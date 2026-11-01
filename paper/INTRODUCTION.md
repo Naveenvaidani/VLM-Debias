@@ -57,7 +57,8 @@ injection gate, determines shortcut reliance in LLM-based VLMs.
 - **What is held fixed:** the LLM (Qwen3.5-4B, replicated with Phi-4-mini), frozen SigLIP features, data,
   prompts and training budget.
 - **What varies:** only the connector, at four levels: an MLP projector, a Q-Former, and gated
-  cross-attention with a learnable or a fixed gate. The two gate variants have identical parameters.
+  cross-attention with a learnable or a fixed gate. The two gate variants have identical parameters; a third,
+  learnable gate initialised open separates trainability from initialisation.
 - **Where it is measured:** worst-group accuracy on Waterbirds, a controlled watermark task and CelebA.
 - **How it is tested:** pre-declared hypotheses over up to 15 paired training seeds, with effect sizes,
   robust and non-parametric tests, and an equivalence test.
@@ -69,11 +70,12 @@ injection gate, determines shortcut reliance in LLM-based VLMs.
 
 This paper makes three contributions.
 1. **A transmission mechanism.** We identify the learnable injection gate as a *transmission bottleneck*
-   between features and readout. The gate closes, and the model then relies on the shortcut; fixing it raises
+   between features and readout. Initialised at zero, the gate never opens, and the model then relies on the shortcut; fixing it raises
    worst-group accuracy by 10.6 and 23.8 points (d_z = 1.10 and 1.27). This extends the feature–readout account
    of shortcut learning and links gate closure to robustness.
 2. **Variance as an outcome.** The learnable gate turns robustness into a seed lottery, with up to 8 of 13
-   runs collapsing. Once the gate is fixed, connector type has no detectable effect. Together these establish
+   runs collapsing. Once the gate is fixed, we detect no significant difference between connector types, although equivalence
+   is not established. Together these establish
    that architectural robustness claims require seed-level evaluation.
 3. **A practical fix and its boundary.** Retraining only the connector on a small group-balanced set raises
    watermark worst-group accuracy to 89.6% with near-zero seed variance, but not when the shortcut is entangled

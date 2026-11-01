@@ -29,6 +29,13 @@ literature → mechanism. Every number below comes from `results_study/` and can
   - Paired test: 95% CI [12.5, 35.1], t(12) = 4.59, p = 3.1 × 10⁻⁴, d_z = 1.27.
   - Wilcoxon: p = 2.4 × 10⁻⁴.
 - Both effects are large by conventional thresholds [cohen1988power]. Achieved power is 0.98 and 0.99.
+- *Robustness of the verdict* (`results_study/robustness_checks.md`):
+  - Unpaired tests, which do not rely on seed pairing, agree: Welch p = 7.6 × 10⁻⁴ and 4.4 × 10⁻⁴;
+    Mann–Whitney p = 1.2 × 10⁻⁵ and 1.2 × 10⁻³.
+  - With label-free model selection (best validation average accuracy) the gain is +17.7 and +24.1
+    (paired p = 0.002 and 2.8 × 10⁻⁴), so it does not depend on using group labels for selection.
+  - The fixed gate also raises average accuracy (84.1 → 88.0, p = 0.007; 76.9 → 85.8, p = 0.003), with
+    in-distribution accuracy unchanged (≈ 98%). The worst-group gain is not a trade-off against accuracy.
 
 **Phi-4-mini, second LLM.**
 - *Waterbirds:* H1 is supported (+9.7, t(4) = 4.52, p = 0.005, d_z = 2.02).
@@ -69,11 +76,16 @@ With n = 5 the smallest attainable one-sided Wilcoxon p is 0.031, so the Wilcoxo
 
 ### R3. Mechanism: the learned gate stays closed
 
-**Target.** Exploratory: whether the gate closes.
+**Target.** Exploratory: whether the gate opens. It is initialised at 0 (tanh 0 = 0), so the question is
+whether training opens it, not whether it closes.
 
 **Gate value.**
 - After 300 alignment steps, |tanh α| = 0.0005 with SigLIP-base and 0.0006 with SigLIP-large.
+- It never opens: in the logged trace it peaks at about 0.006 within 20 steps and decays to ≈ 0.001.
 - Its gradient is near ±1 and changes sign between logged steps (`align.json`, `gate_trace`).
+- A small gate is not by itself a small injection, because `out_proj` is unconstrained and can grow to
+  offset it. The injected signal `‖tanh(α)·out_proj(attn)‖ / ‖e‖` is therefore logged on every evaluation
+  from round 4 on (`inject_ratio`), for SigLIP-base and SigLIP-large.
 
 **Attention on the shortcut.** Both cross-attention variants attend to the watermark corner more when it is
 present (uniform share 8.2%):
@@ -111,7 +123,11 @@ IDEFICS-9B, 1 of 8.
 | Encoder capacity | SigLIP-large, 2 seeds | All connectors +6 to +16; learned 79.3 ± 1.9 vs fixed 80.1 ± 3.1 |
 | LLM adaptation | Frozen LLM, 3 seeds | Learned gate 24.2 ± 2.8; MLP 73.4 ± 1.1; Q-Former 74.6 ± 0.9 |
 | Single alignment per seed | Alignment repeated per seed, 3 seeds | MLP 76.1 ± 2.1, fixed gate 74.2 ± 0.8 |
-| Training length | 8 epochs, 1 seed | MLP 79.1; fixed gate 44.5 |
+| Training length | 8 epochs, 1 seed (seeds 1–4 running) | MLP 79.1; fixed gate 44.5. Unresolved: the fixed gate may also degrade with long training |
+| Gate trainable vs initialisation | Learnable gate initialised open (`bottleneck_open`), 5 seeds | Running |
+| Learning rate | 5e-5 and 1e-3, 3 seeds | Running |
+| Alignment length | 3,000 instead of 300 steps, 3 seeds | Running |
+| Standard group-robust training | Group DRO at the full model, 2 seeds | Running |
 | Caption-reconstruction loss (LTD) | 3 seeds | MLP 75.9 ± 3.3 (vs 74.9); fixed gate 72.3 ± 3.7 |
 
 ### R6. Connector-only fixes
@@ -139,7 +155,8 @@ features.
 
 ### R7. Generalisation to CelebA and to native VLMs (exploratory)
 
-- **CelebA:** the ordering matches the other tasks, but no difference is significant:
+- **CelebA** (8k-image stratified training subsample, so not comparable to full-data results): the ordering
+  matches the other tasks, but no difference is significant:
   - MLP 54.3 ± 13.7 (4 seeds);
   - learned gate 36.3 ± 18.7 (4 seeds);
   - fixed gate 49.3 ± 4.5 (2 seeds).
@@ -161,12 +178,12 @@ shortcut:
 
 ### D2. The gate as a transmission bottleneck
 
-**Finding.** The learned gate shuts during alignment, and models built on it rely on the shortcut and vary
-widely across seeds.
+**Finding.** The learned gate, initialised at zero, never opens during alignment, and models built on it rely
+on the shortcut and vary widely across seeds.
 
 **Comparison with the literature.**
 - *Gate closure:* this confirms [farazi2026gate], who found that learnable gates in frozen VLMs end up closed
-  across five designs. We extend that observation from *whether* the gate closes to *what the model then
+  across five designs. We extend that observation from *whether* the gate stays closed to *what the model then
   relies on*, which they did not measure.
 - *Feature–readout view:* the result also refines the decomposition of [izmailov2022feature] and
   [kirichenko2023dfr]. Between features and readout sits a transmission stage, and its failure produces
@@ -177,8 +194,9 @@ widely across seeds.
   runs match the fixed gate, others collapse.
 
 **Mechanism.**
-- With `tanh(α) ≈ 0` the visual pathway contributes almost nothing to the language stream, so the
-  LoRA-adapted LLM must fit the training labels from whatever survives.
+- With `tanh(α) ≈ 0`, unless `out_proj` grows enough to offset it, the visual pathway contributes little to
+  the language stream, so the LoRA-adapted LLM must fit the training labels from whatever survives. The
+  injection ratio (round 4) tests this directly.
 - On shortcut-aligned training data, the cue with the largest, most linearly available signal wins. This
   matches the "easiest rule" account of [geirhos2020shortcut].
 - Whether a run escapes depends on a near-zero gate with a sign-flipping gradient. That is a fragile,
@@ -218,7 +236,8 @@ significant.
 ### D5. A stronger encoder masks the problem without removing its cause
 
 **Finding.** With SigLIP-large all connectors improve, and the learned gate no longer collapses on Waterbirds,
-although it still closes to 0.0006.
+although its value is still 0.0006. A shut gate is therefore not sufficient for shortcut reliance: it is a
+risk factor whose effect depends on how separable the features are.
 
 **Comparison.**
 - This fits the encoder-centric account of MLLM failures [tong2024eyes; tong2024cambrian]: better features
@@ -269,8 +288,13 @@ Waterbirds.
 **Limitations.**
 - Models are 4-bit and 4B parameters or smaller.
 - The encoder is frozen.
-- SigLIP-large has 2 seeds, CelebA's fixed gate 2, and the 8-epoch run 1.
-- The learning rate was not tuned; the sweep did not complete.
+- SigLIP-large has 2 seeds, CelebA's fixed gate 2, and the 8-epoch run 1 (extensions running).
+- The learning rate was not tuned per connector (sweep running).
+- Learned and fixed gates differ in trainability and in where the zero initialisation sits; the open-gate
+  control separates the two.
+- The fixed gate fell to 44.5 in the single 8-epoch run; long-training behaviour is unresolved.
+- CelebA trains on an 8k subsample.
+- Group DRO is the only full-model group-robust baseline; JTT is tested only at the connector.
 - Phi-4-mini Watermark is underpowered (0.40).
 - The Watermark shortcut is partly textual [materzynska2022disentangling].
 - Equivalence of connector types is not established.

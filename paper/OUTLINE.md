@@ -1,4 +1,4 @@
-# Paper outline: learnable injection gates cause shortcut reliance in LLM-based VLMs
+# Paper outline: learnable injection gates induce shortcut reliance in LLM-based VLMs
 
 Working title: *A learnable injection gate causes shortcut reliance in vision-language models; fixing the gate restores group robustness*
 

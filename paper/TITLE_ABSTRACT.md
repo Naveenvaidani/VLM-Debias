@@ -16,11 +16,12 @@ TPAMI or IJCV first. Pattern Recognition is a strong alternative with a faster t
 
 Each option is 10–15 words, with the keywords in the first 65 characters and no fluff.
 
-1. **Declarative (recommended):** *Learnable Injection Gates Cause Shortcut Learning in Vision-Language Models*
-   (10 words)
+1. **Declarative (recommended):** *Learnable Injection Gates Induce Shortcut Learning in Vision-Language Models*
+   (10 words). "Induce" rather than "Cause": with a stronger encoder the shut gate no longer hurts, so the gate
+   is a risk factor, not a sufficient cause.
 2. **Structured:** *Shortcut Learning in Vision-Language Models: The Role of the Vision-Language Connector
    and Its Injection Gate* (16 words; can drop "Its Injection Gate")
-3. **Hook and subtitle:** *When the Gate Closes: Connector Design and Spurious Correlations in Multimodal
+3. **Hook and subtitle:** *When the Gate Stays Shut: Connector Design and Spurious Correlations in Multimodal
    Large Language Models* (15 words)
 
 ## Abstract (≈ 230 words, five-part formula, no citations, acronyms spelled out)
@@ -38,11 +39,12 @@ Each option is 10–15 words, with the keywords in the first 65 characters and n
 > a learnable or a fixed injection gate. We measure worst-group accuracy on three shortcut tasks, two language
 > models and two encoder sizes, with pre-declared tests over up to fifteen paired training seeds.
 >
-> **[Findings]** The learnable gate closes during alignment, and with it the model relies on the shortcut.
+> **[Findings]** The learnable gate, initialised at zero, never opens during alignment, and with it the model
+> relies on the shortcut.
 > Fixing the gate open raises worst-group accuracy by 10.6 and 23.8 points, large effects (paired Cohen's
 > d = 1.10 and 1.27, p < 0.001). It also eliminates the training runs that collapse below 50%, which occur in
-> up to 8 of 13 seeds with the learnable gate. Once the gate is fixed, connector type makes no detectable
-> difference. Retraining only the connector on a small group-balanced set reaches 89.6% worst-group accuracy
+> up to 8 of 13 seeds with the learnable gate. Once the gate is fixed, no significant difference between
+> connector types is detected. Retraining only the connector on a small group-balanced set reaches 89.6% worst-group accuracy
 > on the watermark task.
 >
 > **[Contribution]** These results identify the injection gate as a transmission bottleneck between features
@@ -58,8 +60,8 @@ robustness; worst-group accuracy; gated cross-attention
 
 ## Highlights (Elsevier journals ask for 3–5, ≤ 85 characters each)
 
-- Learnable injection gates close and make vision-language models rely on shortcuts
+- Zero-initialised learnable gates stay shut and make VLMs rely on shortcuts
 - Fixing the gate raises worst-group accuracy by 10.6–23.8 points over 13–15 seeds
 - The learnable gate turns robustness into a seed lottery: up to 8 of 13 runs collapse
-- With the gate fixed, MLP, Q-Former and cross-attention connectors do not differ
+- With the gate fixed, no significant difference between connector types
 - Retraining only the connector on a small balanced set reaches 89.6% worst-group accuracy

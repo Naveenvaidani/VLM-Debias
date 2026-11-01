@@ -2,12 +2,13 @@
 Builds paper/references.bib and paper/literature_matrix.csv from one verified source list.
 
 Every entry was checked against the arXiv API (title, first author, year) or Crossref (DOI, venue, volume,
-pages) on 2026-11-01. Author lists are abbreviated to the first author plus "others"; fill them in from the DOI
-or arXiv page before submission if the journal style needs every author.
+pages) on 2026-11-01. Full author lists come from paper/authors.json (arXiv API / Crossref, via paper/fetch_authors.py; the first
+author is cross-checked); entries without one fall back to the first author plus "others".
 
     python paper/build_refs.py
 """
 import csv
+import json
 import os
 
 # key, type, first author, title, venue, year, publisher, volume, pages, doi, arxiv, theme,
@@ -243,9 +244,17 @@ BOOKS = r"""
 """
 
 
+_AUTH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "authors.json")
+AUTHORS = json.load(open(_AUTH)) if os.path.exists(_AUTH) else {}  # full lists, from paper/fetch_authors.py
+
+
 def bib(r):
     key, typ, a, title, venue, year, pub, vol, pages, doi, ax = r[:11]
-    f = [f"  author = {{{a + ' and others' if a != 'Microsoft' else '{Microsoft}'}}}", f"  title = {{{{{title}}}}}", f"  year = {{{year}}}"]
+    if key in AUTHORS:
+        who = " and ".join(AUTHORS[key])
+    else:
+        who = a + " and others" if a != "Microsoft" else "{Microsoft}"
+    f = [f"  author = {{{who}}}", f"  title = {{{{{title}}}}}", f"  year = {{{year}}}"]
     if typ == "article":
         f.append(f"  journal = {{{venue}}}")
     elif typ == "inproceedings":
