@@ -1,17 +1,164 @@
-# VLM-SHIELD: Local Feature Bottlenecks against Shortcut Learning in VLMs
+# VLM-Debias: Does the Vision-Language Connector Cause Shortcut Learning?
 
-Vision-language models built as *vision encoder → MLP projector → LLM* can solve a task through a
-spurious shortcut (backgrounds, watermarks, texture) instead of the object itself. **VLM-SHIELD**
-replaces the projector with a **Local Feature Bottleneck**: the LLM's prompt tokens cross-attend to
-individual SigLIP image patches, and the attended visual context enters the LLM through a
-zero-initialised tanh gate. The answer token's attention map can be inspected directly.
+**A controlled study of shortcut learning (spurious correlations) in LLM-based vision-language models (VLMs).**
+We hold the LLM, the vision encoder, the data and the training budget fixed and swap only the
+vision-language connector: **MLP projector (LLaVA)**, **Q-Former (BLIP-2)**, and a **Flamingo-style gated
+cross-attention** block with a learnable or a fixed injection gate. We measure group robustness
+(worst-group accuracy) on **Waterbirds**, a synthetic **Watermark** task and **CelebA**, with Qwen3.5-4B and
+Phi-4-mini (4-bit QLoRA) on frozen SigLIP features.
 
-This repository trains and evaluates the bottleneck against a standard MLP-projector baseline on
-**Waterbirds** (Sagawa et al., 2020), the standard spurious-correlation benchmark: 95% of training
-landbirds appear on land backgrounds and 95% of waterbirds on water, so the background predicts the
-label during training. The test set breaks that correlation.
+**Keywords:** shortcut learning · spurious correlations · group robustness · worst-group accuracy · vision-language
+models · multimodal LLM · connector / projector design · Q-Former · gated cross-attention · Flamingo gate ·
+Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Phi-4-mini · SigLIP
 
-## Results (Waterbirds test set, n = 5,794)
+![Architecture: frozen SigLIP features, four swappable connectors, LLM with LoRA](docs/figures/architecture.svg)
+
+## Key findings
+
+1. **A learnable injection gate causes shortcut reliance.** The Flamingo-style `tanh(α)` gate stays shut after
+   alignment (|tanh α| ≈ 0.0005) and the connector then passes almost no visual signal. Fixing the gate open
+   raises worst-group accuracy by **+10.6 points on Waterbirds** (15 seeds, p = 4e-4) and **+23.8 on Watermark**
+   (13 seeds, p = 3e-4), and removes the collapsed seeds (2/15 and 8/13 → 0). Pre-declared tests H1 and H2 are
+   both confirmed on Qwen3.5-4B.
+2. **It replicates on a second LLM.** Phi-4-mini, 5 seeds: fixed > learned on both tasks (Waterbirds +9.7,
+   p = 0.005; Watermark +31.6, p = 0.044, which misses the pre-declared one-sided α = 0.025).
+3. **Once the gate is fixed, connector type barely matters.** MLP, Q-Former and fixed-gate cross-attention are
+   within seed noise of each other (MLP vs Q-Former, 5 seeds: p = 0.23 and 0.40). Matching image-token counts
+   (MLP with 36 instead of 49 tokens) changes nothing (74.7 vs 74.9).
+4. **A stronger encoder hides the problem, but the gate still shuts.** With SigLIP-large features the learned
+   gate again ends alignment at 0.0006, yet its Waterbirds WGA no longer collapses (79.3 vs 80.1 fixed,
+   2 seeds). All four connectors gain 6–16 points from the bigger encoder.
+5. **A cheap fix: retrain only the connector on a small balanced set (connector-DFR).** On Watermark it lifts the
+   fixed-gate connector from 72.5 to **89.6 ± 0.5** WGA (5 seeds) and beats MLP + DFR (81.2) and a linear DFR
+   probe on the same features (85.1). On Waterbirds it gives no gain (73.9 → 74.1).
+6. **Off-the-shelf VLMs are no better.** Qwen3.5-4B with its own vision tower, zero-shot and calibrated on
+   validation, reaches only **35.5%** WGA on Waterbirds. In released IDEFICS-80B checkpoints, **9 of 20** gated
+   cross-attention layers have |tanh α| < 0.05, so near-shut gates also occur at scale.
+
+![Main result: worst-group accuracy per connector, every seed shown](docs/figures/final/main_connectors.png)
+
+## Results
+
+All numbers: test **worst-group accuracy (WGA, %)**, mean ± s.d. over seeds, checkpoint chosen by validation WGA,
+averaged over three question phrasings (one held out from training).
+
+### 1. Connector comparison, Qwen3.5-4B, SigLIP-base
+
+| Task | MLP projector | Q-Former | Cross-attn, learned gate | Cross-attn, fixed gate |
+| :--- | :---: | :---: | :---: | :---: |
+| Waterbirds | 74.5 ± 1.5 (5 seeds: 74.4) | 71.7 ± 2.5 (5 seeds: 72.8) | 63.6 ± 10.4 (15) | **74.2 ± 3.4** (15) |
+| Watermark | 63.6 ± 4.4 (5 seeds: 66.2) | 68.6 ± 4.1 (5 seeds: 69.2) | 41.4 ± 19.0 (13) | **65.2 ± 10.4** (13) |
+
+### 2. Pre-declared gate hypotheses (paired by seed)
+
+| LLM | Task | Seeds | Learned gate | Fixed gate | Gain (95% CI) | H1 paired t | H2 variance F | Collapsed (< 50) learned / fixed |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| Qwen3.5-4B | Waterbirds | 15 | 63.6 ± 10.4 | 74.2 ± 3.4 | +10.6 [+5.3, +16.0] | **4e-4** | **9e-5** | 2 / 0 |
+| Qwen3.5-4B | Watermark | 13 | 41.4 ± 19.0 | 65.2 ± 10.4 | +23.8 [+12.5, +35.1] | **3e-4** | **0.02** | 8 / 0 |
+| Phi-4-mini | Waterbirds | 5 | 60.4 ± 5.7 | 70.1 ± 3.6 | +9.7 [+3.8, +15.7] | **0.005** | 0.20 | 0 / 0 |
+| Phi-4-mini | Watermark | 5 | 28.5 ± 21.3 | 60.1 ± 15.1 | +31.6 [−7.4, +70.6] | 0.044 | 0.26 | 4 / 2 |
+
+H1: fixed > learned (one-sided, α = 0.025). H2: learned gate varies more across seeds. Bold = significant.
+Tables: [`results_study/hypotheses.md`](results_study/hypotheses.md), [`results_study/phi/hypotheses.md`](results_study/phi/hypotheses.md).
+
+### 3. Second LLM: Phi-4-mini, 5 seeds
+
+| Task | MLP | Q-Former | Learned gate | Fixed gate |
+| :--- | :---: | :---: | :---: | :---: |
+| Waterbirds | **76.6 ± 3.6** | 71.9 ± 3.1 | 60.4 ± 5.7 | 70.1 ± 3.6 |
+| Watermark | 62.2 ± 10.0 | **66.1 ± 10.7** | 28.5 ± 21.3 | 60.1 ± 15.1 |
+
+![Phi-4-mini](docs/figures/final/phi_connectors.png)
+
+### 4. Vision encoder scale: SigLIP-base vs SigLIP-large (Waterbirds)
+
+| Encoder | MLP | Q-Former | Learned gate | Fixed gate |
+| :--- | :---: | :---: | :---: | :---: |
+| SigLIP-base (196 × 768) | 74.5 | 71.7 | 63.6 | 74.2 |
+| SigLIP-large (256 × 1024), 2 seeds | **82.9 ± 3.4** | 81.7 ± 0.4 | 79.3 ± 1.9 | 80.1 ± 3.1 |
+
+![Encoder scale](docs/figures/final/encoder_scale.png)
+
+### 5. Fixes: connector-DFR, balanced sampling, linear DFR
+
+| Method | Uses group labels | Waterbirds | Watermark |
+| :--- | :--- | :---: | :---: |
+| MLP (ERM) | selection only | 74.9 ± 1.4 | 64.9 ± 8.9 |
+| MLP + connector-DFR | small balanced val half | 75.0 ± 3.6 | 81.2 ± 2.2 |
+| Fixed gate (ERM) | selection only | 73.9 ± 2.5 | 72.5 ± 9.5 |
+| **Fixed gate + connector-DFR** | small balanced val half | 74.1 ± 5.6 | **89.6 ± 0.5** |
+| MLP + group-balanced sampling, 3 seeds | yes (training) | – | 89.1 ± 0.9 |
+| Fixed gate + group-balanced sampling, 3 seeds | yes (training) | – | 87.1 ± 3.5 |
+| Linear DFR on frozen SigLIP features (no LLM), 3 seeds | small balanced val half | **84.2 ± 1.5** | 85.1 ± 1.3 |
+| Connector-JTT (1 seed) | selection only | 68.4 / 80.2 (fixed / MLP) | 49.9 / 58.6 |
+
+Rows 1–4: 5 seeds each. Fixed gate + DFR beats MLP + DFR on Watermark by +8.4 [+6.0, +9.8] (p < 0.001, Holm-corrected).
+
+![Fixes](docs/figures/final/fixes.png)
+
+### 6. CelebA (Blond_Hair vs Male, official splits)
+
+| Connector | Seeds | WGA | Avg acc |
+| :--- | :---: | :---: | :---: |
+| MLP | 4 | **54.3 ± 13.7** | 94.1 ± 1.4 |
+| Cross-attn, learned gate | 4 | 36.3 ± 18.7 | 87.4 ± 9.8 |
+| Cross-attn, fixed gate | 2 | 49.3 ± 4.5 | 94.8 ± 0.3 |
+
+Same direction as the other tasks (learned gate worst and least stable); not significant with these seeds.
+
+### 7. Ablations (Waterbirds, MLP unless noted)
+
+| Variant | Seeds | WGA |
+| :--- | :---: | :---: |
+| Default (49 image tokens, 4 epochs) | 5 | 74.9 ± 1.4 |
+| 36 image tokens | 2 | 74.7 ± 1.1 |
+| + latent-target-decoding caption loss (LTD) | 3 | 75.9 ± 3.3 |
+| 8 epochs | 1 | 79.1 |
+| Fixed gate, 8 epochs | 1 | 44.5 |
+| Frozen LLM (no LoRA): learned gate / MLP / Q-Former | 1–3 | 24.2 / 73–75 |
+| Attention-entropy regulariser | 3 | no gain |
+
+![Ablations](docs/figures/final/ablations.png)
+
+### 8. Reference points
+
+| Model | Waterbirds WGA |
+| :--- | :---: |
+| Qwen3.5-4B native vision tower, zero-shot | 0.0 (always one class) |
+| same, answer threshold calibrated on validation | 35.5 (avg 50.8) |
+| Linear probe on SigLIP-base, ERM | 62.0 |
+| Best connector in this study (MLP, SigLIP-large) | 82.9 |
+| Linear DFR on SigLIP-base | 84.2 |
+
+## Observations
+
+- **The gate, not the connector family, decides robustness.** Every failure we see traces to the learnable
+  gate: it is near zero after alignment, its gradient changes sign every step, and with it shut the LLM
+  falls back on whatever cue is easiest. A fixed gate with a zero-initialised output layer starts as the
+  identity, so the optimiser cannot close it.
+- **The failure is a seed lottery.** The learned gate is not uniformly worse: some seeds match the fixed gate,
+  others collapse below 50%. Variance, not only the mean, is the effect (H2).
+- **Stronger features mask it.** With SigLIP-large the gate still shuts, but the learned-gate model no longer
+  collapses on Waterbirds. Two seeds only; the safe reading is "a better encoder hides the problem", not
+  "fixes it".
+- **The information is in the features; the VLM does not use it.** A linear DFR probe on the same frozen
+  features beats every ERM-trained VLM by about 10 points. Retraining only the connector on a few hundred
+  balanced examples closes that gap on Watermark but not on Waterbirds.
+- **Attention on the shortcut does not mean reliance on it.** Both cross-attention variants attend to the
+  watermark corner about 2.5x more when it is present, yet only the learned-gate model fails.
+- **Waterbirds on land is the hardest group** for every connector.
+- **Longer training is not a free win.** At 8 epochs the MLP gains and the fixed gate collapses on one seed;
+  with one seed each this is a warning, not a result.
+
+---
+
+## Earlier experiment: VLM-SHIELD local feature bottleneck (Waterbirds, 1 seed)
+
+The repository started as **VLM-SHIELD**: the prompt tokens cross-attend to individual SigLIP patches and the
+attended context enters the LLM through a zero-initialised tanh gate, so the answer token's attention map is
+inspectable. The connector study above grew out of it.
+
+### VLM-SHIELD results (Waterbirds test set, n = 5,794)
 
 | Model | Avg acc | Worst-group acc | Acc_ID | Acc_OOD | Δ_OOD | RSR |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -28,7 +175,7 @@ and everything is in [`metrics/benchmark_results.json`](metrics/benchmark_result
 
 ![Per-group test accuracy](metrics/per_group_accuracy.png)
 
-### What the numbers say
+#### What the numbers say
 
 - **The shortcut is real.** Every model is 12–16 points less accurate on birds shown on the
   "wrong" background, and `waterbird/land` or `landbird/water` is always the worst group.
@@ -43,7 +190,7 @@ and everything is in [`metrics/benchmark_results.json`](metrics/benchmark_result
 
 ![Training curves](metrics/training_curves.png)
 
-### Where the bottleneck looks
+#### Where the bottleneck looks
 
 The answer token's cross-attention over the 14×14 SigLIP patches, on test images of waterbirds
 photographed on land backgrounds (the hardest group). Attention is sparse (normalised entropy
@@ -52,101 +199,22 @@ this inspectable, but it does not force the model onto the bird.
 
 ![Attention maps](metrics/attention_bottleneck_balanced.png)
 
----
+## Where each result lives
 
-## Connector study: does the connector design change shortcut reliance?
-
-A second experiment holds everything fixed (Qwen3.5-4B in 4-bit with LoRA, frozen SigLIP-base patch
-features, same data, same training budget) and swaps only the vision-language connector:
-
-- **MLP projector** (LLaVA-style), 2x2-pooled patches, 49 image tokens, 8.5M parameters
-- **Q-Former** (BLIP-2-style), 32 learned queries, 11.4M parameters
-- **Cross-attention bottleneck, learned gate** (this repo's design, no image tokens; Flamingo-style
-  zero-initialised tanh gate), 8.9M parameters
-- **Cross-attention bottleneck, fixed gate**: same, but the gate is fixed open and the output layer is
-  zero-initialised instead, so it still starts as the identity but the optimiser cannot shut it
-
-Each connector is first aligned on 10k COCO captions (300 steps, LLM frozen), then trained for 4 epochs
-on two shortcut tasks: **Waterbirds** (background shortcut; official splits, test n = 5,794) and
-**Watermark** (COCO images where a corner watermark predicts "is there a dog?" 95% of the time in
-training; our own group-balanced val/test, test n = 2,400). 3 seeds per configuration (5 for MLP and Q-Former, 13–15 for the learned/fixed gate comparison),
-on Kaggle 2x T4.
-
-### Test worst-group accuracy (mean ± s.d. over 3 seeds, checkpoint chosen by validation WGA)
-
-| Task | MLP projector | Q-Former | Cross-attn, learned gate | Cross-attn, fixed gate |
-| :--- | :---: | :---: | :---: | :---: |
-| Waterbirds | **74.5 ± 1.5** | 71.7 ± 2.5 | 62.1 ± 14.9 | 73.5 ± 0.3 |
-| Watermark | 63.6 ± 4.4 | 68.6 ± 4.1 | 50.3 ± 16.1 | **69.6 ± 8.9** |
-
-| Task | ID → OOD gap in points (MLP / Q-Former / learned gate / fixed gate) | Avg acc (same order) |
-| :--- | :---: | :---: |
-| Waterbirds | 17.0 / 21.0 / 27.2 / 21.5 | 90.4 / 87.6 / 83.0 / 87.7 |
-| Watermark | 27.4 / 21.6 / 37.0 / 22.3 | 84.9 / 87.3 / 79.7 / 86.6 |
-
-### Reference points on the same frozen SigLIP features (no LLM)
-
-Logistic regression on mean-pooled features, 3 seeds ([`results_study/linear_baselines.md`](results_study/linear_baselines.md)):
-
-| Method | Waterbirds WGA | Watermark WGA |
-| :--- | :---: | :---: |
-| Linear probe, ERM on the biased training set | 62.0 ± 0.0 | 46.5 ± 2.5 |
-| DFR: probe retrained on a group-balanced half of validation | **84.2 ± 1.5** | **85.1 ± 1.3** |
-| Probe on a group-balanced subsample of training | 84.3 ± 3.0 | 84.7 ± 1.4 |
-
-What the numbers say:
-
-- **The learned gate was the problem.** Fixing the gate open takes the cross-attention connector from
-  62.1 ± 14.9 to 73.5 ± 0.3 WGA on Waterbirds and from 50.3 ± 16.1 to 69.6 ± 8.9 on Watermark, removes the
-  collapsed seeds, and brings its ID-to-OOD gap in line with the other connectors. The learned gate stayed
-  at 0.0005 after alignment, the gate-suppression effect reported by Farazi et al. (2026, arXiv
-  2607.23335); with the gate shut the connector passes almost no visual signal and the model is left with
-  the easiest cue.
-- **Once the gate is fixed, connector design barely matters.** MLP, Q-Former and the fixed-gate connector
-  are within a few points of each other on both tasks (Q-Former is 2.8 points below MLP on Waterbirds on
-  all 3 seeds; the Watermark differences are inside the seed spread).
-- **The VLMs beat a linear probe on the same features but stay far below DFR.** Every working connector is
-  12-23 points above the ERM probe, yet 10-20 points below DFR, which only retrains a linear layer on a
-  few balanced examples. The information needed is in the features; the VLM does not use it.
-- **Attention on the shortcut does not by itself mean reliance on it.** Both cross-attention variants put
-  far more attention on the watermark corner when the watermark is present (learned gate 16.7% vs 6.1%,
-  fixed gate 18.2% vs 7.0%; uniform 8.2%), yet only the learned-gate variant fails. Q-Former shifts less
-  (11.6% vs 7.7%). See [`results_study/attention_watermark.csv`](results_study/attention_watermark.csv).
-- **The held-out question phrasing** gives the same WGA as the training phrasings to within 1-2 points.
-
-Full tables, including checkpoint selection without group labels: [`results_study/summary.md`](results_study/summary.md);
-every run: [`results_study/all_runs.csv`](results_study/all_runs.csv).
-
-![Worst-group accuracy by connector](docs/figures/study/wga_wga.png)
-
-![ID vs OOD accuracy](docs/figures/study/id_vs_ood_wga.png)
-
-![Paired difference vs MLP](docs/figures/study/delta_vs_mlp_wga.png)
-
-Run it: [`study/kaggle_kernels/`](study/kaggle_kernels/) holds the Kaggle scripts (data prep on one
-session, training on the next; a follow-up session resumes from saved results). Speed on a T4,
-batch 16: 4.0 / 2.5 / 1.7 s per step for MLP / Q-Former / bottleneck after pooling MLP tokens
-196 → 49 and dropping gradient checkpointing (MLP was 13.7 s before); `study/bench_speed.py`
-measures this.
-
-## Pre-declared hypotheses (main result)
-
-Tested on all available seeds, learned vs fixed gate on Qwen3.5-4B, paired by seed
-([`results_study/hypotheses.md`](results_study/hypotheses.md), script `study/hypotheses.py`):
-
-| Task | Seeds | Learned gate | Fixed gate | Gain (95% CI) | H1 paired t p | H2 variance p | Collapsed seeds (< 50) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| Waterbirds | 15 | 63.6 ± 10.4 | 74.2 ± 3.4 | +10.6 [+5.3, +16.0] | 4e-4 | 9e-5 | 2 / 0 |
-| Watermark | 13 | 41.4 ± 19.0 | 65.2 ± 10.4 | +23.8 [+12.5, +35.1] | 3e-4 | 0.02 | 8 / 0 |
-
-- **H1 (fixed > learned gate): confirmed** on both tasks (one-sided α = 0.025).
-- **H2 (learned gate less stable): confirmed** on both tasks.
-- The gate mechanism is logged directly: the learned gate stays near zero and its gradient flips sign every step.
-- It replicates on a second LLM (Phi-4-mini, 3 seeds): fixed > learned on both tasks.
-
-**Connector type (MLP vs Q-Former), five seeds:** no significant difference on either task
-(Waterbirds 74.4 vs 72.8, p = 0.23; Watermark 66.2 vs 69.2, p = 0.40;
-[`results_study/five_seed_mlp_qformer.md`](results_study/five_seed_mlp_qformer.md)).
+| Experiment | Results | Kaggle script |
+| :--- | :--- | :--- |
+| Four connectors, Qwen3.5-4B (3–5 seeds) | [`results_study/summary.md`](results_study/summary.md), [`five_seed_mlp_qformer.md`](results_study/five_seed_mlp_qformer.md) | `study/kaggle_kernels/study*` |
+| Gate hypotheses H1/H2 (13–15 seeds) | [`results_study/hypotheses.md`](results_study/hypotheses.md), [`h1/`](results_study/h1) | `h1a`, `h1b`, `seeds34` |
+| Phi-4-mini (5 seeds) | [`results_study/phi/`](results_study/phi) | `phi-*` |
+| SigLIP-large | [`results_study/siglip_large/`](results_study/siglip_large) | `siglip-large` |
+| Connector-DFR / JTT | [`results_study/stage3/`](results_study/stage3) | `stage3*` |
+| Group-balanced sampling | [`results_study/balanced/`](results_study/balanced) | `extras` |
+| CelebA | [`results_study/celeba/`](results_study/celeba) | `celeba*` |
+| Ablations (36 tokens, LTD, 8 epochs, frozen LLM) | [`mlp36/`](results_study/mlp36), [`ltd/`](results_study/ltd), [`long8/`](results_study/long8), [`frozen/`](results_study/frozen) | `extras`, `ltd-mlp`, `study-sweep` |
+| Linear probes and DFR | [`results_study/linear_baselines.md`](results_study/linear_baselines.md) | `study/linear_baselines.py` |
+| Native zero-shot VLM | [`results_study/native_waterbirds.json`](results_study/native_waterbirds.json) | `study/native_vlm.py` |
+| Released IDEFICS gate values | [`results_study/pretrained_gates.md`](results_study/pretrained_gates.md) | `study/pretrained_gates.py` |
+| Figures | [`docs/figures/final/`](docs/figures/final) (PNG + PDF) | `study/final_figures.py` |
 
 ## Related work and where this study stands
 
@@ -197,7 +265,7 @@ as reported by each paper, on their own setups, so they are context rather than 
   phrasing, and two checkpoint-selection rules, over seeds.
 - **A mechanism with a fix:** a learnable injection gate stays shut (0.0005), and that alone turns a
   cross-attention connector from on-par to the most shortcut-reliant and unstable; fixing the gate open
-  restores it (+11.4 and +19.3 WGA points). This links the gate-suppression effect of Farazi et al. to
+  restores it (+10.6 and +23.8 WGA points over 15 and 13 seeds). This links the gate-suppression effect of Farazi et al. to
   shortcut reliance, which they did not measure.
 - **Reference points on the same features:** a linear ERM probe and DFR bracket every VLM, showing how
   much of the gap is the model's, not the features'.
@@ -256,8 +324,9 @@ All numbers are computed by `evaluate.py` from model predictions on the held-out
 - Pairwise comparisons ([`results_study/significance_wga.md`](results_study/significance_wga.md)): 95% intervals
   from 2,000 stratified bootstrap resamples of the test set, and a **hierarchical bootstrap** that also resamples
   seeds. Significance uses the hierarchical p-value with Holm-Bonferroni correction within each task.
-- With 3 seeds only the learned-vs-fixed gate difference on Watermark survives correction (p = 0.03); every
-  other connector difference is inside training variance. Five seeds are being run.
+- The gate hypotheses were declared before the seed-extension runs and tested with one-sided paired t-tests,
+  Wilcoxon signed-rank tests and variance F-tests ([`study/hypotheses.py`](study/hypotheses.py)).
+- Apart from the gate (and DFR on Watermark), connector differences stay inside training variance.
 
 ## Reproducibility
 
@@ -301,15 +370,19 @@ scripts/                        data preparation, feature caching, model downloa
 train.py / evaluate.py / app.py training, evaluation + figures, demo
 metrics/                        exported results and figures
 src/study/, study/              connector study: connectors, generic VLM wrapper, tasks, training, plots
-results_study/, docs/figures/study/   connector-study results and figures
+results_study/, docs/figures/        connector-study results; docs/figures/final has the summary figures
 ```
 
 ## Limitations
 
 - Waterbirds study at the top: one seed per configuration; differences of a few points are within run-to-run noise.
 - Connector study:
-  - 3 seeds and 2 tasks, one LLM (Qwen3.5-4B, 4-bit) and one small vision encoder (SigLIP-base), so
-    differences under ~5 points are not significant.
+  - 13–15 seeds for the gate comparison, 3–5 for most other cells; SigLIP-large and the 36-token MLP have 2
+    seeds, CelebA's fixed gate 2, the 8-epoch runs 1. The learning-rate sweep did not finish within Kaggle's
+    session limit, so the learning rate (2e-4) is not tuned.
+  - Two 4-bit LLMs of 4B parameters or fewer; results may differ for larger or full-precision models.
+  - The Watermark shortcut is partly textual (readable watermark), and Qwen3.5 was pretrained with its own
+    vision merger, which our connectors replace.
   - Seeds vary only the task stage; stage-1 alignment ran once per connector (`--align_per_seed` now exists).
   - LoRA also adapts the LLM, which can learn the shortcut whatever the connector; a frozen-LLM run
     (`--freeze_llm`) separates the two.
@@ -320,3 +393,16 @@ results_study/, docs/figures/study/   connector-study results and figures
 - Waterbirds has no shortcut-region masks in this setup, so the shortcut-suppression term of the
   loss is implemented and tested but not used in these runs.
 - The vision encoder is frozen; only LoRA adapters and the connector are trained.
+
+## Citation
+
+If you use this code or the findings, please cite the repository:
+
+```bibtex
+@misc{vlmdebias2026,
+  title  = {Does the Vision-Language Connector Cause Shortcut Learning? A Controlled Study of Injection Gates in LLM-based VLMs},
+  author = {{VLM-Debias contributors}},
+  year   = {2026},
+  howpublished = {\url{https://github.com/Naveenvaidani/VLM-Debias}}
+}
+```

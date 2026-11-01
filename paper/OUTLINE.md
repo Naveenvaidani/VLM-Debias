@@ -9,10 +9,11 @@ Working title: *A learnable injection gate causes shortcut reliance in vision-la
 2. **H2:** the learnable gate is less stable across seeds (variance F-test p = 9e-5 Waterbirds, 0.02 Watermark;
    8 of 13 Watermark seeds collapse below 50%, none for the fixed gate).
 3. **Mechanism:** the learnable gate stays near zero after alignment (0.0005) and its gradient flips sign every step.
-4. **Generality:** the effect holds for a second LLM (Phi-4-mini, fixed > learned on both tasks, p ≤ 0.02).
+4. **Generality:** the effect holds for a second LLM (Phi-4-mini, 5 seeds: Waterbirds +9.7, p = 0.005; Watermark +31.6, p = 0.044, misses α = 0.025).
+7. **Encoder scale:** with SigLIP-large the learned gate still shuts (0.0006) but no longer collapses on Waterbirds (79.3 vs 80.1, 2 seeds).
 5. **Connector type does not matter once the gate is fixed:** MLP vs Q-Former, five seeds, no significant difference.
 6. **A label-free fix:** connector-only retraining on a balanced validation half (DFR-style) raises Watermark
-   worst-group accuracy to 89.5 (fixed gate) and Waterbirds to 79.2; the caption loss rises little.
+   worst-group accuracy to 89.6 ± 0.5 (fixed gate, 5 seeds); no gain on Waterbirds (73.9 → 74.1); the caption loss rises little.
    Group-balanced sampling is the strongest Waterbirds method (84.7) but uses group labels; report both, clearly labelled.
 
 ## Negative results (report)
@@ -35,13 +36,13 @@ Working title: *A learnable injection gate causes shortcut reliance in vision-la
    - 3–5 seeds for most cells; CelebA has 1–3 seeds.
    - SigLIP-base only; Watermark text is readable (a partly textual shortcut); Qwen was pretrained with its own vision merger.
    - Unequal image-token counts (MLP 49, Q-Former 32, cross-attention 0).
-   - Single alignment per seed in most runs; learning-rate sweep pending.
+   - Single alignment per seed in most runs; learning-rate sweep incomplete.
    - Balanced sampling needs group labels.
 8. **Conclusion.**
 
 ## Still needed before submission
-- Learning-rate sweep and SigLIP-large (waiting for quota reset).
-- More CelebA seeds (TPU or quota).
-- Calibrated zero-shot native baseline (cheap; uses saved logits).
+- Learning-rate sweep: did not finish (Kaggle session time); 8-epoch run has 1 seed. SigLIP-large has 2 of 3 seeds.
+- CelebA fixed gate has 2 seeds (4 for the others).
+- Calibrated zero-shot native baseline: done (35.5 WGA).
 - Figures as vector PDF; final statistics table.
 - Code release: license, citation file, pinned requirements from `environment.txt`.
