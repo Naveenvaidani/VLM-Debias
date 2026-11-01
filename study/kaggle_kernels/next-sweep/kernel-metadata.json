@@ -1,0 +1,5 @@
+{"id": "jeyadevr/vlm-shortcut-study-sweep", "title": "VLM Shortcut Study Sweep", "code_file": "vlm-shortcut-study-sweep.py",
+ "language": "python", "kernel_type": "script", "is_private": true, "enable_gpu": true, "enable_tpu": false,
+ "enable_internet": true, "dataset_sources": [],
+ "kernel_sources": ["jeyadevr/vlm-shortcut-data-prep", "jeyadevr/vlm-shortcut-study-run", "jeyadevr/vlm-shortcut-study-fixedgate"],
+ "competition_sources": [], "model_sources": [], "machine_shape": "NvidiaTeslaT4"}

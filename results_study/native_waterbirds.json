@@ -1,0 +1,52 @@
+{
+  "llm": "Qwen/Qwen3.5-4B",
+  "task": "waterbirds",
+  "n": 5794,
+  "per_template": {
+    "0": {
+      "avg_acc": 0.7758025543665861,
+      "acc[landbird / land]": 0.9991130820399113,
+      "acc[landbird / water]": 0.9849223946784922,
+      "acc[waterbird / land]": 0.0,
+      "acc[waterbird / water]": 0.03271028037383177,
+      "worst_group_acc": 0.0,
+      "acc_id": 0.7849499482222989,
+      "acc_ood": 0.7666551605108733,
+      "delta_ood": 0.018294787711425564,
+      "rsr": 0.023306948109058867,
+      "balanced_acc": 0.5041864392730588,
+      "positive_rate": 0.009837763203313773
+    }
+  },
+  "calibrated": {
+    "0": {
+      "threshold": -1.0526855468749998,
+      "avg_acc": 0.5082844321712116,
+      "acc[landbird / land]": 0.6066518847006652,
+      "acc[landbird / water]": 0.35476718403547675,
+      "acc[waterbird / land]": 0.4719626168224299,
+      "acc[waterbird / water]": 0.7383177570093458,
+      "worst_group_acc": 0.35476718403547675,
+      "acc_id": 0.6358301691404902,
+      "acc_ood": 0.38073869520193304,
+      "delta_ood": 0.25509147393855713,
+      "rsr": 0.4011943539630836,
+      "balanced_acc": 0.5429248606419794,
+      "positive_rate": 0.5383154987918537
+    }
+  },
+  "mean_over_templates": {
+    "avg_acc": 0.7758025543665861,
+    "acc[landbird / land]": 0.9991130820399113,
+    "acc[landbird / water]": 0.9849223946784922,
+    "acc[waterbird / land]": 0.0,
+    "acc[waterbird / water]": 0.03271028037383177,
+    "worst_group_acc": 0.0,
+    "acc_id": 0.7849499482222989,
+    "acc_ood": 0.7666551605108733,
+    "delta_ood": 0.018294787711425564,
+    "rsr": 0.023306948109058867,
+    "balanced_acc": 0.5041864392730588,
+    "positive_rate": 0.009837763203313773
+  }
+}

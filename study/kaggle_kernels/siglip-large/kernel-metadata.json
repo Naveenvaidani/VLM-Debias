@@ -1,0 +1,4 @@
+{"id": "jeyadevr/vlm-shortcut-siglip-large", "title": "VLM Shortcut SigLIP Large", "code_file": "vlm-shortcut-siglip-large.py",
+ "language": "python", "kernel_type": "script", "is_private": true, "enable_gpu": true, "enable_tpu": false,
+ "enable_internet": true, "dataset_sources": [], "kernel_sources": ["jeyadevr/vlm-shortcut-data-prep-large"],
+ "competition_sources": [], "model_sources": [], "machine_shape": "NvidiaTeslaT4"}

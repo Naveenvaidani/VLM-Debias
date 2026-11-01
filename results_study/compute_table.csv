@@ -1,0 +1,5 @@
+connector,params_M,train_minutes_mean,epochs_mean,sec_per_step_T4,peak_memory_GB,image_tokens
+bottleneck,8.93,40.26,4.0,1.73,6.24,0
+bottleneck_fixed,8.93,36.89,3.67,1.73,6.24,0
+mlp,8.53,83.54,4.0,4.04,12.11,49
+qformer,11.45,55.44,3.83,2.48,10.11,32
