@@ -13,6 +13,34 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
 
 ![Architecture: frozen SigLIP features, four swappable connectors, LLM with LoRA](docs/figures/architecture.svg)
 
+## Contents
+
+- [Key findings](#key-findings) · [Quick start](#quick-start)
+- [Results](#results): [connectors](#1-connector-comparison-qwen35-4b-siglip-base) · [gate hypotheses](#2-pre-declared-gate-hypotheses-paired-by-seed) · [Phi-4-mini](#3-second-llm-phi-4-mini-5-seeds) · [encoder scale](#4-vision-encoder-scale-siglip-base-vs-siglip-large-waterbirds) · [fixes (DFR)](#5-fixes-connector-dfr-balanced-sampling-linear-dfr) · [CelebA](#6-celeba-blond_hair-vs-male-official-splits) · [ablations](#7-ablations-waterbirds-mlp-unless-noted) · [reference points](#8-reference-points) · [ensembles](#9-seed-ensembles-average-the-3-seeds-answer-probabilities) · [linear probes](#10-linear-probes-on-frozen-siglip-base-features-by-pooling-3-seeds) · [attention](#11-attention-on-the-watermark-watermark-task-3-seeds) · [failure analysis](#12-failure-analysis-hardest-group-per-connector-3-seeds) · [compute](#13-compute-cost-one-t4-batch-16-qwen35-4b-nf4) · [IDEFICS gates](#14-gates-in-released-flamingo-style-models-idefics)
+- [Observations](#observations) · [FAQ](#faq) · [Related work](#related-work-and-where-this-study-stands)
+- [Tasks and datasets](#tasks-and-datasets) · [Experimental protocol](#experimental-protocol-connector-study) · [Statistics](#statistics) · [Reproduce](#reproduce) · [Limitations](#limitations) · [Citation](#citation)
+
+## Quick start
+
+```bash
+git clone https://github.com/Naveenvaidani/VLM-Debias.git && cd VLM-Debias
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements-study.txt          # pinned versions used on Kaggle
+
+# rebuild every table and figure from the saved results (CPU, no downloads)
+python study/hypotheses.py --runs_dir <merged runs>/qwen35-4b --out results_study
+python study/final_figures.py --results results_study --out docs/figures/final
+
+# train one connector end to end (one 16 GB GPU)
+python study/build_tasks.py --coco_root <coco2017> --split train2017 --out data/tasks   # task splits
+python study/cache_features.py --tasks_dir data/tasks --vision_model google/siglip-base-patch16-224
+python study/align.py --llm Qwen/Qwen3.5-4B --connector bottleneck_fixed --out runs/align/bottleneck_fixed --mlp_pool 2
+python study/train_task.py --llm Qwen/Qwen3.5-4B --connector bottleneck_fixed --task_dir data/tasks/waterbirds \
+    --align_ckpt runs/align/bottleneck_fixed/connector.pt --run_dir runs/waterbirds/bottleneck_fixed/s0 --seed 0 --mlp_pool 2
+```
+
+Full Kaggle pipeline (2× T4, resumable): [`study/kaggle_kernels/`](study/kaggle_kernels/) and `study/kaggle_study.py`.
+
 ## Key findings
 
 1. **A learnable injection gate causes shortcut reliance.** The Flamingo-style `tanh(α)` gate stays shut after
@@ -311,6 +339,37 @@ The same for the ERM model: [`metrics/attention_bottleneck.png`](metrics/attenti
 | Native zero-shot VLM | [`results_study/native_waterbirds.json`](results_study/native_waterbirds.json) | `study/native_vlm.py` |
 | Released IDEFICS gate values | [`results_study/pretrained_gates.md`](results_study/pretrained_gates.md) | `study/pretrained_gates.py` |
 | Figures | [`docs/figures/final/`](docs/figures/final) (PNG + PDF) | `study/final_figures.py` |
+
+## Tasks and datasets
+
+| Task | Shortcut | Label | Train correlation | Test (balanced groups) |
+| :--- | :--- | :--- | :---: | :---: |
+| **Waterbirds** (Sagawa et al., 2020) | image background (land / water) | landbird vs waterbird | 95% | official split, n = 5,794 |
+| **Watermark** (ours, COCO images) | corner text watermark | "is there a dog?" | 95% | n = 2,400, group-balanced val/test |
+| **CelebA** (Liu et al., 2015) | gender | blond hair vs not | natural (blond ≈ female) | official split |
+
+Groups are (label, shortcut attribute); **worst-group accuracy** is the minimum accuracy over the four groups,
+the standard metric for spurious-correlation robustness. Splits are deterministic (`study/build_tasks.py`, seed 0).
+
+## FAQ
+
+**Why does a learnable gate hurt?** It is initialised at 0 so the pretrained LLM is untouched at the start. During
+alignment its gradient keeps flipping sign and it stays near zero, so almost no image information reaches the LLM;
+the LoRA-tuned LLM then learns whichever cue is easiest, which is the shortcut.
+
+**Why is the fixed gate not just "more parameters"?** Both variants have identical parameters and FLOPs; only
+whether `α` is trainable differs. The fixed variant zero-initialises the output layer instead, so it also starts as
+the identity.
+
+**Does this apply to Flamingo / IDEFICS / Llama-3.2-Vision?** They all use tanh-gated cross-attention. We only
+train 4B-scale models, but released IDEFICS-80B checkpoints have 9 of 20 cross-attention gates below 0.05.
+
+**What should practitioners do?** Use a fixed (or output-zero-initialised) injection instead of a learnable gate,
+check worst-group accuracy over several seeds, and if a small group-balanced set exists, retrain only the
+connector on it (connector-DFR).
+
+**Is the MLP projector the safest choice?** With a fixed gate, MLP, Q-Former and cross-attention are statistically
+indistinguishable; cross-attention is about 2x cheaper in time and memory.
 
 ## Related work and where this study stands
 
