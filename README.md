@@ -108,6 +108,7 @@ the standard metric for spurious-correlation robustness. Splits are deterministi
 | Input-level cross-attention, learned gate (Flamingo-type tanh gate) | prompt tokens attend to patches; `e ← e + tanh(α)·out_proj(attn)`, α initialised at 0, `out_proj` default init | 0 | 8.9M |
 | Cross-attention, fixed gate | same block, `tanh(α)` fixed at 1, `out_proj` zero-initialised (still starts as the identity) | 0 | 8.9M |
 | Cross-attention, open gate (control) | same block, α learnable but initialised at 3 (tanh = 0.995), `out_proj` zero-initialised | 0 | 8.9M |
+| Cross-attention, half-open gate (control) | same block, α learnable, initialised at tanh α = 0.5 (gradient not saturated), `out_proj` zero-initialised | 0 | 8.9M |
 
 **How this differs from Flamingo.** Flamingo inserts a gated cross-attention block before every 4th (9B) or
 7th (80B) frozen LM layer, trains for 500k steps, and reports that its zero-initialised gates "quickly grow"
@@ -118,8 +119,11 @@ keeps the identity at initialisation through a zero-initialised output layer, an
 
 The cross-attention variants have identical parameters and FLOPs. Learned and fixed gates differ in **two**
 ways: whether `α` trains, and whether the identity at initialisation comes from the gate (α = 0) or from the
-output layer (`out_proj` = 0). The open-gate control (`bottleneck_open`) shares the fixed gate's initialisation
-but keeps `α` trainable, so it separates the two (round 3, running).
+output layer (`out_proj` = 0). This second difference cannot be removed: with both the gate and `out_proj` at
+zero, neither receives a gradient (∂/∂α ∝ `out_proj`, ∂/∂`out_proj` ∝ tanh α) and the pathway never trains.
+Two controls share the fixed gate's initialisation but keep `α` trainable: the open gate (`bottleneck_open`,
+tanh = 0.995, which barely moves because its gradient is scaled by 0.01) and the half-open gate
+(`bottleneck_half`, tanh = 0.5, gradient scale 0.75, free to move either way; round 7).
 
 ### Training protocol
 
@@ -609,13 +613,20 @@ paper/                         paper kit: outline, introduction, methodology, re
 
 ## Limitations
 
-- 13–15 seeds for the gate comparison, 3–5 for most other cells; SigLIP-large and the 36-token MLP have 2
-  seeds, CelebA's fixed gate 2, the 8-epoch runs 1 (all being extended: rounds 3–4). The learning rate
-  (2e-4) was not tuned per connector; a sweep (5e-5, 1e-3) is running.
+- 15 seeds for the gate comparison, 3–5 for most other cells. The LR sweep and Group DRO have 2 seeds, SigLIP-large
+  Watermark 2, CelebA 3 paired (all being extended to 5 in round 7); the 8-epoch runs 1 (seeds 1–4 running).
 - Learned and fixed gates differ in trainability *and* in where the zero initialisation sits (gate vs output
-  layer); the open-gate control separates them.
-- A near-zero gate does not by itself imply a near-zero injection, because `out_proj` can grow; the SigLIP-large
-  result shows the gate alone does not decide reliance. The injection ratio is logged from round 4 on.
+  layer). The second difference is forced (both at zero cannot train); the open and half-open controls
+  separate the two as far as possible.
+- The learned pathway is not shut: `out_proj` grows, and the injected signal is 15–35× weaker than with the
+  fixed gate but not zero. Its size does not predict WGA across learned-gate runs, so the mechanism is
+  supported but not proven causal; the inference-time pathway ablation (round 5) is the behavioural test.
+- The fixed gate removes one cause of failure, not all: on Phi-4-mini Watermark 6 of 10 fixed-gate seeds still
+  fall below 50% WGA.
+- Group DRO with group labels closes most of the gap. Fixing the gate needs no group labels and no extra cost,
+  which is its practical advantage, not superior robustness to label-using methods.
+- Tasks: two natural-image tasks (Waterbirds, CelebA) and one synthetic (Watermark); no open-ended VQA
+  benchmark.
 - The fixed gate fell to 44.5 WGA in the single 8-epoch run; whether long training also hurts it is open.
 - CelebA trains on an 8k subsample, so its numbers are not comparable to full-data benchmarks.
 - Group DRO is a full-model baseline with 2 seeds; JTT only at the connector.

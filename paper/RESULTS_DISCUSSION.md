@@ -301,8 +301,8 @@ significant.
 
 ### D5. A stronger encoder masks the problem without removing its cause
 
-**Finding.** With SigLIP-large all connectors improve, and the learned gate no longer collapses on Waterbirds,
-although its value is still 0.0006. A shut gate is therefore not sufficient for shortcut reliance: it is a
+**Finding.** With SigLIP-large all connectors improve, and the gate effect shrinks (Waterbirds 74.5 vs 80.9,
+paired +8.0, p = 0.09, 4 seeds; Watermark 68.8 vs 68.2, 2 seeds), although the gate value is still 0.0006. A shut gate is therefore not sufficient for shortcut reliance: it is a
 risk factor whose effect depends on how separable the features are.
 
 **Comparison.**
@@ -311,8 +311,8 @@ risk factor whose effect depends on how separable the features are.
 - It also warns, in line with [sagawa2020overparam], that more capacity does not fix the mechanism.
 
 **Mechanism.** Larger, more separable features let even a nearly closed pathway carry enough signal, or let
-LoRA compensate. The fragility remains, and may resurface on harder tasks. Two seeds are not enough to
-conclude more.
+LoRA compensate. The fragility remains: one of five SigLIP-large learned-gate seeds still drops to 65.8 on Waterbirds.
+Watermark seeds 2–4 (round 7) will show whether the effect is absent or just smaller there.
 
 ### D6. Readout fixes transfer to the connector, task-dependently
 
@@ -343,6 +343,10 @@ Waterbirds.
 
 - **Fixed injection:** prefer fixed (or zero-initialised-output) injection over learnable tanh gates when
   adding cross-attention adapters to an LLM. Log the gate value if a learnable gate is kept.
+- **Where it sits among fixes:** label-using methods (Group DRO, group-balanced sampling, connector-DFR) reach
+  similar or higher WGA. The fixed gate's advantage is that it needs no group labels, no extra training and no
+  extra compute, so it should be the default, with label-using fixes added when labels exist. It removes
+  one cause of failure, not all: on Phi-4-mini Watermark 6 of 10 fixed-gate seeds still fall below 50%.
 - **Evaluation:** evaluate worst-group accuracy over at least 5–10 seeds before choosing a connector.
 - **Cheap fix:** when a small group-balanced set exists, retrain only the connector. It costs one epoch, needs
   no LLM retraining, and stabilises seeds.

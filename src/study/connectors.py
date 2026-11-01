@@ -12,6 +12,8 @@ llm_dim=2560) so differences come from the design, not capacity.
 """
 from typing import Optional, Tuple
 
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -70,7 +72,11 @@ class CrossAttnBottleneck(nn.Module):
     gate="fixed" drops the learnable gate (scale 1) and zero-initialises out_proj instead, so the
     connector still starts as the identity but the optimiser cannot shut the visual pathway.
     gate="open" keeps the gate learnable but starts it open (tanh(3) = 0.995) with out_proj zero-initialised:
-    it separates "the gate is trainable" from "the gate starts closed"."""
+    it separates "the gate is trainable" from "the gate starts closed". At alpha = 3 the gate gradient is scaled by
+    1 - tanh^2 = 0.01, so it barely moves; gate="half" starts at tanh(alpha) = 0.5 (gradient scale 0.75), learnable
+    and free to move either way.
+    Why the zero-gate arm keeps the default out_proj init: with both the gate and out_proj at zero, neither receives
+    a gradient (d/d gate is proportional to out_proj, d/d out_proj to tanh(gate)) and the pathway never trains."""
     kind = "fuse"
 
     def __init__(self, vision_dim: int, llm_dim: int, attn_dim: int = 1024, num_heads: int = 8,
@@ -83,8 +89,8 @@ class CrossAttnBottleneck(nn.Module):
         self.out_proj = nn.Linear(attn_dim, llm_dim)
         if gate == "learned":
             self.gate = nn.Parameter(torch.zeros(1))
-        elif gate == "open":
-            self.gate = nn.Parameter(torch.full((1,), 3.0))
+        elif gate in ("open", "half"):
+            self.gate = nn.Parameter(torch.full((1,), 3.0 if gate == "open" else math.atanh(0.5)))
             nn.init.zeros_(self.out_proj.weight)
             nn.init.zeros_(self.out_proj.bias)
         else:
@@ -123,6 +129,7 @@ class DeepGatedCrossAttn(nn.Module):
 CONNECTORS = {"mlp": MLPProjector, "qformer": QFormerConnector, "bottleneck": CrossAttnBottleneck,
               "bottleneck_fixed": lambda v, l: CrossAttnBottleneck(v, l, gate="fixed"),
               "bottleneck_open": lambda v, l: CrossAttnBottleneck(v, l, gate="open"),
+              "bottleneck_half": lambda v, l: CrossAttnBottleneck(v, l, gate="half"),
               "xattn_deep": DeepGatedCrossAttn,
               "xattn_deep_fixed": lambda v, l: DeepGatedCrossAttn(v, l, gate="fixed")}
 CONNECTOR_NAMES = list(CONNECTORS)

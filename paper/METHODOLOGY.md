@@ -190,8 +190,16 @@ capacity as a rival explanation.
 **Internal validity.**
 - One factor varies at a time. The two gate arms share every parameter, but differ in two ways: whether `α`
   trains, and where the zero initialisation sits (the learned gate starts with α = 0 and a default-initialised
-  `out_proj`; the fixed gate starts with tanh α = 1 and `out_proj` = 0). A third arm, a learnable gate
-  initialised open with `out_proj` = 0 (`bottleneck_open`), separates the two.
+  `out_proj`; the fixed gate starts with tanh α = 1 and `out_proj` = 0).
+- The second difference is forced, not chosen. If both α and `out_proj` start at zero, the gradient of the
+  output with respect to α is proportional to `out_proj` and that with respect to `out_proj` to tanh α, so
+  both stay at zero and the visual pathway never trains. A learnable zero-initialised gate therefore needs a
+  non-zero `out_proj`, as in Flamingo and LLaMA-Adapter.
+- Two further arms separate trainability from the starting value. Both are learnable, with `out_proj` = 0 like
+  the fixed gate: `bottleneck_open` starts at tanh α = 0.995 and `bottleneck_half` at tanh α = 0.5. The open
+  gate's gradient is scaled by 1 − tanh² ≈ 0.01, so it is nearly fixed in practice; the half-open gate's is
+  scaled by 0.75, so it can move toward 0 or 1. If the half-open gate also matches the fixed gate, the harm is
+  tied to starting at zero; if it drifts shut and loses WGA, trainability itself is the problem.
 - Pairing by seed controls initialisation and data order: a seed fixes the data order, the LoRA
   initialisation and the connector initialisation, so learned and fixed gate runs of one seed differ only in
   the gate. Because pairing is a design choice, unpaired Welch and Mann–Whitney tests are reported as well

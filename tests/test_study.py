@@ -57,6 +57,15 @@ class TestStudy(unittest.TestCase):
         self.assertIn("gate", dict(conn.named_parameters()))
         self.assertGreater(torch.tanh(conn.gate).item(), 0.99)
 
+    def test_half_gate_bottleneck_identity_learnable_unsaturated(self):
+        conn = build_connector("bottleneck_half", 64, 32)
+        text = torch.randn(1, 5, 32)
+        fused, _ = conn(torch.randn(1, 196, 64), text)
+        self.assertTrue(torch.allclose(fused, text))
+        self.assertAlmostEqual(torch.tanh(conn.gate).item(), 0.5, places=5)
+        fused.sum().backward()
+        self.assertGreater(conn.out_proj.weight.grad.abs().sum().item(), 0)  # out_proj trains from step 0
+
     def test_fixed_gate_bottleneck_identity_and_open(self):
         conn = build_connector("bottleneck_fixed", 64, 32)
         text = torch.randn(1, 5, 32)

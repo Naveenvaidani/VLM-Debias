@@ -17,11 +17,12 @@ import pandas as pd
 
 METRICS = [("avg_acc", "Avg"), ("worst_group_acc", "WGA"), ("acc_id", "ID"), ("acc_ood", "OOD"),
            ("rsr", "RSR"), ("balanced_acc", "Bal."), ("generative_acc", "Gen.")]
-SERIES = {"mlp": "#2a78d6", "qformer": "#eb6834", "bottleneck": "#1baf7a", "bottleneck_fixed": "#7a5bd6", "bottleneck_open": "#c0398f",
+SERIES = {"mlp": "#2a78d6", "qformer": "#eb6834", "bottleneck": "#1baf7a", "bottleneck_fixed": "#7a5bd6", "bottleneck_open": "#c0398f", "bottleneck_half": "#d9a21b",
           "xattn_deep": "#c99a06", "xattn_deep_fixed": "#5c6b7a"}
 LABELS = {"mlp": "MLP projector", "qformer": "Q-Former", "bottleneck": "Cross-attn bottleneck",
           "bottleneck_fixed": "Cross-attn, fixed gate",
           "bottleneck_open": "Cross-attn, learned gate (open init)",
+          "bottleneck_half": "Cross-attn, learned gate (half-open init)",
           "xattn_deep": "Per-layer cross-attn, learned gates", "xattn_deep_fixed": "Per-layer cross-attn, fixed gates"}
 
 

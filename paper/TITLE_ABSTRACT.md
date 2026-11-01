@@ -51,7 +51,8 @@ Each option is 10–15 words, with the keywords in the first 65 characters and n
 >
 > **[Contribution]** These results identify the injection gate as a transmission bottleneck between features
 > and readout. They show that robustness claims require seed-level evaluation, and they give practitioners a
-> zero-cost design rule and a cheap connector-level fix.
+> zero-cost, label-free design rule that removes one source of shortcut reliance, and a cheap connector-level
+> fix when group labels are available.
 
 Word count: about 230 (check against the journal's limit).
 
