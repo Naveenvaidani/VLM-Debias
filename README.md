@@ -61,6 +61,10 @@ averaged over three question phrasings (one held out from training).
 H1: fixed > learned (one-sided, α = 0.025). H2: learned gate varies more across seeds. Bold = significant.
 Tables: [`results_study/hypotheses.md`](results_study/hypotheses.md), [`results_study/phi/hypotheses.md`](results_study/phi/hypotheses.md).
 
+Each line is one seed, learned gate → fixed gate (left: Qwen3.5-4B, right: Phi-4-mini):
+
+<p><img src="results_study/h1_gate_seeds.png" width="49%" alt="Per-seed paired worst-group accuracy, Qwen3.5-4B"> <img src="results_study/phi/h1_gate_seeds.png" width="49%" alt="Per-seed paired worst-group accuracy, Phi-4-mini"></p>
+
 ### 3. Second LLM: Phi-4-mini, 5 seeds
 
 | Task | MLP | Q-Former | Learned gate | Fixed gate |
@@ -106,6 +110,8 @@ Rows 1–4: 5 seeds each. Fixed gate + DFR beats MLP + DFR on Watermark by +8.4 
 
 Same direction as the other tasks (learned gate worst and least stable); not significant with these seeds.
 
+![CelebA](docs/figures/final/celeba.png)
+
 ### 7. Ablations (Waterbirds, MLP unless noted)
 
 | Variant | Seeds | WGA |
@@ -115,8 +121,11 @@ Same direction as the other tasks (learned gate worst and least stable); not sig
 | + latent-target-decoding caption loss (LTD) | 3 | 75.9 ± 3.3 |
 | 8 epochs | 1 | 79.1 |
 | Fixed gate, 8 epochs | 1 | 44.5 |
-| Frozen LLM (no LoRA): learned gate / MLP / Q-Former | 1–3 | 24.2 / 73–75 |
-| Attention-entropy regulariser | 3 | no gain |
+| Alignment repeated per seed: MLP / fixed gate | 3 | 76.1 ± 2.1 / 74.2 ± 0.8 |
+| Fixed gate + LTD caption loss | 3 | 72.3 ± 3.7 |
+| Group-balanced sampling: MLP / fixed gate (uses group labels) | 2 / 1 | 83.9 ± 1.9 / 87.3 |
+| Attention-entropy regulariser: fixed gate / Q-Former | 1 | 72.1 / 69.8 |
+| Frozen LLM (no LoRA): learned gate / MLP / Q-Former | 3 | **24.2 ± 2.8** / 73.4 ± 1.1 / 74.6 ± 0.9 |
 
 ![Ablations](docs/figures/final/ablations.png)
 
@@ -129,6 +138,91 @@ Same direction as the other tasks (learned gate worst and least stable); not sig
 | Linear probe on SigLIP-base, ERM | 62.0 |
 | Best connector in this study (MLP, SigLIP-large) | 82.9 |
 | Linear DFR on SigLIP-base | 84.2 |
+
+### 9. Seed ensembles (average the 3 seeds' answer probabilities)
+
+| Task | MLP | Q-Former | Learned gate | Fixed gate |
+| :--- | :---: | :---: | :---: | :---: |
+| Waterbirds: single seed → ensemble | 74.5 → 74.1 | 71.7 → 74.0 | 62.1 → 69.1 | 73.5 → 74.2 |
+| Watermark: single seed → ensemble | 63.6 → 64.3 | 68.6 → 68.9 | 50.3 → 52.3 | 69.6 → **76.7** |
+
+Ensembling helps the unstable learned gate most but does not close its gap ([`seed_ensemble.csv`](results_study/seed_ensemble.csv)).
+
+### 10. Linear probes on frozen SigLIP-base features, by pooling (3 seeds)
+
+| Pooling | Waterbirds ERM / DFR / balanced-train | Watermark ERM / DFR / balanced-train |
+| :--- | :---: | :---: |
+| Mean over patches (768-d) | 62.0 / 84.2 / 84.3 | 46.5 / 85.1 / 84.7 |
+| Mean + max (1,536-d) | 64.7 / 84.3 / 84.2 | 44.2 / 85.1 / 84.8 |
+| 7×7 grid, the MLP connector's tokens (37,632-d) | 60.1 / 84.1 / 84.9 | 49.3 / 83.2 / 83.4 |
+
+Pooling does not matter: DFR reaches about 84 whichever features it sees ([`linear_baselines*.md`](results_study/linear_baselines.md)).
+
+### 11. Attention on the watermark (Watermark task, 3 seeds)
+
+Share of the answer token's attention on the watermark corner (uniform = 8.2%):
+
+| Connector | Watermark present | Absent |
+| :--- | :---: | :---: |
+| Cross-attn, learned gate | 16.7% | 6.1% |
+| Cross-attn, fixed gate | 18.2% | 7.0% |
+| Q-Former | 11.6% | 7.7% |
+
+Both gate variants look at the watermark; only the learned gate relies on it
+([`attention_watermark.csv`](results_study/attention_watermark.csv), threshold sweep in
+[`attention_watermark_sensitivity.csv`](results_study/attention_watermark_sensitivity.csv)).
+
+![Connector attention on Waterbirds minority-group images](results_study/attention_examples.png)
+
+### 12. Failure analysis: hardest group per connector (3 seeds)
+
+| Task, hardest group | MLP | Q-Former | Learned gate | Fixed gate |
+| :--- | :---: | :---: | :---: | :---: |
+| Waterbirds, waterbird on land (n = 642): error rate | 25.5% | 26.1% | 38.0% | 25.6% |
+| … wrong in every seed / in any seed | 21% / 29% | 19% / 34% | 19% / **65%** | 20% / 32% |
+| Watermark, no dog + watermark (n = 600): error rate | 37.4% | 32.1% | 49.5% | 24.5% |
+| … wrong in every seed / in any seed | 25% / 51% | 15% / 49% | 20% / **81%** | 12% / 38% |
+
+About 20% of the hardest images are wrong for every seed and connector (a shared core); the learned gate adds
+seed-specific errors on top ([`failure_analysis.csv`](results_study/failure_analysis.csv)).
+
+### 13. Compute cost (one T4, batch 16, Qwen3.5-4B NF4)
+
+| Connector | Parameters | Image tokens | s / step | Peak memory | Train time (4 epochs) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| MLP projector | 8.5M | 49 | 4.04 | 12.1 GB | 84 min |
+| Q-Former | 11.4M | 32 | 2.48 | 10.1 GB | 55 min |
+| Cross-attn (either gate) | 8.9M | 0 | **1.73** | **6.2 GB** | **37–40 min** |
+
+The fixed-gate cross-attention connector matches MLP robustness at about half the time and memory
+([`compute_table.csv`](results_study/compute_table.csv)).
+
+### 14. Gates in released Flamingo-style models (IDEFICS)
+
+Read straight from the Hugging Face checkpoints (only the gate tensors are downloaded):
+
+| Model | Cross-attn gate, mean \|tanh α\| | Layers with \|tanh α\| < 0.05 |
+| :--- | :---: | :---: |
+| IDEFICS-9B / 9B-instruct | 0.114 / 0.115 | 1 of 8 |
+| IDEFICS-80B / 80B-instruct | 0.068 / 0.067 | **9 of 20** |
+
+Near-shut cross-attention gates also occur at 80B scale ([`pretrained_gates.md`](results_study/pretrained_gates.md)).
+
+### 15. More plots of the 3-seed connector comparison
+
+<p>
+<img src="docs/figures/study/wga_wga.png" width="49%" alt="Worst-group accuracy by connector">
+<img src="docs/figures/study/avg_wga.png" width="49%" alt="Average accuracy by connector">
+<img src="docs/figures/study/id_vs_ood_wga.png" width="49%" alt="ID vs OOD accuracy">
+<img src="docs/figures/study/delta_vs_mlp_wga.png" width="49%" alt="Paired difference vs MLP">
+<img src="docs/figures/study/heldout_wga.png" width="49%" alt="Held-out question phrasing">
+</p>
+
+The same plots with checkpoints chosen without group labels (validation average accuracy):
+[`wga_avg`](docs/figures/study/wga_avg.png), [`avg_avg`](docs/figures/study/avg_avg.png),
+[`id_vs_ood_avg`](docs/figures/study/id_vs_ood_avg.png), [`delta_vs_mlp_avg`](docs/figures/study/delta_vs_mlp_avg.png),
+[`heldout_avg`](docs/figures/study/heldout_avg.png). Per-experiment bar charts are in each
+`results_study/<experiment>/wga_by_task.png`; every run is in [`all_runs.csv`](results_study/all_runs.csv).
 
 ## Observations
 
@@ -198,6 +292,8 @@ photographed on land backgrounds (the hardest group). Attention is sparse (norma
 this inspectable, but it does not force the model onto the bird.
 
 ![Attention maps](metrics/attention_bottleneck_balanced.png)
+
+The same for the ERM model: [`metrics/attention_bottleneck.png`](metrics/attention_bottleneck.png).
 
 ## Where each result lives
 
