@@ -17,7 +17,7 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
 
 - [Key findings](#key-findings) · [Quick start](#quick-start)
 - [Results](#results): [connectors](#1-connector-comparison-qwen35-4b-siglip-base) · [gate hypotheses](#2-pre-declared-gate-hypotheses-paired-by-seed) · [Phi-4-mini](#3-second-llm-phi-4-mini-5-seeds) · [encoder scale](#4-vision-encoder-scale-siglip-base-vs-siglip-large-waterbirds) · [fixes (DFR)](#5-fixes-connector-dfr-balanced-sampling-linear-dfr) · [CelebA](#6-celeba-blond_hair-vs-male-official-splits) · [ablations](#7-ablations-waterbirds-mlp-unless-noted) · [reference points](#8-reference-points) · [ensembles](#9-seed-ensembles-average-the-3-seeds-answer-probabilities) · [linear probes](#10-linear-probes-on-frozen-siglip-base-features-by-pooling-3-seeds) · [attention](#11-attention-on-the-watermark-watermark-task-3-seeds) · [failure analysis](#12-failure-analysis-hardest-group-per-connector-3-seeds) · [compute](#13-compute-cost-one-t4-batch-16-qwen35-4b-nf4) · [IDEFICS gates](#14-gates-in-released-flamingo-style-models-idefics)
-- [Observations](#observations) · [FAQ](#faq) · [Related work](#related-work-and-where-this-study-stands)
+- [Observations](#observations) · [FAQ](#faq) · [Related work](#related-work-and-where-this-study-stands) · [Literature review](docs/LITERATURE.md)
 - [Tasks and datasets](#tasks-and-datasets) · [Experimental protocol](#experimental-protocol-connector-study) · [Statistics](#statistics) · [Reproduce](#reproduce) · [Limitations](#limitations) · [Citation](#citation)
 
 ## Quick start
@@ -372,6 +372,8 @@ connector on it (connector-DFR).
 indistinguishable; cross-attention is about 2x cheaper in time and memory.
 
 ## Related work and where this study stands
+
+Full literature review with what each source did, what we learned and what we used: [`docs/LITERATURE.md`](docs/LITERATURE.md).
 
 Literature check (October 2026): Google Scholar, OpenAlex (covers Springer, Elsevier, IEEE, ACM, ACL,
 AAAI and arXiv), forward citations of the closest papers, and full reads of the five nearest. No
