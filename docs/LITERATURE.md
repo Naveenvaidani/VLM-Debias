@@ -46,13 +46,23 @@ framing yields testable predictions.
 **Injection gates.**
 - Flamingo-style models add `tanh(α)·CrossAttn(text, image)` to the language stream, with `α` initialised at
   zero so that the pretrained LLM is unchanged at the start [alayrac2022flamingo].
-- The same zero-initialised, learnable scaling is used in unimodal networks to stabilise training
-  [bachlechner2021rezero], in LLaMA-Adapter's zero-gated prompts [zhang2024llamaadapter; gao2023llamaadapterv2],
+- The same zero-initialised, learnable scaling is used in unimodal networks to stabilise training:
+  ReZero [bachlechner2021rezero] and SkipInit [de2020skipinit] put a learnable scalar on each residual branch,
+  initialised at 0 (SkipInit: 0 or at most 1/√d for d blocks), so that every block starts as the identity;
+  LayerScale [touvron2021cait] uses a per-channel version initialised at a small ε (0.1 up to depth 18,
+  10⁻⁵ at depth 24, 10⁻⁶ deeper) and reports that a ReZero scalar started at ε trains better than one started
+  at 0. Unlike Flamingo's gate, these scales are linear, not passed through tanh, so their gradient never
+  saturates. The same idea appears in LLaMA-Adapter's zero-gated prompts [zhang2024llamaadapter; gao2023llamaadapterv2],
   and in released VLMs: IDEFICS and Llama 3.2 Vision (separate attention and MLP gates in 8 of 40 layers)
   [grattafiori2024llama3]. Its estimation theory is analysed in [diep2025zeroinit].
 - Flamingo reports that its gates grow from zero over 500k steps, and that removing them costs 4.2 points
   [alayrac2022flamingo].
 - A gate is *closed* when `|tanh α| ≈ 0`.
+- **What this literature does not ask.** ReZero, SkipInit and LayerScale motivate a near-zero start by
+  optimisation stability, and evaluate convergence and average accuracy. In those networks every residual
+  branch sees the same input, so a branch that stays small loses capacity, not information. In a multimodal
+  adapter the gated branch is the *only* path for the image, so the same near-zero start can starve one
+  modality. Its effect on what the model relies on, and on worst-group accuracy, has not been measured.
 
 ## 2. Thematic synthesis
 

@@ -208,13 +208,6 @@
   "Fung, Pascale",
   "Hoi, Steven"
  ],
- "hosseini2025spurlens": [
-  "Hosseini, Parsa",
-  "Nawathe, Sumit",
-  "Moayeri, Mazda",
-  "Balasubramanian, Sriram",
-  "Feizi, Soheil"
- ],
  "sarker2026purge": [
   "Sarker, Aditi",
   "Shah, Nazreen",
@@ -222,6 +215,13 @@
   "Jang, Rhongho",
   "Zhu, Dongxiao",
   "Khanduri, Prashant"
+ ],
+ "hosseini2025spurlens": [
+  "Hosseini, Parsa",
+  "Nawathe, Sumit",
+  "Moayeri, Mazda",
+  "Balasubramanian, Sriram",
+  "Feizi, Soheil"
  ],
  "alayrac2022flamingo": [
   "Alayrac, Jean-Baptiste",
@@ -1073,6 +1073,13 @@
   "Yang, Hongxia",
   "Huang, Longbo"
  ],
+ "touvron2021cait": [
+  "Touvron, Hugo",
+  "Cord, Matthieu",
+  "Sablayrolles, Alexandre",
+  "Synnaeve, Gabriel",
+  "Jégou, Hervé"
+ ],
  "wu2022greedy": [
   "Wu, Nan",
   "Jastrzębski, Stanisław",
@@ -1089,6 +1096,10 @@
   "Zhu, Jianke",
   "Zhang, Lei"
  ],
+ "de2020skipinit": [
+  "De, Soham",
+  "Smith, Samuel L."
+ ],
  "dosovitskiy2021vit": [
   "Dosovitskiy, Alexey",
   "Beyer, Lucas",
@@ -1102,6 +1113,43 @@
   "Gelly, Sylvain",
   "Uszkoreit, Jakob",
   "Houlsby, Neil"
+ ],
+ "groger2026rethinking": [
+  "Gröger, Fabian",
+  "Ouerghemi, Naël",
+  "Wen, Shuo",
+  "Brbić, Maria"
+ ],
+ "picard2021seed": [
+  "Picard, David"
+ ],
+ "dettmers2023qlora": [
+  "Dettmers, Tim",
+  "Pagnoni, Artidoro",
+  "Holtzman, Ari",
+  "Zettlemoyer, Luke"
+ ],
+ "jain2019attention": [
+  "Jain, Sarthak",
+  "Wallace, Byron C."
+ ],
+ "henderson2018matters": [
+  "Henderson, Peter",
+  "Islam, Riashat",
+  "Bachman, Philip",
+  "Pineau, Joelle",
+  "Precup, Doina",
+  "Meger, David"
+ ],
+ "chen2016checkpoint": [
+  "Chen, Tianqi",
+  "Xu, Bing",
+  "Zhang, Chiyuan",
+  "Guestrin, Carlos"
+ ],
+ "wiegreffe2019attention": [
+  "Wiegreffe, Sarah",
+  "Pinter, Yuval"
  ],
  "hu2022lora": [
   "Hu, Edward J.",
@@ -1190,43 +1238,6 @@
   "Zhang, Li Lyna",
   "Zhang, Yunan",
   "Zhou, Xiren"
- ],
- "groger2026rethinking": [
-  "Gröger, Fabian",
-  "Ouerghemi, Naël",
-  "Wen, Shuo",
-  "Brbić, Maria"
- ],
- "picard2021seed": [
-  "Picard, David"
- ],
- "dettmers2023qlora": [
-  "Dettmers, Tim",
-  "Pagnoni, Artidoro",
-  "Holtzman, Ari",
-  "Zettlemoyer, Luke"
- ],
- "jain2019attention": [
-  "Jain, Sarthak",
-  "Wallace, Byron C."
- ],
- "henderson2018matters": [
-  "Henderson, Peter",
-  "Islam, Riashat",
-  "Bachman, Philip",
-  "Pineau, Joelle",
-  "Precup, Doina",
-  "Meger, David"
- ],
- "chen2016checkpoint": [
-  "Chen, Tianqi",
-  "Xu, Bing",
-  "Zhang, Chiyuan",
-  "Guestrin, Carlos"
- ],
- "wiegreffe2019attention": [
-  "Wiegreffe, Sarah",
-  "Pinter, Yuval"
  ],
  "bouthillier2021variance": [
   "Bouthillier, Xavier",

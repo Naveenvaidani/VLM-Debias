@@ -18,6 +18,7 @@ closest prior work it must be distinguished from.
 | **Flamingo** [alayrac2022flamingo] | Introduces tanh-gated cross-attention, gates initialised at 0, one block every 4th–7th LM layer. Gates grow over 500k steps. Removing the gate costs 4.2 points. | Whether a gate that stays small changes *what the model relies on*. No worst-group or shortcut evaluation. |
 | **IDEFICS** (HF M4) and **Llama 3.2 Vision** [grattafiori2024llama3] | The same zero-initialised tanh gates ship in released models: IDEFICS uses one gate per block; Llama 3.2 gates the attention and the MLP separately, in 8 of 40 layers (11B). | The gate values and their consequences are not reported. We read them from the checkpoints (README §14): every Llama 3.2 Vision attention gate is below 0.012 (11B) and 0.003 (90B), the same regime as our learned gate. |
 | **LLaMA-Adapter / V2** [zhang2024llamaadapter; gao2023llamaadapterv2] | A zero-initialised learnable gate injects adapter prompts, including visual ones, into a frozen LLM, to keep it intact early in training. | No analysis of gate values or of robustness. |
+| **ReZero / SkipInit / LayerScale** [bachlechner2021rezero; de2020skipinit; touvron2021cait] | Learnable residual scales initialised at 0 or a small ε make deep unimodal networks train stably; LayerScale shows the start value matters (ε beats 0). | Unimodal; outcome is convergence and average accuracy. The scaled branch is never a modality's only path, so the robustness cost of a near-zero start cannot appear. |
 | **Zero-initialised attention theory** [diep2025zeroinit] | Prompts and gating factors of zero-initialised attention can be estimated optimally (a mixture-of-experts view). | Estimation theory only; nothing on spurious correlations. |
 | **The Gate Always Closes** [farazi2026gate] | Across five gated designs in frozen VLMs, the gated pathway ends up *behaviourally* closed: ablating it at inference changes nothing. Recommends fixed injection. | Measures relational accuracy on GQA and VSR, not shortcut reliance, worst-group accuracy or seed variance. No controlled comparison with other connector types. |
 | **Modality imbalance** [wu2022greedy; huang2022modality; peng2022balanced; wei2025onthefly] | Multimodal networks greedily learn one modality and under-fit the other. Which modality wins depends on initialisation. Gradient modulation helps. | Late-fusion audio-visual or RGB-depth classifiers. No LLM-based VLMs, no connectors, no spurious-group evaluation. |
@@ -55,7 +56,10 @@ closest prior work it must be distinguished from.
 
 **Claims we deliberately do not make:**
 - We do not claim to be the first to observe that gates stay closed. Farazi et al. did.
-- We do not claim that zero-initialised gating is new. Flamingo and LLaMA-Adapter introduced it.
+- We do not claim that zero-initialised gating is new. ReZero and SkipInit introduced zero-initialised learnable
+  residual scales; Flamingo and LLaMA-Adapter carried them into vision-language and adapter models.
+- We do not claim that the initial value of a learnable scale matters for *optimisation*; LayerScale showed
+  that. We claim it matters for *robustness* when the scaled branch is a modality's only path.
 - We do not claim that the gate is *sufficient* for shortcut reliance. With SigLIP-large it is not.
 - We do not claim results for per-layer injection or fp16 weights until the round-6 runs are in.
 - We do not claim the gate pathway is closed: the learned gate still injects visual signal, 15–35× less

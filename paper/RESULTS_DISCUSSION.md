@@ -336,7 +336,13 @@ Waterbirds.
 2. **Variance as an outcome.** Architectural choices can change *how often* a model learns the shortcut, not
    only how much on average. Seed-level reporting is therefore required for claims about robustness
    [bouthillier2021variance].
-3. **A boundary condition for readout fixes.** Connector-level DFR works when the spurious cue is spatially
+3. **A cost of near-identity initialisation.** Zero- or small-initialised learnable residual scales are
+   standard because they stabilise optimisation [bachlechner2021rezero; de2020skipinit; touvron2021cait].
+   That literature measures convergence and average accuracy in unimodal networks, where each scaled branch
+   sees the same input. When the scaled branch is the only path for a modality, the same initialisation has a
+   robustness cost: the branch stays small and the model relies on the shortcut. The design question is
+   therefore not only how to start near the identity, but through which parameter (gate vs output layer).
+4. **A boundary condition for readout fixes.** Connector-level DFR works when the spurious cue is spatially
    localised and separable, and fails when it is entangled with the core object.
 
 ### D8. Practical implications

@@ -13,7 +13,7 @@ controlled **Watermark** task and **CelebA**, with **Qwen3.5-4B** and **Phi-4-mi
 | **Answer** | Yes for the gate: initialised at zero, it never opens (tanh α peaks below 0.01 and ends ≈ 0.0005) and the model relies on the shortcut. Fixing it raises worst-group accuracy by **+10.6** (Waterbirds) and **+25.2** points (Watermark), d_z = 1.10 and 1.34, p < 0.001, with label-free model selection and unpaired tests too. Once the gate is fixed, no significant difference between connector types was found (equivalence not established). |
 | **Fix** | Retrain only the connector on a small group-balanced set (connector-DFR): **89.6 ± 0.5** worst-group accuracy on Watermark. |
 | **Scale** | 2 LLMs · 2 encoders · 3 tasks · 4 connectors · 200+ training runs on Kaggle T4s |
-| **Paper kit** | Literature review, methodology, results and discussion, 101 verified references: [`paper/`](paper/) |
+| **Paper kit** | Literature review, methodology, results and discussion, 103 verified references: [`paper/`](paper/) |
 
 **Keywords:** shortcut learning · spurious correlations · group robustness · worst-group accuracy · vision-language
 models · multimodal LLM · connector / projector design · Q-Former · gated cross-attention · Flamingo gate ·
@@ -540,7 +540,7 @@ Everything needed to write the journal paper from this repository:
 | Introduction (CARS five-paragraph funnel) | [`paper/INTRODUCTION.md`](paper/INTRODUCTION.md) |
 | Literature review: background, themes, contradictions, gaps, bridge to hypotheses | [`docs/LITERATURE.md`](docs/LITERATURE.md) |
 | Synthesis matrix of 88 papers (objective, finding, limitation, use) | [`paper/literature_matrix.csv`](paper/literature_matrix.csv) |
-| 101 verified references (arXiv API / Crossref), 26 journal articles | [`paper/references.bib`](paper/references.bib) (built by [`paper/build_refs.py`](paper/build_refs.py)) |
+| 103 verified references (arXiv API / Crossref), 26 journal articles | [`paper/references.bib`](paper/references.bib) (built by [`paper/build_refs.py`](paper/build_refs.py)) |
 | Methodology: design, data, variables, power analysis, tests, assumptions, validity, ethics | [`paper/METHODOLOGY.md`](paper/METHODOLOGY.md) |
 | Results (per hypothesis, effect sizes) and discussion (mechanism, implications, limitations) | [`paper/RESULTS_DISCUSSION.md`](paper/RESULTS_DISCUSSION.md) |
 | Claims and structure | [`paper/OUTLINE.md`](paper/OUTLINE.md) |

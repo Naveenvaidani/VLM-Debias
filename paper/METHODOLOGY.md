@@ -195,10 +195,15 @@ capacity as a rival explanation.
   output with respect to α is proportional to `out_proj` and that with respect to `out_proj` to tanh α, so
   both stay at zero and the visual pathway never trains. A learnable zero-initialised gate therefore needs a
   non-zero `out_proj`, as in Flamingo and LLaMA-Adapter.
-- Two further arms separate trainability from the starting value. Both are learnable, with `out_proj` = 0 like
-  the fixed gate: `bottleneck_open` starts at tanh α = 0.995 and `bottleneck_half` at tanh α = 0.5. The open
+- Two further arms separate trainability from the starting value. The design follows the residual-scaling
+  literature, where the start value of a learnable scale is the variable: ReZero and SkipInit start it at 0
+  [bachlechner2021rezero; de2020skipinit], and LayerScale at a small ε, reporting that ε trains better than 0
+  [touvron2021cait]. Those scales are linear; Flamingo's gate passes through tanh, so its gradient is scaled
+  by 1 − tanh² α and vanishes as the gate saturates. Both arms are learnable, with `out_proj` = 0 like the
+  fixed gate: `bottleneck_open` starts at tanh α = 0.995 and `bottleneck_half` at tanh α = 0.5. The open
   gate's gradient is scaled by 1 − tanh² ≈ 0.01, so it is nearly fixed in practice; the half-open gate's is
-  scaled by 0.75, so it can move toward 0 or 1. If the half-open gate also matches the fixed gate, the harm is
+  scaled by 0.75, so it can move toward 0 or 1. The value 0.5 is our choice, not taken from prior work: it
+  is the midpoint of the gate's range at which the gradient is still within 25% of its maximum (at tanh α = 0). If the half-open gate also matches the fixed gate, the harm is
   tied to starting at zero; if it drifts shut and loses WGA, trainability itself is the problem.
 - Pairing by seed controls initialisation and data order: a seed fixes the data order, the LoRA
   initialisation and the connector initialisation, so learned and fixed gate runs of one seed differ only in

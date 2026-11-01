@@ -221,3 +221,18 @@ What a strict reviewer would still raise after §9, and what was done.
 | Mechanism only correlational | Said in limitations; the pathway-ablation test (round 5) is the behavioural check. |
 
 Accounts and quota: gp1, gp2 and jeyadevr are close to their weekly 30 GPU-hours, so round 7 runs on account E (2 jobs), account C and account D (1 each).
+
+## 11. Literature basis for the gate-initialisation controls
+
+Question asked: are the controls taken from the literature, or invented? Checked against the papers themselves (PDFs read):
+
+- **SkipInit** [de2020skipinit] (De and Smith, NeurIPS 2020): a learnable scalar at the end of each residual branch, initialised at 0, or at most 1/√d for d blocks, so that deep networks train without normalisation.
+- **LayerScale** [touvron2021cait] (Touvron et al., CaiT, ICCV 2021): a learnable per-channel residual scale initialised at a small ε (0.1 up to depth 18, 10⁻⁵ at depth 24, 10⁻⁶ deeper). Their Table 1 shows a ReZero scalar started at ε beats one started at 0, so the start value of a learnable scale matters.
+- **ReZero** [bachlechner2021rezero] was already cited.
+
+How they are used:
+- **The controls vary the start value with learnability held fixed**, exactly the variable LayerScale studies. The 0.5 start of the half-open gate is our own choice, stated as such: it is where the tanh gradient is still within 25% of its maximum.
+- **These scales are linear, not tanh**, so their gradient never saturates. This is why the tanh = 0.995 open gate barely moves and the half-open control was added.
+- **Novelty sharpened.** That literature measures convergence and average accuracy in unimodal networks, where every branch sees the same input. We show that the same near-identity start costs robustness when the scaled branch is a modality's only path. This is added to LITERATURE (injection gates), NOVELTY (closest-work row, claims not made), METHODOLOGY §6 and RESULTS_DISCUSSION D7.
+
+References now 103.
