@@ -8,7 +8,7 @@ literature → mechanism. Every number below comes from `results_study/` and can
 **Notation:**
 - WGA: test worst-group accuracy (%); means are ± s.d. over seeds.
 - d_z: paired Cohen's d (mean difference ÷ s.d. of the differences).
-- All H1/H2 tests are one-sided at the pre-declared α = 0.025.
+- All H1/H2 tests are one-sided at α = 0.025, fixed before the confirmation seeds were run.
 
 ---
 
@@ -36,6 +36,11 @@ literature → mechanism. Every number below comes from `results_study/` and can
     (paired p = 0.002 and 2.8 × 10⁻⁴), so it does not depend on using group labels for selection.
   - The fixed gate also raises average accuracy (84.1 → 88.0, p = 0.007; 76.9 → 85.8, p = 0.003), with
     in-distribution accuracy unchanged (≈ 98%). The worst-group gain is not a trade-off against accuracy.
+  - *Confirmation sample.* H1 was formed after a 3-seed pilot, so it is also tested on the later seeds only:
+    Waterbirds +10.5 (12 seeds, t(11) = 4.06, p = 9.5 × 10⁻⁴, d_z = 1.17); Watermark +25.1 (10 seeds,
+    t(9) = 4.15, p = 0.0012, d_z = 1.31). The pilot alone was not significant (p = 0.16 and 0.12).
+  - *Multiplicity.* With Holm correction across the four H1 tests (2 LLMs × 2 tasks), three survive at 0.025
+    (adjusted p = 0.0012, 0.0012, 0.011); Phi-4-mini Watermark does not (0.044).
 
 **Phi-4-mini, second LLM.**
 - *Waterbirds:* H1 is supported (+9.7, t(4) = 4.52, p = 0.005, d_z = 2.02).
@@ -64,7 +69,7 @@ With n = 5 the smallest attainable one-sided Wilcoxon p is 0.031, so the Wilcoxo
 - Test: one-sided F-test on seed variances, with the Brown–Forsythe test as a robust check, since learned-gate
   WGA is non-normal on Qwen Waterbirds (Shapiro–Wilk p = 0.003).
 
-**Verdict: supported for Qwen3.5-4B by the pre-declared F-test; the robust test weakens Watermark.**
+**Verdict: supported for Qwen3.5-4B by the F-test; the robust test weakens Watermark.**
 
 | Task | F-test | Brown–Forsythe (two-sided) | Reading |
 | :--- | :--- | :--- | :--- |
@@ -82,7 +87,11 @@ whether training opens it, not whether it closes.
 **Gate value.**
 - After 300 alignment steps, |tanh α| = 0.0005 with SigLIP-base and 0.0006 with SigLIP-large.
 - It never opens: in the logged trace it peaks at about 0.006 within 20 steps and decays to ≈ 0.001.
-- Its gradient is near ±1 and changes sign between logged steps (`align.json`, `gate_trace`).
+- The logged gradient is near ±1 and changes sign between logged steps (`align.json`, `gate_trace`). It is the
+  value *after* global-norm clipping at 1, so it means the gate's gradient made up almost all of the clipped
+  norm, not that its raw gradient is 1. Global clipping therefore shrinks every other connector update when the
+  gate is learnable. Flamingo uses the same clipping; a control that leaves the gate out of clipping, and raw
+  gradient logging, are in round 5.
 - A small gate is not by itself a small injection, because `out_proj` is unconstrained and can grow to
   offset it. The injected signal `‖tanh(α)·out_proj(attn)‖ / ‖e‖` is therefore logged on every evaluation
   from round 4 on (`inject_ratio`), for SigLIP-base and SigLIP-large.
@@ -204,6 +213,30 @@ on the shortcut and vary widely across seeds.
 - The frozen-LLM result supports this. Without LoRA to compensate, the learned gate falls to 24.2 WGA while
   MLP and Q-Former stay near 74.
 
+**Scope relative to Flamingo.** Flamingo's gates "quickly grow" from zero over 500k steps with one gated block
+every 4th–7th LM layer [alayrac2022flamingo]. Our connector injects once, at the input embeddings, after 300
+alignment steps. The finding is therefore scoped to short alignment and input-level injection, the regime of
+adapter-style fine-tuning on a budget; the 3,000-step alignment run tests how far it extends. The IDEFICS gate
+readings (9 of 20 layers below 0.05 after full training) show that near-shut gates also survive long training.
+Flamingo also reports that removing the gate costs 4.2 points and destabilises training. Our fixed gate is not
+"no gate": the output layer is zero-initialised, so the model still starts as the pretrained LLM, and no
+instability was observed.
+
+**Behavioural closure.** [farazi2026gate] define a pathway as closed when ablating it at inference leaves
+accuracy unchanged, even when the gate nominally passes 30–45% of the signal. Our gate value is a parameter
+reading; the round-5 runs add their behavioural test (`ablated_mean_over_templates`) and the injected-signal
+ratio, so both criteria can be reported.
+
+**Where the bias sits.** SpurLens attributes most of the spurious bias of MLLMs to the vision encoder
+[hosseini2025spurlens]. Our design holds the encoder fixed and shared across arms, so the gate effect cannot
+come from the encoder; the two findings are complementary: the encoder decides what spurious information is
+available, the connector decides how much of the rest reaches the LLM.
+
+**Why not just use a linear probe?** Linear DFR on the same frozen features reaches about 85 WGA, above every
+VLM (≈ 74). The study does not propose a better classifier; it explains a failure of VLMs. The gap is itself
+evidence for the transmission account: the information is in the features but is lost between features and
+answer.
+
 ### D3. Attention is not reliance
 
 **Finding.** Both gate variants attend to the watermark about 2.5× more when it is present, yet only one relies
@@ -298,6 +331,12 @@ Waterbirds.
 - Phi-4-mini Watermark is underpowered (0.40).
 - The Watermark shortcut is partly textual [materzynska2022disentangling].
 - Equivalence of connector types is not established.
+- Injection is input-level (one block), not per-layer as in Flamingo, and alignment is 300 steps.
+- In stage 2 the learned gate has weight decay 0.01 (none in alignment); it shrinks α by a relative
+  2 × 10⁻⁶ per step (lr × decay), negligible, and a no-weight-decay control is in round 5.
+- Watermark uses one shortcut strength (p = 0.95); a dose–response at p = 0.9 and 0.99 is in round 5.
+- SigLIP's web pre-training may include CUB, Places or COCO images (shared by every arm).
+- CelebA and Waterbirds are licensed for non-commercial research only.
 
 **Three directions for future work.**
 1. Test gate dynamics in full-precision, larger models with trainable encoders: IDEFICS-scale models and

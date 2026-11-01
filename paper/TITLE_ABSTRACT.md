@@ -37,7 +37,8 @@ Each option is 10–15 words, with the keywords in the first 65 characters and n
 > **[Method]** We hold the language model, frozen vision features, data and training budget fixed and vary only
 > the connector: a multilayer-perceptron projector, a query transformer, and gated cross-attention with either
 > a learnable or a fixed injection gate. We measure worst-group accuracy on three shortcut tasks, two language
-> models and two encoder sizes, with pre-declared tests over up to fifteen paired training seeds.
+> models and two encoder sizes, with hypotheses formed on a pilot and confirmed on new paired
+> training seeds (up to fifteen in total).
 >
 > **[Findings]** The learnable gate, initialised at zero, never opens during alignment, and with it the model
 > relies on the shortcut.

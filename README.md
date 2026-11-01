@@ -2,10 +2,10 @@
 
 **A controlled study of shortcut learning (spurious correlations) in LLM-based vision-language models (VLMs).**
 We hold the LLM, the vision features, the data and the training budget fixed and swap only the vision-language
-connector: an **MLP projector (LLaVA)**, a **Q-Former (BLIP-2)**, and **Flamingo-style gated cross-attention** with a
+connector: an **MLP projector (LLaVA)**, a **Q-Former (BLIP-2)**, and **input-level gated cross-attention** (Flamingo-type `tanh` gate) with a
 learnable or a fixed injection gate. Group robustness (worst-group accuracy) is measured on **Waterbirds**, a
 controlled **Watermark** task and **CelebA**, with **Qwen3.5-4B** and **Phi-4-mini** (4-bit QLoRA) on frozen
-**SigLIP** features, over up to 15 paired seeds with pre-declared statistical tests.
+**SigLIP** features, over up to 15 paired seeds with hypothesis tests confirmed on seeds run after a pilot.
 
 | | |
 | :--- | :--- |
@@ -13,7 +13,7 @@ controlled **Watermark** task and **CelebA**, with **Qwen3.5-4B** and **Phi-4-mi
 | **Answer** | Yes for the gate: initialised at zero, it never opens (tanh α peaks below 0.01 and ends ≈ 0.0005) and the model relies on the shortcut. Fixing it raises worst-group accuracy by **+10.6** (Waterbirds) and **+23.8** points (Watermark), d_z = 1.10 and 1.27, p < 0.001, with label-free model selection and unpaired tests too. Once the gate is fixed, no significant difference between connector types was found (equivalence not established). |
 | **Fix** | Retrain only the connector on a small group-balanced set (connector-DFR): **89.6 ± 0.5** worst-group accuracy on Watermark. |
 | **Scale** | 2 LLMs · 2 encoders · 3 tasks · 4 connectors · 200+ training runs on Kaggle T4s |
-| **Paper kit** | Literature review, methodology, results and discussion, 93 verified references: [`paper/`](paper/) |
+| **Paper kit** | Literature review, methodology, results and discussion, 94 verified references: [`paper/`](paper/) |
 
 **Keywords:** shortcut learning · spurious correlations · group robustness · worst-group accuracy · vision-language
 models · multimodal LLM · connector / projector design · Q-Former · gated cross-attention · Flamingo gate ·
@@ -25,7 +25,7 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
 
 - [Key findings](#key-findings)
 - [Study design](#study-design): [Research question and hypotheses](#research-question-and-hypotheses) · [Tasks and datasets](#tasks-and-datasets) · [Connectors](#connectors) · [Training protocol](#training-protocol) · [Metrics](#metrics) · [Statistics](#statistics)
-- [Results](#results): [1. Connector comparison, Qwen3.5-4B, SigLIP-base](#1-connector-comparison-qwen35-4b-siglip-base) · [2. Pre-declared gate hypotheses](#2-pre-declared-gate-hypotheses-paired-by-seed) · [3. Second LLM](#3-second-llm-phi-4-mini-5-seeds) · [4. Vision encoder scale](#4-vision-encoder-scale-siglip-base-vs-siglip-large-waterbirds) · [5. Fixes](#5-fixes-connector-dfr-balanced-sampling-linear-dfr) · [6. CelebA](#6-celeba-blond_hair-vs-male-official-partitions-train-subsampled-to-8k) · [7. Ablations](#7-ablations-waterbirds-mlp-unless-noted) · [8. Reference points](#8-reference-points) · [9. Seed ensembles](#9-seed-ensembles-average-the-3-seeds-answer-probabilities) · [10. Linear probes on frozen SigLIP-base features, by pooling](#10-linear-probes-on-frozen-siglip-base-features-by-pooling-3-seeds) · [11. Attention on the watermark](#11-attention-on-the-watermark-watermark-task-3-seeds) · [12. Failure analysis](#12-failure-analysis-hardest-group-per-connector-3-seeds) · [13. Compute cost](#13-compute-cost-one-t4-batch-16-qwen35-4b-nf4) · [14. Gates in released Flamingo-style models](#14-gates-in-released-flamingo-style-models-idefics) · [15. More plots of the 3-seed connector comparison](#15-more-plots-of-the-3-seed-connector-comparison) · [16. Robustness checks for reviewers](#16-robustness-checks-for-reviewers)
+- [Results](#results): [1. Connector comparison, Qwen3.5-4B, SigLIP-base](#1-connector-comparison-qwen35-4b-siglip-base) · [2. Gate hypotheses](#2-gate-hypotheses-paired-by-seed) · [3. Second LLM](#3-second-llm-phi-4-mini-5-seeds) · [4. Vision encoder scale](#4-vision-encoder-scale-siglip-base-vs-siglip-large-waterbirds) · [5. Fixes](#5-fixes-connector-dfr-balanced-sampling-linear-dfr) · [6. CelebA](#6-celeba-blond_hair-vs-male-official-partitions-train-subsampled-to-8k) · [7. Ablations](#7-ablations-waterbirds-mlp-unless-noted) · [8. Reference points](#8-reference-points) · [9. Seed ensembles](#9-seed-ensembles-average-the-3-seeds-answer-probabilities) · [10. Linear probes on frozen SigLIP-base features, by pooling](#10-linear-probes-on-frozen-siglip-base-features-by-pooling-3-seeds) · [11. Attention on the watermark](#11-attention-on-the-watermark-watermark-task-3-seeds) · [12. Failure analysis](#12-failure-analysis-hardest-group-per-connector-3-seeds) · [13. Compute cost](#13-compute-cost-one-t4-batch-16-qwen35-4b-nf4) · [14. Gates in released Flamingo-style models](#14-gates-in-released-flamingo-style-models-idefics) · [15. More plots of the 3-seed connector comparison](#15-more-plots-of-the-3-seed-connector-comparison) · [16. Robustness checks for reviewers](#16-robustness-checks-for-reviewers)
 - [Observations](#observations)
 - [FAQ](#faq)
 - [Related work and where this study stands](#related-work-and-where-this-study-stands)
@@ -37,15 +37,15 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
 
 ## Key findings
 
-1. **A learnable injection gate induces shortcut reliance.** The Flamingo-style `tanh(α)` gate starts at 0 and
+1. **A learnable injection gate induces shortcut reliance.** The Flamingo-type `tanh(α)` gate starts at 0 and
    never opens during alignment (it peaks below 0.01 and ends at |tanh α| ≈ 0.0005). Fixing the gate open
    raises worst-group accuracy by **+10.6 points on Waterbirds** (15 seeds, p = 4e-4) and **+23.8 on Watermark**
-   (13 seeds, p = 3e-4), and removes the collapsed seeds (2/15 and 8/13 → 0). Pre-declared tests H1 and H2 are
-   both confirmed on Qwen3.5-4B. The gain holds with label-free checkpoint selection (+17.7 and +24.1), with
+   (13 seeds, p = 3e-4), and removes the collapsed seeds (2/15 and 8/13 → 0). Tests H1 and H2 are
+   both confirmed on Qwen3.5-4B, and H1 holds on the confirmation seeds alone (seeds 3+, p ≤ 0.0012). The gain holds with label-free checkpoint selection (+17.7 and +24.1), with
    unpaired Welch and Mann–Whitney tests (all p ≤ 0.002), and the fixed gate also raises average accuracy
    (84.1 → 88.0 and 76.9 → 85.8), so it is not a worst-group/average trade-off ([16](#16-robustness-checks-for-reviewers)).
 2. **It replicates on a second LLM.** Phi-4-mini, 5 seeds: fixed > learned on both tasks (Waterbirds +9.7,
-   p = 0.005; Watermark +31.6, p = 0.044, which misses the pre-declared one-sided α = 0.025).
+   p = 0.005; Watermark +31.6, p = 0.044, which misses the one-sided α = 0.025).
 3. **Once the gate is fixed, no connector-type difference is detected.** MLP, Q-Former and fixed-gate
    cross-attention show no significant difference (MLP vs Q-Former, 5 seeds: p = 0.23 and 0.40), but
    equivalence is not established (TOST, ±3 points), and on CelebA MLP leads the fixed gate by 5 points (n.s.). Matching image-token counts
@@ -69,7 +69,9 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
 ### Research question and hypotheses
 
 Holding the LLM, features, data and budget fixed, does the vision-language connector determine shortcut reliance?
-Pre-declared before the seed-extension runs (one-sided α = 0.025):
+Formulated after a 3-seed pilot and tested with one-sided α = 0.025. They were not pre-registered on a public
+registry; to avoid forming and testing a hypothesis on the same data, H1 is also tested on the seeds run after the
+pilot only (seeds 3+), where it holds on its own ([16](#16-robustness-checks-for-reviewers)):
 
 - **H1:** a fixed injection gate gives higher worst-group accuracy than a learnable gate (paired by seed).
 - **H2:** the learnable gate is less stable across seeds.
@@ -96,9 +98,16 @@ the standard metric for spurious-correlation robustness. Splits are deterministi
 | :--- | :--- | :---: | :---: |
 | MLP projector (LLaVA-1.5) | LayerNorm–Linear–GELU–Linear over 2×2-pooled patches | 49 | 8.5M |
 | Q-Former (BLIP-2) | 32 learned queries, 8 heads, 1 block | 32 | 11.4M |
-| Cross-attention, learned gate (Flamingo) | prompt tokens attend to patches; `e ← e + tanh(α)·out_proj(attn)`, α initialised at 0, `out_proj` default init | 0 | 8.9M |
+| Input-level cross-attention, learned gate (Flamingo-type tanh gate) | prompt tokens attend to patches; `e ← e + tanh(α)·out_proj(attn)`, α initialised at 0, `out_proj` default init | 0 | 8.9M |
 | Cross-attention, fixed gate | same block, `tanh(α)` fixed at 1, `out_proj` zero-initialised (still starts as the identity) | 0 | 8.9M |
 | Cross-attention, open gate (control) | same block, α learnable but initialised at 3 (tanh = 0.995), `out_proj` zero-initialised | 0 | 8.9M |
+
+**How this differs from Flamingo.** Flamingo inserts a gated cross-attention block before every 4th (9B) or
+7th (80B) frozen LM layer, trains for 500k steps, and reports that its zero-initialised gates "quickly grow"
+(Alayrac et al., 2022, App. A.1.2). Here one block injects visual context into the input embeddings only, and
+alignment is 300 steps. The gate mechanism (`tanh(α)`, α = 0) is the same; depth and training length are not.
+Flamingo also reports that removing the gate costs 4.2 points and destabilises training; our fixed gate instead
+keeps the identity at initialisation through a zero-initialised output layer, and showed no instability.
 
 The cross-attention variants have identical parameters and FLOPs. Learned and fixed gates differ in **two**
 ways: whether `α` trains, and whether the identity at initialisation comes from the gate (α = 0) or from the
@@ -154,7 +163,7 @@ averaged over three question phrasings (one held out from training).
 | Waterbirds | 74.5 ± 1.5 (5 seeds: 74.4) | 71.7 ± 2.5 (5 seeds: 72.8) | 63.6 ± 10.4 (15) | **74.2 ± 3.4** (15) |
 | Watermark | 63.6 ± 4.4 (5 seeds: 66.2) | 68.6 ± 4.1 (5 seeds: 69.2) | 41.4 ± 19.0 (13) | **65.2 ± 10.4** (13) |
 
-### 2. Pre-declared gate hypotheses (paired by seed)
+### 2. Gate hypotheses (paired by seed)
 
 | LLM | Task | Seeds | Learned gate | Fixed gate | Gain (95% CI) | H1 paired t | H2 variance F | Collapsed (< 50) learned / fixed |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -333,8 +342,8 @@ The same plots with checkpoints chosen without group labels (validation average 
 
 ### 16. Robustness checks for reviewers
 
-Fixed vs learned gate, Qwen3.5-4B. Does the H1 gain depend on group-label model selection, on pairing seeds, or
-on trading average accuracy for worst-group accuracy? No to all three.
+Fixed vs learned gate, Qwen3.5-4B. Does the H1 gain depend on group-label model selection, on pairing seeds, on
+trading average accuracy for worst-group accuracy, or on the pilot seeds the hypothesis was formed from? No to all four.
 
 Generated by `study/robustness_checks.py`. Values are test means over seeds, in %. One-sided tests (fixed > learned) unless marked two-sided.
 
@@ -345,7 +354,21 @@ Generated by `study/robustness_checks.py`. Values are test means over seeds, in 
 | watermark_p0.95 | val WGA (group labels) | 13 | 41.4 | 65.2 | +23.8 | 0.00031 | 0.00044 | 0.0012 | 76.9 | 85.8 | 0.003 | 97.7 | 98.1 |
 | watermark_p0.95 | val average (label-free) | 13 | 41.0 | 65.1 | +24.1 | 0.00028 | 0.00036 | 0.00088 | 78.4 | 85.8 | 9.3e-05 | 97.8 | 98.2 |
 
+#### Pilot (seeds 0-2) vs confirmation sample (seeds 3 and later)
+
+H1 was formulated after a 3-seed pilot. Testing it only on the seeds run afterwards avoids using the same data to form and test the hypothesis.
+
+| Task | Sample | Seeds | WGA learned | WGA fixed | Gain | Paired t | p (one-sided) | Wilcoxon p | d_z |
+| :--- | :--- | :---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| waterbirds | pilot | 3 | 62.1 | 73.5 | +11.4 | 1.34 | 0.16 | 0.12 | 0.77 |
+| waterbirds | confirmation | 12 | 63.9 | 74.4 | +10.5 | 4.06 | 0.00095 | 0.00024 | 1.17 |
+| watermark_p0.95 | pilot | 3 | 50.3 | 69.6 | +19.3 | 1.66 | 0.12 | 0.12 | 0.96 |
+| watermark_p0.95 | confirmation | 10 | 38.8 | 63.9 | +25.1 | 4.15 | 0.0012 | 0.002 | 1.31 |
+
 Reading: the gain survives label-free model selection and tests that do not pair seeds, and the fixed gate raises average accuracy as well, so the worst-group gain is not bought with accuracy elsewhere.
+
+Holm correction across the four H1 tests (2 LLMs × 2 tasks): Qwen Watermark p_adj = 0.0012, Qwen Waterbirds 0.0012,
+Phi-4-mini Waterbirds 0.011 (all < 0.025); Phi-4-mini Watermark 0.044 fails (5 seeds; seeds 5–9 added, analysis pending).
 
 | Check | Status |
 | :--- | :--- |
@@ -356,6 +379,10 @@ Reading: the gain survives label-free model selection and tests that do not pair
 | 8-epoch training, seeds 1–4 (MLP, both gates) | running (round 4) |
 | Group DRO full-model baseline (MLP, both gates, 2 tasks, 2 seeds) | running (round 4) |
 | Watermark seeds 8 and 14 (both gates → 15 per arm) | running (round 4) |
+| Behavioural pathway test: visual contribution removed at inference (learned, fixed gate) | running (round 5) |
+| Gate left out of gradient clipping; raw pre-clip gradients logged (learned gate, 3 seeds) | running (round 5) |
+| No weight decay on the gate (learned gate, 2 seeds) | running (round 5) |
+| Shortcut strength p = 0.9 / 0.99 on Watermark (MLP, both gates, 3 seeds) | queued (round 5) |
 
 ## Observations
 
@@ -466,11 +493,12 @@ Everything needed to write the journal paper from this repository:
 | Introduction (CARS five-paragraph funnel) | [`paper/INTRODUCTION.md`](paper/INTRODUCTION.md) |
 | Literature review: background, themes, contradictions, gaps, bridge to hypotheses | [`docs/LITERATURE.md`](docs/LITERATURE.md) |
 | Synthesis matrix of 88 papers (objective, finding, limitation, use) | [`paper/literature_matrix.csv`](paper/literature_matrix.csv) |
-| 93 verified references (arXiv API / Crossref), 24 journal articles | [`paper/references.bib`](paper/references.bib) (built by [`paper/build_refs.py`](paper/build_refs.py)) |
+| 94 verified references (arXiv API / Crossref), 25 journal articles | [`paper/references.bib`](paper/references.bib) (built by [`paper/build_refs.py`](paper/build_refs.py)) |
 | Methodology: design, data, variables, power analysis, tests, assumptions, validity, ethics | [`paper/METHODOLOGY.md`](paper/METHODOLOGY.md) |
 | Results (per hypothesis, effect sizes) and discussion (mechanism, implications, limitations) | [`paper/RESULTS_DISCUSSION.md`](paper/RESULTS_DISCUSSION.md) |
 | Claims and structure | [`paper/OUTLINE.md`](paper/OUTLINE.md) |
-| Reviewer pre-submission checklist (18 likely concerns, status of each) | [`paper/SUBMISSION_CHECKLIST.md`](paper/SUBMISSION_CHECKLIST.md) |
+| What was changed for reviewers, why, and where (plain-language log) | [`docs/REVIEW_HARDENING.md`](docs/REVIEW_HARDENING.md) |
+| Reviewer pre-submission checklist (30 likely concerns, status of each) | [`paper/SUBMISSION_CHECKLIST.md`](paper/SUBMISSION_CHECKLIST.md) |
 
 ## Reproduce
 
@@ -550,6 +578,13 @@ paper/                         paper kit: outline, introduction, methodology, re
 - The fixed gate fell to 44.5 WGA in the single 8-epoch run; whether long training also hurts it is open.
 - CelebA trains on an 8k subsample, so its numbers are not comparable to full-data benchmarks.
 - Group DRO is compared only as a full-model baseline in round 4 (running); JTT only at the connector.
+- Injection is input-level (one gated block on the embeddings), not one per LM layer as in Flamingo, and
+  alignment is 300 steps where Flamingo trains 500k; Flamingo's gates do open over that schedule.
+- H1/H2 were formulated after a 3-seed pilot and not pre-registered; the confirmation-only test is reported.
+- The gate gradient logged up to round 4 is the post-clipping value; raw gradients are logged from round 5.
+- One Watermark shortcut strength (0.95) until the round-5 dose–response finishes.
+- Waterbirds and CelebA are licensed for non-commercial research; SigLIP's web pre-training may include
+  CUB, Places or COCO images (shared by every arm).
 - MLP vs Q-Former equivalence is not established (TOST, ±3 points, 5 seeds); the claim is "no significant difference detected".
 - Two 4-bit LLMs of 4B parameters or fewer; results may differ for larger or full-precision models.
 - The Watermark shortcut is partly textual (readable watermark), and Qwen3.5 was pretrained with its own

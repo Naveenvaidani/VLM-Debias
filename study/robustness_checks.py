@@ -57,6 +57,23 @@ def main():
             lines.append(f"| {task} | {name} | {len(seeds)} | {L.mean():.1f} | {F.mean():.1f} | {F.mean() - L.mean():+.1f} "
                          f"| {paired:.2g} | {welch:.2g} | {mw:.2g} | {LA.mean():.1f} | {FA.mean():.1f} | {avg_p:.2g} "
                          f"| {LI.mean():.1f} | {FI.mean():.1f} |")
+    # pilot vs confirmation: H1/H2 were written after the 3-seed pilot (seeds 0-2); seeds >= 3 are new data
+    lines += ["", "## Pilot (seeds 0-2) vs confirmation sample (seeds 3 and later)", "",
+              "H1 was formulated after a 3-seed pilot. Testing it only on the seeds run afterwards avoids using the "
+              "same data to form and test the hypothesis.", "",
+              "| Task | Sample | Seeds | WGA learned | WGA fixed | Gain | Paired t | p (one-sided) | Wilcoxon p | d_z |",
+              "| :--- | :--- | :---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+    for task in args.tasks.split(","):
+        data = load(args.runs_dir, task)
+        both = sorted(set(data[(ARMS[0], "wga")]) & set(data[(ARMS[1], "wga")]))
+        for name, seeds in (("pilot", [s for s in both if s < 3]), ("confirmation", [s for s in both if s >= 3])):
+            L = np.array([data[(ARMS[0], "wga")][s]["worst_group_acc"] for s in seeds]) * 100
+            F = np.array([data[(ARMS[1], "wga")][s]["worst_group_acc"] for s in seeds]) * 100
+            d = F - L
+            t = stats.ttest_rel(F, L, alternative="greater")
+            w = stats.wilcoxon(F, L, alternative="greater").pvalue
+            lines.append(f"| {task} | {name} | {len(seeds)} | {L.mean():.1f} | {F.mean():.1f} | {d.mean():+.1f} | "
+                         f"{t.statistic:.2f} | {t.pvalue:.2g} | {w:.2g} | {d.mean() / d.std(ddof=1):.2f} |")
     lines += ["", "Reading: the gain survives label-free model selection and tests that do not pair seeds, and the "
               "fixed gate raises average accuracy as well, so the worst-group gain is not bought with accuracy elsewhere."]
     os.makedirs(os.path.dirname(args.out), exist_ok=True)

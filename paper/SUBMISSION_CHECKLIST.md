@@ -1,4 +1,4 @@
-# Pre-submission checklist (what a Q1 reviewer is likely to raise)
+# Pre-submission checklist (what a Q1 reviewer is likely to raise, 30 items)
 
 Status as of 2026-11-01. "Done" = addressed in code, results or text; "Running" = Kaggle job in progress;
 "Authors" = needs a decision only the authors can make.
@@ -20,9 +20,29 @@ Status as of 2026-11-01. "Done" = addressed in code, results or text; "Running" 
 | 13 | No standard group-robust baseline at the full model | Group DRO (`--loss groupdro`), MLP and both gates, 2 tasks | Running |
 | 14 | Generative-AI disclosure (Springer / Elsevier / IEEE policy) | Template in METHODOLOGY §7 | Authors (adjust and include) |
 | 15 | Author names, affiliations, ORCIDs | README citation, paper front matter | Authors |
-| 16 | Bibliography: full author lists, preprint IDs | `paper/fetch_authors.py` → `authors.json`; all 93 entries have full authors and eprint IDs | Done |
+| 16 | Bibliography: full author lists, preprint IDs | `paper/fetch_authors.py` → `authors.json`; all 94 entries have full authors and eprint IDs | Done |
 | 17 | Licence, pinned requirements, data/code availability | `requirements-study.txt` pinned; availability statements in METHODOLOGY §7 | Done · licence: Authors |
 | 18 | Causal wording in the title | Recommended title now "Induce"; outline renamed | Done |
+
+## Second pass (after reading Flamingo, Farazi et al. 2026, SpuriVerse, SpurLens and the NeurIPS checklist)
+
+| # | Reviewer concern | Where addressed | Status |
+| :---: | :--- | :--- | :--- |
+| 19 | Logged gate gradient is the post-clipping value; global clipping couples the gate to every other update | Raw gradient logged (`grad_raw`); `--clip_exclude_gate` control; R3 text | Done (code, text) · Running (control) |
+| 20 | "Flamingo-style" overclaims: Flamingo gates every 4th–7th LM layer and trains 500k steps; gates grow | Renamed "input-level gated cross-attention (Flamingo-type gate)"; scope paragraph in D2; limitation | Done · 3k-step alignment running |
+| 21 | Flamingo: removing the gate costs 4.2 points and destabilises training | D2: our fixed gate keeps the identity via zero-initialised output; no instability observed | Done |
+| 22 | Is the learned pathway *behaviourally* closed (Farazi's criterion), not just a small parameter? | Test-time ablation of the visual contribution on every selected checkpoint | Done (code) · Running |
+| 23 | No correction across the four H1 tests | Holm: three survive (0.0012, 0.0012, 0.011), Phi Watermark fails (0.044) | Done |
+| 24 | "Pre-declared" without a registry; hypothesis formed after the pilot | Timeline with commit hashes; confirmation-only test: p = 9.5e-4 and 0.0012 | Done |
+| 25 | Linear DFR on the same features beats every VLM: why use a VLM? | D2 framing: study explains a VLM failure; the gap supports the transmission account | Done |
+| 26 | Weight decay on the gate in stage 2 | Negligible (relative 2e-6 per step); `--gate_no_wd` control | Done · Running |
+| 27 | One shortcut strength | Watermark p = 0.9 and 0.99, three connectors | Queued |
+| 28 | SpurLens: bias comes from the vision encoder | Encoder frozen and shared, so it cannot explain the gate effect; complementary account in D2 | Done |
+| 29 | Dataset/model licences and pre-training overlap (NeurIPS checklist item 12) | METHODOLOGY ethics: licences listed; overlap shared by all arms | Done |
+| 30 | Compute including preliminary work (checklist item 8) | Estimate for rounds 1–5 stated; preliminary/failed sessions | Authors (add estimate) |
+
+Optional, not queued: native zero-shot on CelebA and Watermark (needs task images on the account that runs it);
+gate excluded from clipping *and* no weight decay together; multi-layer injection.
 
 ## Still open after these runs (would strengthen a TPAMI / IJCV submission)
 

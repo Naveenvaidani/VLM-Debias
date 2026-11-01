@@ -2,7 +2,7 @@
 
 Working title: *A learnable injection gate causes shortcut reliance in vision-language models; fixing the gate restores group robustness*
 
-## Claims (each tied to a pre-declared test)
+## Claims (each tied to a stated test)
 
 1. **H1:** a fixed (open) injection gate has higher worst-group accuracy than a learnable tanh gate
    (Waterbirds +10.6 [5.3, 16.0], Watermark +23.8 [12.5, 35.1]; paired t p < 0.001; 13–15 seeds per arm).

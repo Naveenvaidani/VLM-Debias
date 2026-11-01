@@ -101,6 +101,11 @@ capacity as a rival explanation.
   - seed variance of WGA (H2);
   - WGA with the label-free checkpoint rule (validation average accuracy).
 - **Mechanism measures:** the learned gate value `tanh(α)` and its gradient, logged every 10 alignment steps.
+  Up to round 4 the logged gradient is the value after global-norm clipping at 1 (as in Flamingo); from round 5
+  the raw pre-clip gradient and the pre-clip global norm are logged as well (`grad_raw`, `grad_norm_total`).
+- **Behavioural pathway test:** from round 5, every selected checkpoint is re-tested with the connector's visual
+  contribution removed (`ablated_mean_over_templates`). If WGA does not change, the pathway is behaviourally
+  closed, the criterion of [farazi2026gate].
   Also the share of attention on the watermark corner.
 
 **Controlled variables, and why each is controlled.**
@@ -155,11 +160,19 @@ capacity as a rival explanation.
 
 | Question | Test | Why this test |
 | :--- | :--- | :--- |
-| H1: fixed > learned gate | One-sided **paired t-test** over seeds, with a **Wilcoxon signed-rank** test as the assumption-free check [dror2018hitchhiker] | Seeds pair the two arms (same data order and initialisation), removing between-seed variance |
+| H1: fixed > learned gate | One-sided **paired t-test** over seeds, with a **Wilcoxon signed-rank** test as the assumption-free check [dror2018hitchhiker]; **Holm** correction across the four H1 cells (2 LLMs × 2 tasks); unpaired Welch and Mann–Whitney tests as checks | Seeds pair the two arms (same data order and initialisation), removing between-seed variance |
 | H2: learned gate more variable | One-sided **variance-ratio F-test**, with the **Brown–Forsythe** test as a robust check | The F-test is sensitive to non-normality; Brown–Forsythe is not |
 | Pairwise connector differences | **Stratified bootstrap** of test images (2,000 resamples) and a **hierarchical bootstrap** over seeds and images [efron1993bootstrap]; **Holm–Bonferroni** correction within each task [holm1979simple] | The hierarchical bootstrap covers training variance, not just test-sample noise |
 | "Connector type does not matter" | **Two one-sided tests (TOST)**, margin ±3 points [schuirmann1987tost] | A non-significant difference is not evidence of equivalence |
 | Effect size | Paired **Cohen's d_z** (mean difference / s.d. of differences), plus d_av for comparison across designs [cohen1988power] | p-values alone do not show practical importance |
+
+**Hypothesis timeline (stated openly, since there is no public pre-registration).**
+- 28 Oct 2026: 3-seed pilot of all connectors, including the fixed gate (commit `2c948b4`).
+- 28 Oct 2026, after the pilot: seed-extension runs launched (Kaggle kernels `h1a`, `h1b`, `seeds34`).
+- 29 Oct 2026: H1/H2 and their tests committed with the extended results (`7ab0563`, `study/hypotheses.py`).
+- Because H1 was formed after seeing the pilot, it is also tested on the confirmation seeds only (seeds ≥ 3):
+  Waterbirds +10.5, t(11) = 4.06, p = 9.5 × 10⁻⁴, d_z = 1.17; Watermark +25.1, t(9) = 4.15, p = 0.0012,
+  d_z = 1.31. The pilot alone was not significant (p = 0.16 and 0.12). (`results_study/robustness_checks.md`)
 
 **Assumption checks (reported in full).**
 - *Normality of the paired differences (Shapiro–Wilk):*
@@ -217,11 +230,22 @@ capacity as a rival explanation.
 - All per-seed results and figure scripts.
 
 **Ethics.**
-- All data are public research datasets used under their terms: Waterbirds/CUB, Places, MS-COCO, CelebA.
+- All data are public research datasets used under their terms:
+  - Waterbirds [sagawa2020groupdro]: CUB-200-2011 birds [wah2011cub] on Places backgrounds [zhou2017places];
+    both are for non-commercial research.
+  - MS-COCO 2017 [lin2014coco]: annotations CC BY 4.0; images under Flickr terms of use.
+  - CelebA [liu2015celeba]: non-commercial research purposes only.
+  - Models: Qwen3.5-4B (Apache-2.0), Phi-4-mini-instruct (MIT), SigLIP (Apache-2.0). Check each model card
+    for the exact version used (`environment.txt`).
+- SigLIP was pre-trained on web data (WebLI) that may contain CUB, Places or COCO images; this affects every
+  connector equally, because the encoder is frozen and shared.
 - No new human-subject data were collected, so no IRB approval was required.
 - CelebA contains face images and a binary gender attribute. It is used only as the standard
   group-robustness benchmark [sagawa2020groupdro]; no identity inference is performed.
-- Compute: about 150 T4 GPU-hours of task training across 222 logged runs (from `train_minutes`), plus data preparation, alignment and evaluation, on Kaggle free-tier accounts.
+- Compute: about 150 T4 GPU-hours of task training across 222 logged runs (from `train_minutes`), plus data
+  preparation, alignment and evaluation, on Kaggle free-tier accounts. Rounds 3–5 (controls and extensions)
+  add roughly 120–150 GPU-hours. Preliminary work (the VLM-SHIELD pilot, failed or cancelled sessions) is not
+  in these totals and should be estimated by the authors for the NeurIPS-style compute statement.
 
 ## 7. Statements required at submission
 

@@ -61,6 +61,8 @@ R = [
   "Survey of domain generalisation", "Taxonomy of o.o.d. methods and protocols", "Pre-LLM era", "Background on o.o.d. generalisation"),
  ("wang2022dgsurvey", "article", "Wang, Jindong", "Generalizing to Unseen Domains: A Survey on Domain Generalization", "IEEE Transactions on Knowledge and Data Engineering", 2022, "IEEE", "", "", "10.1109/TKDE.2022.3178128", "", "A3 Evaluation of shift",
   "Survey of domain generalisation", "Theory and methods of o.o.d. generalisation", "Pre-LLM era", "Background on o.o.d. generalisation"),
+ ("zhou2017places", "article", "Zhou, Bolei", "Places: A 10 Million Image Database for Scene Recognition", "IEEE Transactions on Pattern Analysis and Machine Intelligence", 2018, "IEEE", "40", "1452--1464", "10.1109/TPAMI.2017.2723009", "", "A3 Evaluation of shift",
+  "Places scene database", "Scene images used as Waterbirds backgrounds", "Dataset paper", "Source of the Waterbirds backgrounds; licence statement"),
  ("liu2015celeba", "inproceedings", "Liu, Ziwei", "Deep Learning Face Attributes in the Wild", "IEEE International Conference on Computer Vision (ICCV)", 2015, "IEEE", "", "3730--3738", "10.1109/ICCV.2015.425", "1411.7766", "A3 Evaluation of shift",
   "CelebA face-attribute dataset", "Natural attribute correlations (blond hair and gender)", "Dataset paper", "Third task"),
  ("zhou2018places", "article", "Zhou, Bolei", "Places: A 10 Million Image Database for Scene Recognition", "IEEE Transactions on Pattern Analysis and Machine Intelligence", 2018, "IEEE", "40", "1452--1464", "10.1109/TPAMI.2017.2723009", "", "A3 Evaluation of shift",

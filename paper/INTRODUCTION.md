@@ -60,7 +60,8 @@ injection gate, determines shortcut reliance in LLM-based VLMs.
   cross-attention with a learnable or a fixed gate. The two gate variants have identical parameters; a third,
   learnable gate initialised open separates trainability from initialisation.
 - **Where it is measured:** worst-group accuracy on Waterbirds, a controlled watermark task and CelebA.
-- **How it is tested:** pre-declared hypotheses over up to 15 paired training seeds, with effect sizes,
+- **How it is tested:** hypotheses formed on a 3-seed pilot and confirmed on up to 12 new paired
+  seeds (15 in total), with effect sizes,
   robust and non-parametric tests, and an equivalence test.
 - **Fixes and rival explanations:** we log the gate during training, read the gates of released IDEFICS
   checkpoints, test a connector-only analogue of deep feature reweighting, and probe rival explanations
