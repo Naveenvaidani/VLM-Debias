@@ -49,6 +49,14 @@ class TestStudy(unittest.TestCase):
         fused, _ = conn(torch.randn(1, 196, 64), text)
         self.assertTrue(torch.allclose(fused, text))
 
+    def test_open_gate_bottleneck_identity_learnable_and_open(self):
+        conn = build_connector("bottleneck_open", 64, 32)
+        text = torch.randn(1, 5, 32)
+        fused, _ = conn(torch.randn(1, 196, 64), text)
+        self.assertTrue(torch.allclose(fused, text))
+        self.assertIn("gate", dict(conn.named_parameters()))
+        self.assertGreater(torch.tanh(conn.gate).item(), 0.99)
+
     def test_fixed_gate_bottleneck_identity_and_open(self):
         conn = build_connector("bottleneck_fixed", 64, 32)
         text = torch.randn(1, 5, 32)

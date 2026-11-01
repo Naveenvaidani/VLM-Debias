@@ -17,9 +17,10 @@ import pandas as pd
 
 METRICS = [("avg_acc", "Avg"), ("worst_group_acc", "WGA"), ("acc_id", "ID"), ("acc_ood", "OOD"),
            ("rsr", "RSR"), ("balanced_acc", "Bal."), ("generative_acc", "Gen.")]
-SERIES = {"mlp": "#2a78d6", "qformer": "#eb6834", "bottleneck": "#1baf7a", "bottleneck_fixed": "#7a5bd6"}
+SERIES = {"mlp": "#2a78d6", "qformer": "#eb6834", "bottleneck": "#1baf7a", "bottleneck_fixed": "#7a5bd6", "bottleneck_open": "#c0398f"}
 LABELS = {"mlp": "MLP projector", "qformer": "Q-Former", "bottleneck": "Cross-attn bottleneck",
-          "bottleneck_fixed": "Cross-attn, fixed gate"}
+          "bottleneck_fixed": "Cross-attn, fixed gate",
+          "bottleneck_open": "Cross-attn, learned gate (open init)"}
 
 
 def bootstrap_wga(preds, labels, groups, n=1000, seed=0):
@@ -95,7 +96,7 @@ def main():
     # figure: WGA per task and connector (wga selection), mean ± std over seeds
     d = df[df.rule == "wga"]
     tasks = sorted(d.task.unique())
-    conns = [c for c in ("mlp", "qformer", "bottleneck", "bottleneck_fixed") if c in set(d.connector)]
+    conns = [c for c in ("mlp", "qformer", "bottleneck", "bottleneck_fixed", "bottleneck_open") if c in set(d.connector)]
     fig, ax = plt.subplots(figsize=(max(6, 2.2 * len(tasks)), 4.2), facecolor="#fcfcfb")
     width = 0.8 / len(conns)
     for i, c in enumerate(conns):

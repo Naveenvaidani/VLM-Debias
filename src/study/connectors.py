@@ -68,7 +68,9 @@ class CrossAttnBottleneck(nn.Module):
     to their own embedding through tanh(gate), gate initialised at 0.
 
     gate="fixed" drops the learnable gate (scale 1) and zero-initialises out_proj instead, so the
-    connector still starts as the identity but the optimiser cannot shut the visual pathway."""
+    connector still starts as the identity but the optimiser cannot shut the visual pathway.
+    gate="open" keeps the gate learnable but starts it open (tanh(3) = 0.995) with out_proj zero-initialised:
+    it separates "the gate is trainable" from "the gate starts closed"."""
     kind = "fuse"
 
     def __init__(self, vision_dim: int, llm_dim: int, attn_dim: int = 1024, num_heads: int = 8,
@@ -81,6 +83,10 @@ class CrossAttnBottleneck(nn.Module):
         self.out_proj = nn.Linear(attn_dim, llm_dim)
         if gate == "learned":
             self.gate = nn.Parameter(torch.zeros(1))
+        elif gate == "open":
+            self.gate = nn.Parameter(torch.full((1,), 3.0))
+            nn.init.zeros_(self.out_proj.weight)
+            nn.init.zeros_(self.out_proj.bias)
         else:
             self.register_buffer("gate", torch.full((1,), float("inf")))  # tanh(inf) = 1
             nn.init.zeros_(self.out_proj.weight)
@@ -94,7 +100,8 @@ class CrossAttnBottleneck(nn.Module):
 
 
 CONNECTORS = {"mlp": MLPProjector, "qformer": QFormerConnector, "bottleneck": CrossAttnBottleneck,
-              "bottleneck_fixed": lambda v, l: CrossAttnBottleneck(v, l, gate="fixed")}
+              "bottleneck_fixed": lambda v, l: CrossAttnBottleneck(v, l, gate="fixed"),
+              "bottleneck_open": lambda v, l: CrossAttnBottleneck(v, l, gate="open")}
 
 
 def build_connector(name: str, vision_dim: int, llm_dim: int, mlp_pool: int = 1, mlp_grid: int = 0) -> nn.Module:

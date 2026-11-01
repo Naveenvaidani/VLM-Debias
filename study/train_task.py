@@ -29,7 +29,7 @@ from src.study.vlm import StudyVLM
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--llm", required=True)
-    parser.add_argument("--connector", choices=["mlp", "qformer", "bottleneck", "bottleneck_fixed"], required=True)
+    parser.add_argument("--connector", choices=["mlp", "qformer", "bottleneck", "bottleneck_fixed", "bottleneck_open"], required=True)
     parser.add_argument("--task_dir", required=True)
     parser.add_argument("--align_ckpt", default=None, help="stage-1 connector weights (recommended)")
     parser.add_argument("--run_dir", required=True)
