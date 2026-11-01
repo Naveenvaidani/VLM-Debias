@@ -137,7 +137,7 @@ tanh = 0.995, which barely moves because its gradient is scaled by 0.01) and the
 | Prompting | Chat template; answer = first token of the class word; 2 training question phrasings, 1 held out for test |
 | Checkpoint selection | Best val worst-group accuracy (uses group labels); best val average accuracy reported as the label-free alternative |
 | Stage 3 (connector-only) | From the selected stage-2 model, LLM and LoRA frozen. DFR-style: group-balanced half of val, other half selects. JTT-style: training set with the stage-2 model's errors repeated 20x. 1 epoch |
-| Seeds | 15 per arm on both tasks for the gate comparison, 5 for MLP vs Q-Former, Phi-4-mini and connector-DFR, 2–4 for follow-ups. A seed fixes data order, LoRA init and connector init, so the learned and fixed gate arms of one seed differ only in the gate. Watermark seeds 8 and 14 were first missed (session budget), not excluded, and later run to equalise the arms at 15. Phi-4-mini Watermark seeds 5–9 were added after the 5-seed test missed α (disclosed; tested alone too). Every finished run is reported |
+| Seeds | 15 per arm on both tasks for the gate comparison, 5 for MLP vs Q-Former, Phi-4-mini and connector-DFR, 2–4 for follow-ups. A seed fixes data order and LoRA init; it does not replay a run exactly (non-deterministic GPU kernels), so seeds are random replicates and unpaired tests are reported too. Watermark seeds 8 and 14 were first missed (session budget), not excluded, and later run to equalise the arms at 15. Phi-4-mini Watermark seeds 5–9 were added after the 5-seed test missed α (disclosed; tested alone too). Every finished run is reported |
 | Hardware | Kaggle 2x NVIDIA T4 (16 GB); one job per GPU |
 
 ### Metrics
@@ -578,7 +578,12 @@ Full Kaggle pipeline (2× T4, resumable): [`study/kaggle_kernels/`](study/kaggle
 - Every Kaggle run writes `environment.txt` (exact `pip freeze`, GPU driver, git commit) next to its results.
 - Data splits are deterministic (`study/build_tasks.py`, seed 0); Waterbirds uses the official splits.
 - `study/kaggle_kernels/` holds the exact scripts for every run; runs resume from exported results.
-- Unit tests: `python -m pytest tests` (18).
+- Runs are **not bit-reproducible**: GPU kernels are non-deterministic, and the Kaggle scripts installed the
+  latest `transformers` (5.21.0 to 5.22.1 across jobs). Rerunning a seed changed WGA by 12.7 points on average
+  for the learned gate and 5.2 for the fixed gate ([`extra_analyses.md`](results_study/extra_analyses.md) §9),
+  so seeds are random replicates. For new runs, install the pinned versions in
+  [`study/requirements-kaggle.txt`](study/requirements-kaggle.txt).
+- Unit tests: `python -m pytest tests` (23).
 
 ### Repository layout
 
@@ -637,6 +642,9 @@ paper/                         paper kit: outline, introduction, methodology, re
 - The fixed gate fell to 44.5 WGA in the single 8-epoch run; whether long training also hurts it is open.
 - CelebA trains on an 8k subsample, so its numbers are not comparable to full-data benchmarks.
 - Group DRO is a full-model baseline with 2 seeds; JTT only at the connector.
+- Every task is a binary question read out from the first answer token; open-ended generation is not evaluated.
+- Runs are not bit-reproducible (non-deterministic GPU kernels, `transformers` drift between jobs); see
+  Reproducibility.
 - Injection is input-level (one gated block on the embeddings), not one per LM layer as in Flamingo, and
   alignment is 300 steps where Flamingo trains 500k; Flamingo's gates do open over that schedule.
 - H1/H2 were formulated after a 3-seed pilot and not pre-registered; the confirmation-only test is reported.

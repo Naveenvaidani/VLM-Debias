@@ -214,10 +214,17 @@ without correction and are not used as evidence for the hypotheses.
   scaled by 0.75, so it can move toward 0 or 1. The value 0.5 is our choice, not taken from prior work: it
   is the midpoint of the gate's range at which the gradient is still within 25% of its maximum (at tanh α = 0). If the half-open gate also matches the fixed gate, the harm is
   tied to starting at zero; if it drifts shut and loses WGA, trainability itself is the problem.
-- Pairing by seed controls initialisation and data order: a seed fixes the data order, the LoRA
-  initialisation and the connector initialisation, so learned and fixed gate runs of one seed differ only in
-  the gate. Because pairing is a design choice, unpaired Welch and Mann–Whitney tests are reported as well
+- Pairing by seed shares the data order and the LoRA initialisation between the two arms of a seed (the
+  connector initialisations differ by design, see above). A seed does not replay a run exactly: GPU kernels
+  (4-bit matrix multiplies, linear-attention kernels, atomic additions) are non-deterministic, and library
+  versions drifted between jobs (transformers 5.21.0 to 5.22.1, recorded per job in `environment.txt`).
+  Rerunning seeds 0–1 changed WGA by 12.7 points on average for the learned gate and 5.2 for the fixed gate
+  (`results_study/extra_analyses.md` §9). Seeds are therefore treated as random replicates. Pairing is a
+  design choice, so unpaired Welch and Mann–Whitney tests are reported as well
   (`results_study/robustness_checks.md`); they agree.
+- The headline WGA averages three question phrasings, two of which were used in training. On the held-out
+  phrasing alone the gate effect is the same (+10.8, +25.5, +10.2 and +25.8; all p ≤ 0.006;
+  `extra_analyses.md` §8).
 - Model selection uses validation WGA (group labels), as is standard [sagawa2020groupdro; kirichenko2023dfr];
   the label-free rule (best validation average accuracy) is reported for every run and gives a larger gate
   effect.
@@ -248,8 +255,11 @@ without correction and are not used as evidence for the hypotheses.
 **Reliability and replicability.**
 - Deterministic splits.
 - Exact scripts for every run in [`study/kaggle_kernels/`](../study/kaggle_kernels/).
-- Pinned requirements ([`requirements-study.txt`](../requirements-study.txt)) and an `environment.txt` per run.
-- 18 unit tests.
+- Requirements ([`requirements-study.txt`](../requirements-study.txt), Kaggle pins in
+  [`study/requirements-kaggle.txt`](../study/requirements-kaggle.txt)) and an `environment.txt` per run.
+- Not bit-reproducible: GPU kernels are non-deterministic and Kaggle jobs installed the latest
+  `transformers`; same-seed reruns differ (§6, internal validity), so seeds are random replicates.
+- 23 unit tests.
 - All per-seed results and figure scripts.
 
 **Ethics.**

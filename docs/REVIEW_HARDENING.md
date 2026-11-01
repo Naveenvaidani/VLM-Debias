@@ -249,3 +249,17 @@ References now 103.
 | "The gate never opens" is not true at the highest learning rate (0.018) | Now "at the default learning rate". |
 | "Gating and VLM shortcuts are both studied; is this novel?" | Added the Gated Multimodal Unit [arevalo2017gmu] and RaVL [varma2024ravl], and a NOVELTY answer: the two literatures have not met; nobody manipulated a standard gate with everything else fixed and measured shortcut reliance. References now 105. |
 
+## 13. Seventh pass: reproducibility and phrasing
+
+- **A seed does not replay a run.** Rerunning seeds 0–1 with the same settings changed worst-group accuracy by
+  up to 28 points (mean 12.7 for the learned gate, 5.2 for the fixed gate). Causes: non-deterministic GPU kernels
+  and `transformers` updates between Kaggle jobs (5.21.0 → 5.22.1). The paper now calls seeds random
+  replicates, not exact replays; the unpaired tests, which do not need pairing, already agree. New runs should
+  use the pinned versions in `study/requirements-kaggle.txt`.
+- **Held-out phrasing.** The headline numbers average three question phrasings, two seen in training. On the
+  unseen phrasing alone the gate effect is unchanged (+10.8 / +25.5 Qwen, +10.2 / +25.8 Phi; all p ≤ 0.006).
+- **Readout scope.** Every task is a yes/no-style question answered by one token; open-ended generation is
+  not tested. Added to the limitations.
+- **Privacy.** Kaggle account names were removed from the documents and from git history (history rewrite
+  of the 8 most recent commits; see the commit log).
+

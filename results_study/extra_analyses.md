@@ -88,3 +88,31 @@ Reading: the learned gate passes about 15–35× less visual signal than the fix
 
 Reading: with the stronger encoder the gate effect is smaller and not reliable (few seeds), consistent with the gate being a risk factor rather than a sufficient cause. CelebA (third task, 3 paired seeds): +13.3 in the same direction, not significant.
 
+## 8. H1 on the held-out question phrasing only (template 2, never seen in training)
+
+| LLM | Task | Seeds | Learned | Fixed | Gain | p one-sided (paired t) |
+| :--- | :--- | :---: | :---: | :---: | ---: | ---: |
+| Qwen3.5-4B | waterbirds | 15 | 63.2 ± 9.6 | 74.1 ± 3.6 | +10.8 | 0.00018 |
+| Qwen3.5-4B | watermark_p0.95 | 15 | 39.9 ± 18.2 | 65.4 ± 10.3 | +25.5 | 5.9e-05 |
+| Phi-4-mini | waterbirds | 5 | 59.9 ± 5.2 | 70.1 ± 3.6 | +10.2 | 0.0062 |
+| Phi-4-mini | watermark_p0.95 | 10 | 29.5 ± 18.5 | 55.2 ± 14.3 | +25.8 | 0.0036 |
+
+Reading: the headline WGA averages one held-out and two training phrasings; this table uses the held-out phrasing alone.
+
+## 9. Same seed, same settings, run twice
+
+Seeds 0-1 of the learned and fixed gate were rerun in round 4 (`r4-inject`) with the original settings. Differences come from non-deterministic GPU kernels (4-bit matmuls, linear-attention kernels, atomic adds) and from library drift between jobs (transformers 5.21.0 vs 5.22.1; versions are recorded in each job's `environment.txt`).
+
+| Task | Connector | Seed | Original | Rerun | Difference |
+| :--- | :--- | :---: | ---: | ---: | ---: |
+| waterbirds | bottleneck | 0 | 45.1 | 60.7 | +15.7 |
+| waterbirds | bottleneck | 1 | 68.6 | 67.0 | -1.6 |
+| waterbirds | bottleneck_fixed | 0 | 73.2 | 70.4 | -2.9 |
+| waterbirds | bottleneck_fixed | 1 | 73.8 | 78.5 | +4.7 |
+| watermark_p0.95 | bottleneck | 0 | 32.2 | 60.1 | +27.9 |
+| watermark_p0.95 | bottleneck | 1 | 63.0 | 57.4 | -5.6 |
+| watermark_p0.95 | bottleneck_fixed | 0 | 74.2 | 62.8 | -11.4 |
+| watermark_p0.95 | bottleneck_fixed | 1 | 75.4 | 77.3 | +1.9 |
+
+Mean absolute rerun difference: learned gate 12.7, fixed gate 5.2 points (4 pairs each, descriptive). A seed fixes data order and initialisation but does not replay a run exactly, so seeds are treated as random replicates; the unpaired Welch and Mann–Whitney tests (robustness_checks.md) do not rely on pairing and agree.
+

@@ -64,6 +64,10 @@ Status as of 2026-11-01. "Done" = addressed in code, results or text; "Running" 
 | 47 | 2-seed controls (LR, Group DRO, SigLIP-large Watermark), CelebA 3 paired | Extended: Group DRO → 4, LR → 3, SigLIP-large Watermark → 5, CelebA → 5 paired | Running (round 7) |
 | 48 | Mechanism correlational (injection ratio does not predict WGA) | Stated in limitations; pathway ablation is the behavioural test | Done (text) · Running (round 5) |
 | 49 | Fixed gate fell to 44.5 at 8 epochs (1 seed) | Seeds 1–4 | Running (round 4) |
+| 50 | Same seed rerun gives a different result (up to 28 points) | Measured and reported (extra_analyses §9): mean 12.7 learned, 5.2 fixed; seeds treated as random replicates; unpaired tests agree | Done |
+| 51 | `transformers` not pinned in Kaggle jobs (5.21.0 → 5.22.1) | Versions recorded per job; disclosed; `study/requirements-kaggle.txt` pins them for new runs | Done |
+| 52 | Headline WGA averages two training phrasings | H1 on the held-out phrasing alone: same effect, all p ≤ 0.006 (extra_analyses §8) | Done |
+| 53 | Binary first-token readout, not open-ended generation | Stated in limitations | Done |
 
 Optional, not queued: native zero-shot on CelebA and Watermark (needs task images on the account that runs it);
 gate excluded from clipping *and* no weight decay together; multi-layer injection.

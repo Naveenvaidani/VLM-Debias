@@ -245,6 +245,40 @@ def main():
           "consistent with the gate being a risk factor rather than a sufficient cause. CelebA (third task, 3 paired "
           "seeds): +13.3 in the same direction, not significant.", ""]
 
+    # 8. held-out question phrasing only
+    L += ["## 8. H1 on the held-out question phrasing only (template 2, never seen in training)", "",
+          "| LLM | Task | Seeds | Learned | Fixed | Gain | p one-sided (paired t) |", "| :--- | :--- | :---: | :---: | :---: | ---: | ---: |"]
+    ho = lambda r: 100 * r["test"]["wga"]["per_template"]["2"]["worst_group_acc"]
+    for llm, root in (("Qwen3.5-4B", a.h1), ("Phi-4-mini", a.phi)):
+        for t in TASKS:
+            rs = runs(os.path.join(root, t))
+            seeds = sorted({x for c, x in rs if c == "bottleneck"} & {x for c, x in rs if c == "bottleneck_fixed"})
+            lo = np.array([ho(rs[("bottleneck", x)]) for x in seeds]); fx = np.array([ho(rs[("bottleneck_fixed", x)]) for x in seeds])
+            L.append(f"| {llm} | {t} | {len(seeds)} | {fmt(lo)} | {fmt(fx)} | {fx.mean() - lo.mean():+.1f} | "
+                     f"{stats.ttest_rel(fx, lo, alternative='greater').pvalue:.2g} |")
+    L += ["", "Reading: the headline WGA averages one held-out and two training phrasings; this table uses the "
+          "held-out phrasing alone.", ""]
+
+    # 9. same-seed reruns
+    L += ["## 9. Same seed, same settings, run twice", "",
+          "Seeds 0-1 of the learned and fixed gate were rerun in round 4 (`r4-inject`) with the original settings. "
+          "Differences come from non-deterministic GPU kernels (4-bit matmuls, linear-attention kernels, atomic "
+          "adds) and from library drift between jobs (transformers 5.21.0 vs 5.22.1; versions are recorded in each "
+          "job's `environment.txt`).", "",
+          "| Task | Connector | Seed | Original | Rerun | Difference |", "| :--- | :--- | :---: | ---: | ---: | ---: |"]
+    diffs = {"bottleneck": [], "bottleneck_fixed": []}
+    for t in TASKS:
+        rr = runs(dl("vlm-shortcut-r4-inject", "qwen35-4b_inject", t))
+        for c in diffs:
+            for x in (0, 1):
+                if (c, x) in rr and (c, x) in H1[t]:
+                    o, n = wga(H1[t][(c, x)]), wga(rr[(c, x)]); diffs[c].append(abs(n - o))
+                    L.append(f"| {t} | {c} | {x} | {o:.1f} | {n:.1f} | {n - o:+.1f} |")
+    L += ["", f"Mean absolute rerun difference: learned gate {np.mean(diffs['bottleneck']):.1f}, fixed gate "
+          f"{np.mean(diffs['bottleneck_fixed']):.1f} points (4 pairs each, descriptive). A seed fixes data order and "
+          "initialisation but does not replay a run exactly, so seeds are treated as random replicates; the unpaired "
+          "Welch and Mann–Whitney tests (robustness_checks.md) do not rely on pairing and agree.", ""]
+
     os.makedirs(os.path.dirname(a.out), exist_ok=True)
     open(a.out, "w").write("\n".join(L) + "\n")
     print("\n".join(L))
