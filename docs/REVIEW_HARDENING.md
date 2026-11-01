@@ -26,8 +26,8 @@ comparable with the earlier ones.
 | Before | After | Why |
 | :--- | :--- | :--- |
 | "the learned gate **closes** during training" | "initialised at zero, the gate **never opens**" | `tanh(0) = 0` at the start. The logged trace peaks at ≈ 0.006 and decays to ≈ 0.001, so nothing "closes". |
-| "learnable gates **cause** shortcut learning" (title) | "**induce**" | With SigLIP-large the gate is still ≈ 0.0006, yet WGA no longer collapses (79.3 vs 80.1). A shut gate is a risk factor, not a sufficient cause. |
-| "connector type makes **no difference**" | "**no significant difference detected; equivalence not established**" | The ±3-point TOST does not pass, and on CelebA MLP leads by 5 points (n.s.). |
+| "learnable gates **cause** shortcut learning" (title) | "**induce**" | With SigLIP-large the gate is still ≈ 0.0006, the gap shrinks to +8.0 (p = 0.09, 4 seeds; 2-seed reading was 79.3 vs 80.1). A shut gate is a risk factor, not a sufficient cause. |
+| "connector type makes **no difference**" | "**no significant difference detected; equivalence not established**" | The ±3-point TOST does not pass, and on CelebA MLP led by 5 points (n.s.; 1.2 with 4 fixed-gate seeds). |
 | "**Flamingo-style** cross-attention" | "**input-level** gated cross-attention with a **Flamingo-type** `tanh` gate" | Flamingo inserts a gated block before every 4th (9B) or 7th (80B) LM layer and trains for 500k steps. Ours injects once, into the input embeddings, after 300 steps. |
 | "**pre-declared** hypotheses" | "formulated after a 3-seed pilot, confirmed on new seeds" | Git shows the hypotheses were committed (29 Oct, `7ab0563`) after the pilot (28 Oct, `2c948b4`). There is no public pre-registration. |
 
@@ -38,12 +38,12 @@ All of these come from [`study/robustness_checks.py`](../study/robustness_checks
 
 | Reviewer question | Answer from the data |
 | :--- | :--- |
-| Does the gate effect depend on choosing checkpoints with group labels? | No. With label-free selection (best validation average accuracy) the gain is larger: +17.7 and +24.1 points. |
-| Is pairing seeds what makes the test significant? | No. Unpaired Welch tests give p = 7.6 × 10⁻⁴ and 4.4 × 10⁻⁴; Mann–Whitney gives 1.2 × 10⁻⁵ and 1.2 × 10⁻³. |
-| Is worst-group accuracy bought with average accuracy? | No. The fixed gate also raises average accuracy (84.1 → 88.0, 76.9 → 85.8). In-distribution accuracy stays ≈ 98%. |
-| The hypothesis was formed on the pilot. Does it hold on new data alone? | Yes. On seeds 3+ only: Waterbirds +10.5 (12 seeds, p = 9.5 × 10⁻⁴, d_z = 1.17) and Watermark +25.1 (10 seeds, p = 0.0012, d_z = 1.31). The 3-seed pilot alone was not significant (p = 0.16, 0.12). |
-| Four H1 tests (2 LLMs × 2 tasks): is there a multiple-testing correction? | Holm: three survive at 0.025 (adjusted p = 0.0012, 0.0012, 0.011). Phi-4-mini Watermark (0.044) does not; its seeds 5–9 have finished and are being added. |
-| Why are there 13 Watermark seeds but 15 Waterbirds seeds? | Seeds 8 and 14 were never launched, because of the session budget. No finished run was excluded. Both are now running. |
+| Does the gate effect depend on choosing checkpoints with group labels? | No. With label-free selection (best validation average accuracy) the gain is larger: +17.7 and +25.5 points. |
+| Is pairing seeds what makes the test significant? | No. Unpaired Welch tests give p = 7.6 × 10⁻⁴ and 5.1 × 10⁻⁵; Mann–Whitney gives 1.2 × 10⁻⁵ and 2.5 × 10⁻⁴. |
+| Is worst-group accuracy bought with average accuracy? | No. The fixed gate also raises average accuracy (84.1 → 88.0, 76.9 → 86.1). In-distribution accuracy stays ≈ 98%. |
+| The hypothesis was formed on the pilot. Does it hold on new data alone? | Yes. On seeds 3+ only: Waterbirds +10.5 (12 seeds, p = 9.5 × 10⁻⁴, d_z = 1.17) and Watermark +26.7 (12 seeds, p = 2.5 × 10⁻⁴, d_z = 1.40). The 3-seed pilot alone was not significant (p = 0.16, 0.12). |
+| Four H1 tests (2 LLMs × 2 tasks): is there a multiple-testing correction? | Holm: all four survive at 0.025 (adjusted p = 0.0012, 2.7 × 10⁻⁴, 0.0086, 0.0086). Phi-4-mini Watermark needed its seeds 5–9 (p 0.044 → 0.0043). |
+| Why are there 13 Watermark seeds but 15 Waterbirds seeds? | Seeds 8 and 14 were never launched, because of the session budget. No finished run was excluded. Both have now run: 15 seeds per arm. |
 
 ## 3. Code changes (all optional flags; defaults unchanged)
 
@@ -169,3 +169,39 @@ The literature review (theme C4), the introduction (¶3) and the discussion (D2)
 - A bug caught before any GPU time was spent: with gradient checkpointing, the per-layer hooks lost the image
   features when layers were recomputed in the backward pass. Fixed, then tested on CPU with gradient
   checkpointing on.
+
+## 9. Fourth pass: results of the round 3-4 control runs (1 Nov 2026)
+
+In plain words, what the new Kaggle runs showed and what changed in the paper. Numbers: test worst-group
+accuracy (%). Full tables: [`results_study/extra_analyses.md`](../results_study/extra_analyses.md), README §17.
+
+**Main result got stronger.**
+- Watermark now has 15 seeds per arm (seeds 8 and 14 added): fixed gate +25.2 over learned, p = 6.6 × 10⁻⁵.
+- Phi-4-mini Watermark now has 10 seeds: +25.5, p = 0.0043 (was 0.044 with 5). All four LLM × task tests now
+  survive Holm correction.
+- Honest caveat added: on Phi-4-mini Watermark the fixed gate also collapses in 6 of 10 seeds.
+
+**Why the learned gate hurts: it is the zero start, not learnability.**
+- A learnable gate that starts open (tanh = 0.995) matches the fixed gate (71.8 vs 72.9; 66.8 vs 72.1).
+  Caveat: at that value the gate hardly moves, so it is close to fixed in practice.
+- A bigger connector learning rate lets the gate move further (0.002 → 0.018) and the gap shrinks
+  (+29.6 → +0.7). A smaller one widens it. Dose-response, 2 seeds each.
+
+**"Flamingo trains longer": answered for our regime.** 10× more alignment (3,000 steps) leaves the gate shut
+(peak 0.003). The learned-gate model then collapses (11.4 and 4.1) while the fixed gate stays (70.8 and 59.5).
+
+**"How does the model see the shortcut if the gate is shut?": answered.** The gate is not fully shut. The output
+layer grows, so the learned gate still injects 1–7× the text-embedding norm, but 15–35× less than the fixed gate.
+Within learned-gate runs this amount does not predict WGA (ρ = 0.33, p = 0.27). We no longer call the pathway
+"closed"; we say it is much weaker.
+
+**Group DRO** (group labels in the loss) rescues most of the learned gate (72.5 and 69.2) and shrinks the gap to
++3.5 and +9.9; the fixed gate still leads. So the narrow pathway carries enough information; plain training
+does not use it.
+
+**Other runs.** SigLIP-large now 4–5 seeds: gap +8.0 on Waterbirds (p = 0.09), none on Watermark (2 seeds),
+so a stronger encoder weakens the effect, as the "risk factor, not sufficient cause" wording says. CelebA
+fixed gate now 4 seeds: +13.3 over learned on 3 paired seeds, not significant.
+
+**Still running:** pathway ablation, gate left out of clipping, no weight decay on the gate, shortcut strength
+p-sweep, 8-epoch seeds (round 4-5); per-layer gated cross-attention and fp16 LLM (round 6).

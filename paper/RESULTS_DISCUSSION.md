@@ -25,41 +25,44 @@ literature → mechanism. Every number below comes from `results_study/` and can
 - *Waterbirds:* the fixed gate exceeds the learned gate by 10.6 points.
   - Paired test: 95% CI [5.3, 16.0], t(14) = 4.26, p = 4.0 × 10⁻⁴, d_z = 1.10.
   - Wilcoxon: p = 3.1 × 10⁻⁵.
-- *Watermark:* the gain is 23.8 points.
-  - Paired test: 95% CI [12.5, 35.1], t(12) = 4.59, p = 3.1 × 10⁻⁴, d_z = 1.27.
-  - Wilcoxon: p = 2.4 × 10⁻⁴.
+- *Watermark:* the gain is 25.2 points.
+  - Paired test: 95% CI [14.8, 35.6], t(14) = 5.21, p = 6.6 × 10⁻⁵, d_z = 1.34.
+  - Wilcoxon: p = 6.1 × 10⁻⁵.
 - Both effects are large by conventional thresholds [cohen1988power]. Achieved power is 0.98 and 0.99.
 - *Robustness of the verdict* (`results_study/robustness_checks.md`):
-  - Unpaired tests, which do not rely on seed pairing, agree: Welch p = 7.6 × 10⁻⁴ and 4.4 × 10⁻⁴;
-    Mann–Whitney p = 1.2 × 10⁻⁵ and 1.2 × 10⁻³.
-  - With label-free model selection (best validation average accuracy) the gain is +17.7 and +24.1
-    (paired p = 0.002 and 2.8 × 10⁻⁴), so it does not depend on using group labels for selection.
-  - The fixed gate also raises average accuracy (84.1 → 88.0, p = 0.007; 76.9 → 85.8, p = 0.003), with
+  - Unpaired tests, which do not rely on seed pairing, agree: Welch p = 7.6 × 10⁻⁴ and 5.1 × 10⁻⁵;
+    Mann–Whitney p = 1.2 × 10⁻⁵ and 2.5 × 10⁻⁴.
+  - With label-free model selection (best validation average accuracy) the gain is +17.7 and +25.5
+    (paired p = 0.002 and 6.0 × 10⁻⁵), so it does not depend on using group labels for selection.
+  - The fixed gate also raises average accuracy (84.1 → 88.0, p = 0.007; 76.9 → 86.1, p = 7.4 × 10⁻⁴), with
     in-distribution accuracy unchanged (≈ 98%). The worst-group gain is not a trade-off against accuracy.
   - *Confirmation sample.* H1 was formed after a 3-seed pilot, so it is also tested on the later seeds only:
-    Waterbirds +10.5 (12 seeds, t(11) = 4.06, p = 9.5 × 10⁻⁴, d_z = 1.17); Watermark +25.1 (10 seeds,
-    t(9) = 4.15, p = 0.0012, d_z = 1.31). The pilot alone was not significant (p = 0.16 and 0.12).
-  - *Multiplicity.* With Holm correction across the four H1 tests (2 LLMs × 2 tasks), three survive at 0.025
-    (adjusted p = 0.0012, 0.0012, 0.011); Phi-4-mini Watermark does not (0.044).
+    Waterbirds +10.5 (12 seeds, t(11) = 4.06, p = 9.5 × 10⁻⁴, d_z = 1.17); Watermark +26.7 (12 seeds,
+    t(11) = 4.86, p = 2.5 × 10⁻⁴, d_z = 1.40). The pilot alone was not significant (p = 0.16 and 0.12).
+  - *Multiplicity.* With Holm correction across the four H1 tests (2 LLMs × 2 tasks), all four survive at 0.025
+    (adjusted p = 0.0012 and 2.7 × 10⁻⁴ for Qwen3.5-4B, 0.0086 and 0.0086 for Phi-4-mini;
+    `results_study/extra_analyses.md` §1).
 
 **Phi-4-mini, second LLM.**
 - *Waterbirds:* H1 is supported (+9.7, t(4) = 4.52, p = 0.005, d_z = 2.02).
-- *Watermark:* the gain is larger (+31.6) but **not significant** at α = 0.025 (t(4) = 2.25, p = 0.044,
-  d_z = 1.01).
-  - Achieved power is 0.40; about 10 seeds would be needed for 80% power.
-  - Two of the five fixed-gate seeds also fall below 50% WGA on this task.
+- *Watermark, 10 seeds:* H1 is supported (+25.5, 95% CI [8.2, 42.7], t(9) = 3.34, p = 0.0043,
+  Wilcoxon p = 9.8 × 10⁻⁴, d_z = 1.06).
+  - With the first 5 seeds the gain (+31.6) missed α = 0.025 (p = 0.044). Seeds 5–9 were added to reach the
+    ≈ 10 seeds a power analysis asked for, before looking at them; fixed > learned in all five new seeds.
+  - The fixed gate is not robust on this task either: 6 of 10 fixed-gate seeds fall below 50% WGA (8 of 10
+    learned). Phi-4-mini finds the watermark task harder with any gate.
 
 **Table 1.** Gate hypotheses (WGA, %).
 
 | LLM | Task | Seeds | Learned | Fixed | Δ [95% CI] | t (df) | p (t) | p (Wilcoxon) | d_z | Collapsed < 50 (L / F) |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | Qwen3.5-4B | Waterbirds | 15 | 63.6 ± 10.4 | 74.2 ± 3.4 | +10.6 [5.3, 16.0] | 4.26 (14) | 4.0e-4 | 3.1e-5 | 1.10 | 2 / 0 |
-| Qwen3.5-4B | Watermark | 13 | 41.4 ± 19.0 | 65.2 ± 10.4 | +23.8 [12.5, 35.1] | 4.59 (12) | 3.1e-4 | 2.4e-4 | 1.27 | 8 / 0 |
+| Qwen3.5-4B | Watermark | 15 | 40.5 ± 18.0 | 65.7 ± 10.3 | +25.2 [14.8, 35.6] | 5.21 (14) | 6.6e-5 | 6.1e-5 | 1.34 | 10 / 0 |
 | Phi-4-mini | Waterbirds | 5 | 60.4 ± 5.7 | 70.1 ± 3.6 | +9.7 [3.8, 15.7] | 4.52 (4) | 5.3e-3 | 3.1e-2 | 2.02 | 0 / 0 |
-| Phi-4-mini | Watermark | 5 | 28.5 ± 21.3 | 60.1 ± 15.1 | +31.6 [−7.4, 70.6] | 2.25 (4) | 4.4e-2 | 3.1e-2 | 1.01 | 4 / 2 |
+| Phi-4-mini | Watermark | 10 | 29.4 ± 18.7 | 54.9 ± 14.5 | +25.5 [8.2, 42.7] | 3.34 (9) | 4.3e-3 | 9.8e-4 | 1.06 | 8 / 6 |
 
 With n = 5 the smallest attainable one-sided Wilcoxon p is 0.031, so the Wilcoxon test cannot reach
-α = 0.025 for Phi-4-mini. Figure 1: `results_study/h1_gate_seeds.png`, `results_study/phi/h1_gate_seeds.png`
+α = 0.025 for Phi-4-mini Waterbirds. Figure 1: `results_study/h1_gate_seeds.png`, `results_study/phi/h1_gate_seeds.png`
 (one line per seed).
 
 ### R2. H2: the learned gate is less stable across seeds
@@ -74,10 +77,10 @@ With n = 5 the smallest attainable one-sided Wilcoxon p is 0.031, so the Wilcoxo
 | Task | F-test | Brown–Forsythe (two-sided) | Reading |
 | :--- | :--- | :--- | :--- |
 | Waterbirds | F = 9.2, p = 8.6 × 10⁻⁵ | p = 0.045 | Supported |
-| Watermark | F = 3.4, p = 0.023 | p = 0.070 | Supported only by the F-test |
+| Watermark | F = 3.1, p = 0.023 | not recomputed for 15 seeds | Supported by the F-test |
 
-- The learned gate collapses below 50% WGA in 2 of 15 and 8 of 13 seeds; the fixed gate never does.
-- For Phi-4-mini, neither variance test is significant (F p = 0.20 and 0.26).
+- The learned gate collapses below 50% WGA in 2 of 15 and 10 of 15 seeds; the fixed gate never does.
+- For Phi-4-mini, neither variance test is significant (F p = 0.20 and 0.23).
 
 ### R3. Mechanism: the learned gate stays closed
 
@@ -95,6 +98,12 @@ whether training opens it, not whether it closes.
 - A small gate is not by itself a small injection, because `out_proj` is unconstrained and can grow to
   offset it. The injected signal `‖tanh(α)·out_proj(attn)‖ / ‖e‖` is therefore logged on every evaluation
   from round 4 on (`inject_ratio`), for SigLIP-base and SigLIP-large.
+- *Result (`results_study/extra_analyses.md` §6):* `out_proj` does partly compensate. With tanh α ≈ 0.003 the
+  learned gate still injects 1.2–7.5 times the text-embedding norm (mean 3.5, Qwen, 6 runs), but the fixed
+  gate injects 95–129 (mean 112) and the open gate 106–145. The learned gate passes 15–35× less visual
+  signal. Within learned-gate runs the ratio does not predict WGA (Spearman ρ = 0.33, p = 0.27, 13 runs).
+- *Longer alignment does not open the gate (§4):* after 3,000 alignment steps instead of 300 the gate peaks at
+  |tanh α| = 0.003 and ends at −0.0002.
 
 **Attention on the shortcut.** Both cross-attention variants attend to the watermark corner more when it is
 present (uniform share 8.2%):
@@ -134,14 +143,15 @@ Yet only the learned gate fails.
 | Rival explanation | Check | Result |
 | :--- | :--- | :--- |
 | Image-token count | MLP with 36 instead of 49 tokens, 2 seeds | 74.7 ± 1.1 vs 74.9 ± 1.4 |
-| Encoder capacity | SigLIP-large, 2 seeds | All connectors +6 to +16; learned 79.3 ± 1.9 vs fixed 80.1 ± 3.1 |
+| Encoder capacity | SigLIP-large, 4–5 seeds | All connectors +6 to +11; learned 74.5 ± 7.4 (5) vs fixed 80.9 ± 2.6 (4); paired +8.0, p = 0.088. Watermark, 2 seeds: 68.8 vs 68.2 |
 | LLM adaptation | Frozen LLM, 3 seeds | Learned gate 24.2 ± 2.8; MLP 73.4 ± 1.1; Q-Former 74.6 ± 0.9 |
 | Single alignment per seed | Alignment repeated per seed, 3 seeds | MLP 76.1 ± 2.1, fixed gate 74.2 ± 0.8 |
 | Training length | 8 epochs, 1 seed (seeds 1–4 running) | MLP 79.1; fixed gate 44.5. Unresolved: the fixed gate may also degrade with long training |
-| Gate trainable vs initialisation | Learnable gate initialised open (`bottleneck_open`), 5 seeds | Running |
-| Learning rate | 5e-5 and 1e-3, 3 seeds | Running |
-| Alignment length | 3,000 instead of 300 steps, 3 seeds | Running |
-| Standard group-robust training | Group DRO at the full model, 2 seeds | Running |
+| Gate trainable vs initialisation | Learnable gate initialised open (`bottleneck_open`, tanh = 0.995), 5 seeds | Open gate matches the fixed gate (71.8 vs 72.9; 66.8 vs 72.1) and beats the zero-init gate (+9.9, +17.1). The harm comes from the zero initialisation |
+| Learning rate | Connector LR 5e-5 / 2e-4 / 1e-3, 2 seeds | Gap +29.6 / +16.7 / +0.7 as the gate moves further from 0 (0.002 / 0.004 / 0.018): dose-response |
+| Alignment length | 3,000 instead of 300 steps, 3 seeds | Gate still shut (peak 0.003); learned-gate WGA collapses (11.4, 4.1) while fixed stays (70.8, 59.5): gap widens to +59 and +55 |
+| Standard group-robust training | Group DRO at the full model, 2 seeds | Gap shrinks to +3.5 and +9.9; the fixed gate still leads |
+| Injection strength | ‖injected‖ / ‖text‖ at test | Learned gate ≈ 3–8, fixed and open ≈ 100–125: 15–35× less visual signal, but not zero |
 | Caption-reconstruction loss (LTD) | 3 seeds | MLP 75.9 ± 3.3 (vs 74.9); fixed gate 72.3 ± 3.7 |
 
 ### R6. Connector-only fixes
@@ -173,7 +183,7 @@ features.
   matches the other tasks, but no difference is significant:
   - MLP 54.3 ± 13.7 (4 seeds);
   - learned gate 36.3 ± 18.7 (4 seeds);
-  - fixed gate 49.3 ± 4.5 (2 seeds).
+  - fixed gate 53.1 ± 5.8 (4 seeds); fixed − learned on 3 paired seeds +13.3, p = 0.24.
 - **Native zero-shot:** Qwen3.5-4B with its own vision tower reaches 0.0 WGA (it always predicts one class),
   and 35.5 after a validation-calibrated threshold.
 
@@ -210,7 +220,7 @@ on the shortcut and vary widely across seeds.
 **Mechanism.**
 - With `tanh(α) ≈ 0`, unless `out_proj` grows enough to offset it, the visual pathway contributes little to
   the language stream, so the LoRA-adapted LLM must fit the training labels from whatever survives. The
-  injection ratio (round 4) tests this directly.
+  injection ratio confirms a 15–35× weaker visual signal (R3).
 - On shortcut-aligned training data, the cue with the largest, most linearly available signal wins. This
   matches the "easiest rule" account of [geirhos2020shortcut].
 - Whether a run escapes depends on a near-zero gate with a sign-flipping gradient. That is a fragile,
@@ -221,7 +231,9 @@ on the shortcut and vary widely across seeds.
 **Scope relative to Flamingo.** Flamingo's gates "quickly grow" from zero over 500k steps with one gated block
 every 4th–7th LM layer [alayrac2022flamingo]. Our connector injects once, at the input embeddings, after 300
 alignment steps. The finding is therefore scoped to short alignment and input-level injection, the regime of
-adapter-style fine-tuning on a budget; the 3,000-step alignment run tests how far it extends. The IDEFICS gate
+adapter-style fine-tuning on a budget. Ten times longer alignment (3,000 steps) does not move it toward
+Flamingo's behaviour: the gate stays shut and the learned-gate model collapses further (WGA 11.4 and 4.1 vs
+70.8 and 59.5 for the fixed gate). In our regime more alignment widens the gap. The IDEFICS gate
 readings (9 of 20 layers below 0.05 after full training) show that near-shut gates also survive long training.
 Flamingo also reports that removing the gate costs 4.2 points and destabilises training. Our fixed gate is not
 "no gate": the output layer is zero-initialised, so the model still starts as the pretrained LLM, and no
@@ -236,8 +248,11 @@ problem at no cost, and the consequence is measured as worst-group accuracy rath
 **If the gate is shut, how is the visual shortcut learned?** The watermark and the background are themselves
 visual, so some image signal must reach the LLM. A gate of ≈ 0.0005 passes little unless the output layer grows
 to offset it. Our account is that the narrow residual pathway carries the strongest, most linearly available cue
-and loses the finer object evidence. The injection ratio and the pathway ablation (rounds 4–5) test this
-directly. If ablation sends the learned-gate model to chance, the pathway is narrow but open. If it changes
+and loses the finer object evidence. The injection ratio supports the first half: the pathway is open (the
+injected signal is several times the text-embedding norm, because `out_proj` grows) but 15–35× weaker than
+with a fixed gate. Group DRO (R5) supports the second: with group-balanced weighting of the loss, the same
+narrow pathway reaches 72.5 and 69.2 WGA, so it carries enough object evidence; under ERM the model does not
+use it. The pathway ablation (round 5) adds the behavioural test. If ablation sends the learned-gate model to chance, the pathway is narrow but open. If it changes
 nothing, the pathway is behaviourally closed and the shortcut comes from elsewhere.
 
 **Behavioural closure.** [farazi2026gate] define a pathway as closed when ablating it at inference leaves
@@ -339,10 +354,10 @@ Waterbirds.
 **Limitations.**
 - Models are 4-bit and 4B parameters or smaller.
 - The encoder is frozen.
-- SigLIP-large has 2 seeds, CelebA's fixed gate 2, and the 8-epoch run 1 (extensions running).
-- The learning rate was not tuned per connector (sweep running).
-- Learned and fixed gates differ in trainability and in where the zero initialisation sits; the open-gate
-  control separates the two.
+- SigLIP-large Watermark has 2 seeds, CelebA 3–4, and the 8-epoch run 1 (extension running).
+- The learning-rate sweep and Group DRO have 2 seeds per setting and are descriptive.
+- The open-gate control separates initialisation from learnability only partly: at α = 3 the gate gradient
+  is scaled by 1 − tanh² ≈ 0.01, so the open gate barely moves.
 - The fixed gate fell to 44.5 in the single 8-epoch run; long-training behaviour is unresolved.
 - CelebA trains on an 8k subsample.
 - Group DRO is the only full-model group-robust baseline; JTT is tested only at the connector.

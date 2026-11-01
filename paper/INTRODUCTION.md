@@ -77,9 +77,9 @@ injection gate, determines shortcut reliance in LLM-based VLMs.
 This paper makes three contributions.
 1. **A transmission mechanism.** We identify the learnable injection gate as a *transmission bottleneck*
    between features and readout. Initialised at zero, the gate never opens, and the model then relies on the shortcut; fixing it raises
-   worst-group accuracy by 10.6 and 23.8 points (d_z = 1.10 and 1.27). This extends the feature–readout account
+   worst-group accuracy by 10.6 and 25.2 points (d_z = 1.10 and 1.34). This extends the feature–readout account
    of shortcut learning and links gate closure to robustness.
-2. **Variance as an outcome.** The learnable gate turns robustness into a seed lottery, with up to 8 of 13
+2. **Variance as an outcome.** The learnable gate turns robustness into a seed lottery, with up to 10 of 15
    runs collapsing. Once the gate is fixed, we detect no significant difference between connector types, although equivalence
    is not established. Together these establish
    that architectural robustness claims require seed-level evaluation.

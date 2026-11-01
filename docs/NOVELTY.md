@@ -28,7 +28,7 @@ closest prior work it must be distinguished from.
 
 **C1. The connector's gate is a controlled cause of shortcut reliance in LLM-based VLMs.**
 - *Evidence:* one variable is changed with everything else fixed (LLM, features, data, budget, seeds). Fixing
-  the gate raises WGA by +10.6 and +23.8 points.
+  the gate raises WGA by +10.6 and +25.2 points (15 seeds each).
 - *Robustness:* the gain holds on confirmation seeds alone, with unpaired tests and with label-free selection.
   It replicates on Phi-4-mini for Waterbirds.
 - *New relative to Farazi et al.:* the outcome is shortcut reliance and worst-group accuracy, not relational
@@ -37,7 +37,7 @@ closest prior work it must be distinguished from.
   component, in LLM-based VLMs, measured on spurious-correlation groups.
 
 **C2. A learnable gate turns robustness into a seed lottery.**
-- *Evidence:* the learned gate collapses below 50% WGA in 2 of 15 and 8 of 13 seeds; the fixed gate never
+- *Evidence:* the learned gate collapses below 50% WGA in 2 of 15 and 10 of 15 seeds; the fixed gate never
   does (H2, F-test p = 8.6 × 10⁻⁵).
 - *Link to theory:* this is the empirical counterpart of modality competition, where the winner depends on
   initialisation [huang2022modality].
@@ -57,8 +57,9 @@ closest prior work it must be distinguished from.
 - We do not claim to be the first to observe that gates stay closed. Farazi et al. did.
 - We do not claim that zero-initialised gating is new. Flamingo and LLaMA-Adapter introduced it.
 - We do not claim that the gate is *sufficient* for shortcut reliance. With SigLIP-large it is not.
-- We do not claim results for per-layer injection or long alignment until the round-6 and 3k-alignment runs
-  are in.
+- We do not claim results for per-layer injection or fp16 weights until the round-6 runs are in.
+- We do not claim the gate pathway is closed: the learned gate still injects visual signal, 15–35× less
+  than the fixed gate (README §17).
 
 ## 3. Questions a reviewer is likely to ask, and the answers
 
@@ -72,7 +73,8 @@ directly:
 - **Injection ratio** (`inject_ratio`): how large the injected signal is relative to the text embedding.
 - **Pathway ablation** (`ablated_mean_over_templates`): how much accuracy depends on it.
 
-If ablation sends the learned-gate model to chance, the pathway is open but narrow. If nothing changes, it is
+Measured so far: the injection ratio is 3.5 for the learned gate vs 112 for the fixed gate, so the pathway
+is open but 15–35× weaker, and under Group DRO the same narrow pathway reaches ~70 WGA. If ablation sends the learned-gate model to chance, the pathway is open but narrow. If nothing changes, it is
 behaviourally closed and the shortcut is learned from elsewhere. Either way, the answer is reported, not
 assumed.
 
@@ -93,7 +95,8 @@ assumed.
 
 **"Flamingo trains 500k steps and its gates open."**
 - *What we say:* our regime is short, adapter-style alignment, and the paper says so.
-- *The test:* the 3,000-step alignment run measures how far the result extends.
+- *The test:* 3,000 alignment steps (10×) leave the gate shut (peak 0.003) and widen the gap to +59 / +55
+  (README §17).
 - *Supporting evidence:* the released IDEFICS-80B gates show that near-shut gates survive full training in
   9 of 20 layers.
 

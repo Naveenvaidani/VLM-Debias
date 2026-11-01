@@ -5,12 +5,12 @@ Working title: *A learnable injection gate causes shortcut reliance in vision-la
 ## Claims (each tied to a stated test)
 
 1. **H1:** a fixed (open) injection gate has higher worst-group accuracy than a learnable tanh gate
-   (Waterbirds +10.6 [5.3, 16.0], Watermark +23.8 [12.5, 35.1]; paired t p < 0.001; 13–15 seeds per arm).
+   (Waterbirds +10.6 [5.3, 16.0], Watermark +25.2 [14.8, 35.6]; paired t p < 0.001; 15 seeds per arm).
 2. **H2:** the learnable gate is less stable across seeds (variance F-test p = 9e-5 Waterbirds, 0.02 Watermark;
-   8 of 13 Watermark seeds collapse below 50%, none for the fixed gate).
+   10 of 15 Watermark seeds collapse below 50%, none for the fixed gate).
 3. **Mechanism:** the learnable gate stays near zero after alignment (0.0005) and its gradient flips sign every step.
-4. **Generality:** the effect holds for a second LLM (Phi-4-mini, 5 seeds: Waterbirds +9.7, p = 0.005; Watermark +31.6, p = 0.044, misses α = 0.025).
-7. **Encoder scale:** with SigLIP-large the learned gate still shuts (0.0006) but no longer collapses on Waterbirds (79.3 vs 80.1, 2 seeds).
+4. **Generality:** the effect holds for a second LLM (Phi-4-mini: Waterbirds +9.7, 5 seeds, p = 0.005; Watermark +25.5, 10 seeds, p = 0.004; all four cells survive Holm).
+7. **Encoder scale:** with SigLIP-large the learned gate still shuts (0.0006) and the gap shrinks (Waterbirds 74.5 vs 80.9, paired +8.0, p = 0.09, 4 seeds; Watermark 68.8 vs 68.2, 2 seeds).
 5. **Connector type does not matter once the gate is fixed:** MLP vs Q-Former, five seeds, no significant difference.
 6. **A label-free fix:** connector-only retraining on a balanced validation half (DFR-style) raises Watermark
    worst-group accuracy to 89.6 ± 0.5 (fixed gate, 5 seeds); no gain on Waterbirds (73.9 → 74.1); the caption loss rises little.
@@ -45,8 +45,8 @@ Title/abstract, introduction, methodology, results and discussion drafts, verifi
 matrix are in this folder; the literature review is `docs/LITERATURE.md`.
 
 ## Still needed before submission
-- Learning-rate sweep: did not finish (Kaggle session time); 8-epoch run has 1 seed. SigLIP-large has 2 of 3 seeds.
-- CelebA fixed gate has 2 seeds (4 for the others).
+- Controls done (README §17): open gate, LR sweep (2 seeds), 3k alignment, Group DRO, injection ratio. 8-epoch seeds 1–4, pathway ablation, p-sweep, per-layer and fp16 running.
+- SigLIP-large Watermark has 2 seeds; CelebA 3 paired seeds.
 - Calibrated zero-shot native baseline: done (35.5 WGA).
 - Figures as vector PDF; final statistics table.
 - Code release: license, citation file, pinned requirements from `environment.txt`.

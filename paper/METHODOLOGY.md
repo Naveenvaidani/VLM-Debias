@@ -72,8 +72,9 @@ validity and ethics. Each step follows the "action → justification → citatio
 | 2.0 | 0.47 | 0.91 | 1.00 | 1.00 | 5 |
 
 The initial 3-seed design had power below 0.5 even for large effects. The gate comparison was therefore
-extended to **15 (Waterbirds) and 13 (Watermark) seeds**, enough for 80% power at d_z ≥ 0.8. Observed effects
-(Section 4 of the results) are d_z = 1.10 and 1.27, giving achieved power of 0.98 and 0.99.
+extended to **15 seeds per arm on both tasks**, enough for 80% power at d_z ≥ 0.8. Observed effects
+(Section 4 of the results) are d_z = 1.10 and 1.34, giving achieved power of 0.98 and > 0.99. Phi-4-mini
+Watermark (d_z ≈ 1.0, power 0.40 at 5 seeds) was extended to 10 seeds before its new seeds were examined.
 
 ## 3. Variables and instrumentation
 
@@ -171,8 +172,8 @@ capacity as a rival explanation.
 - 28 Oct 2026, after the pilot: seed-extension runs launched (Kaggle kernels `h1a`, `h1b`, `seeds34`).
 - 29 Oct 2026: H1/H2 and their tests committed with the extended results (`7ab0563`, `study/hypotheses.py`).
 - Because H1 was formed after seeing the pilot, it is also tested on the confirmation seeds only (seeds ≥ 3):
-  Waterbirds +10.5, t(11) = 4.06, p = 9.5 × 10⁻⁴, d_z = 1.17; Watermark +25.1, t(9) = 4.15, p = 0.0012,
-  d_z = 1.31. The pilot alone was not significant (p = 0.16 and 0.12). (`results_study/robustness_checks.md`)
+  Waterbirds +10.5, t(11) = 4.06, p = 9.5 × 10⁻⁴, d_z = 1.17; Watermark +26.7, t(11) = 4.86, p = 2.5 × 10⁻⁴,
+  d_z = 1.40. The pilot alone was not significant (p = 0.16 and 0.12). (`results_study/robustness_checks.md`)
 
 **Assumption checks (reported in full).**
 - *Normality of the paired differences (Shapiro–Wilk):*
