@@ -40,6 +40,10 @@ Working title: *A learnable injection gate causes shortcut reliance in vision-la
    - Balanced sampling needs group labels.
 8. **Conclusion.**
 
+## Paper kit
+Title/abstract, introduction, methodology, results and discussion drafts, verified references and the literature
+matrix are in this folder; the literature review is `docs/LITERATURE.md`.
+
 ## Still needed before submission
 - Learning-rate sweep: did not finish (Kaggle session time); 8-epoch run has 1 seed. SigLIP-large has 2 of 3 seeds.
 - CelebA fixed gate has 2 seeds (4 for the others).

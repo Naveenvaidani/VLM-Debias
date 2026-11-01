@@ -1,0 +1,65 @@
+# Title, abstract and keywords
+
+## Target journals (computer vision / machine learning, Q1)
+
+| Journal | Publisher | Why it fits | Abstract limit |
+| :--- | :--- | :--- | :--- |
+| IEEE Transactions on Pattern Analysis and Machine Intelligence (TPAMI) | IEEE | Publishes VLM surveys and robustness studies we cite; values controlled analysis | ~250 words |
+| International Journal of Computer Vision (IJCV) | Springer | Published TokenPacker, VQA v2 and the CIB robust-VQA paper we build on | ~250 words |
+| Pattern Recognition | Elsevier | Strong venue for robustness / bias analyses of deep models | ~250 words |
+| Neural Networks | Elsevier | Fits the mechanism (gating, optimisation dynamics) angle | ~250 words |
+| Information Fusion | Elsevier | Multimodal fusion focus; published the Clever-Hans removal work we cite | ~250 words |
+
+TPAMI or IJCV first. Pattern Recognition is a strong alternative with a faster turnaround.
+
+## Title options
+
+Each option is 10–15 words, with the keywords in the first 65 characters and no fluff.
+
+1. **Declarative (recommended):** *Learnable Injection Gates Cause Shortcut Learning in Vision-Language Models*
+   (10 words)
+2. **Structured:** *Shortcut Learning in Vision-Language Models: The Role of the Vision-Language Connector
+   and Its Injection Gate* (16 words; can drop "Its Injection Gate")
+3. **Hook and subtitle:** *When the Gate Closes: Connector Design and Spurious Correlations in Multimodal
+   Large Language Models* (15 words)
+
+## Abstract (≈ 230 words, five-part formula, no citations, acronyms spelled out)
+
+> **[Context]** Vision-language models built by connecting a vision encoder to a large language model are
+> increasingly deployed in settings where reliance on spurious cues, such as image backgrounds or watermarks,
+> causes silent failures on under-represented groups.
+>
+> **[Gap]** Prior work attributes these failures to data, scale or the vision encoder, and compares connector
+> designs only on average benchmark accuracy. Whether the connector itself determines shortcut reliance has not
+> been tested.
+>
+> **[Method]** We hold the language model, frozen vision features, data and training budget fixed and vary only
+> the connector: a multilayer-perceptron projector, a query transformer, and gated cross-attention with either
+> a learnable or a fixed injection gate. We measure worst-group accuracy on three shortcut tasks, two language
+> models and two encoder sizes, with pre-declared tests over up to fifteen paired training seeds.
+>
+> **[Findings]** The learnable gate closes during alignment, and with it the model relies on the shortcut.
+> Fixing the gate open raises worst-group accuracy by 10.6 and 23.8 points, large effects (paired Cohen's
+> d = 1.10 and 1.27, p < 0.001). It also eliminates the training runs that collapse below 50%, which occur in
+> up to 8 of 13 seeds with the learnable gate. Once the gate is fixed, connector type makes no detectable
+> difference. Retraining only the connector on a small group-balanced set reaches 89.6% worst-group accuracy
+> on the watermark task.
+>
+> **[Contribution]** These results identify the injection gate as a transmission bottleneck between features
+> and readout. They show that robustness claims require seed-level evaluation, and they give practitioners a
+> zero-cost design rule and a cheap connector-level fix.
+
+Word count: about 230 (check against the journal's limit).
+
+## Keywords (5–7)
+
+Shortcut learning; spurious correlations; vision-language models; multimodal large language models; group
+robustness; worst-group accuracy; gated cross-attention
+
+## Highlights (Elsevier journals ask for 3–5, ≤ 85 characters each)
+
+- Learnable injection gates close and make vision-language models rely on shortcuts
+- Fixing the gate raises worst-group accuracy by 10.6–23.8 points over 13–15 seeds
+- The learnable gate turns robustness into a seed lottery: up to 8 of 13 runs collapse
+- With the gate fixed, MLP, Q-Former and cross-attention connectors do not differ
+- Retraining only the connector on a small balanced set reaches 89.6% worst-group accuracy

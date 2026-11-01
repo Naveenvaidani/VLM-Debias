@@ -18,7 +18,7 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
 - [Key findings](#key-findings) · [Quick start](#quick-start)
 - [Results](#results): [connectors](#1-connector-comparison-qwen35-4b-siglip-base) · [gate hypotheses](#2-pre-declared-gate-hypotheses-paired-by-seed) · [Phi-4-mini](#3-second-llm-phi-4-mini-5-seeds) · [encoder scale](#4-vision-encoder-scale-siglip-base-vs-siglip-large-waterbirds) · [fixes (DFR)](#5-fixes-connector-dfr-balanced-sampling-linear-dfr) · [CelebA](#6-celeba-blond_hair-vs-male-official-splits) · [ablations](#7-ablations-waterbirds-mlp-unless-noted) · [reference points](#8-reference-points) · [ensembles](#9-seed-ensembles-average-the-3-seeds-answer-probabilities) · [linear probes](#10-linear-probes-on-frozen-siglip-base-features-by-pooling-3-seeds) · [attention](#11-attention-on-the-watermark-watermark-task-3-seeds) · [failure analysis](#12-failure-analysis-hardest-group-per-connector-3-seeds) · [compute](#13-compute-cost-one-t4-batch-16-qwen35-4b-nf4) · [IDEFICS gates](#14-gates-in-released-flamingo-style-models-idefics)
 - [Observations](#observations) · [FAQ](#faq) · [Related work](#related-work-and-where-this-study-stands) · [Literature review](docs/LITERATURE.md)
-- [Tasks and datasets](#tasks-and-datasets) · [Experimental protocol](#experimental-protocol-connector-study) · [Statistics](#statistics) · [Reproduce](#reproduce) · [Limitations](#limitations) · [Citation](#citation)
+- [Paper-writing kit](#paper-writing-kit-q1-structure) · [Tasks and datasets](#tasks-and-datasets) · [Experimental protocol](#experimental-protocol-connector-study) · [Statistics](#statistics) · [Reproduce](#reproduce) · [Limitations](#limitations) · [Citation](#citation)
 
 ## Quick start
 
@@ -50,8 +50,8 @@ Full Kaggle pipeline (2× T4, resumable): [`study/kaggle_kernels/`](study/kaggle
    both confirmed on Qwen3.5-4B.
 2. **It replicates on a second LLM.** Phi-4-mini, 5 seeds: fixed > learned on both tasks (Waterbirds +9.7,
    p = 0.005; Watermark +31.6, p = 0.044, which misses the pre-declared one-sided α = 0.025).
-3. **Once the gate is fixed, connector type barely matters.** MLP, Q-Former and fixed-gate cross-attention are
-   within seed noise of each other (MLP vs Q-Former, 5 seeds: p = 0.23 and 0.40). Matching image-token counts
+3. **Once the gate is fixed, connector type barely matters.** MLP, Q-Former and fixed-gate cross-attention show no
+   significant difference (equivalence not established with 5 seeds) (MLP vs Q-Former, 5 seeds: p = 0.23 and 0.40). Matching image-token counts
    (MLP with 36 instead of 49 tokens) changes nothing (74.7 vs 74.9).
 4. **A stronger encoder hides the problem, but the gate still shuts.** With SigLIP-large features the learned
    gate again ends alignment at 0.0006, yet its Waterbirds WGA no longer collapses (79.3 vs 80.1 fixed,
@@ -323,6 +323,21 @@ this inspectable, but it does not force the model onto the bird.
 
 The same for the ERM model: [`metrics/attention_bottleneck.png`](metrics/attention_bottleneck.png).
 
+## Paper-writing kit (Q1 structure)
+
+Everything needed to write the journal paper from this repository:
+
+| Part | File |
+| :--- | :--- |
+| Title options, abstract, keywords, highlights, target journals | [`paper/TITLE_ABSTRACT.md`](paper/TITLE_ABSTRACT.md) |
+| Introduction (CARS five-paragraph funnel) | [`paper/INTRODUCTION.md`](paper/INTRODUCTION.md) |
+| Literature review: background, themes, contradictions, gaps, bridge to hypotheses | [`docs/LITERATURE.md`](docs/LITERATURE.md) |
+| Synthesis matrix of 88 papers (objective, finding, limitation, use) | [`paper/literature_matrix.csv`](paper/literature_matrix.csv) |
+| 93 verified references (arXiv API / Crossref), 24 journal articles | [`paper/references.bib`](paper/references.bib) (built by [`paper/build_refs.py`](paper/build_refs.py)) |
+| Methodology: design, data, variables, power analysis, tests, assumptions, validity, ethics | [`paper/METHODOLOGY.md`](paper/METHODOLOGY.md) |
+| Results (per hypothesis, effect sizes) and discussion (mechanism, implications, limitations) | [`paper/RESULTS_DISCUSSION.md`](paper/RESULTS_DISCUSSION.md) |
+| Claims and structure | [`paper/OUTLINE.md`](paper/OUTLINE.md) |
+
 ## Where each result lives
 
 | Experiment | Results | Kaggle script |
@@ -368,8 +383,9 @@ train 4B-scale models, but released IDEFICS-80B checkpoints have 9 of 20 cross-a
 check worst-group accuracy over several seeds, and if a small group-balanced set exists, retrain only the
 connector on it (connector-DFR).
 
-**Is the MLP projector the safest choice?** With a fixed gate, MLP, Q-Former and cross-attention are statistically
-indistinguishable; cross-attention is about 2x cheaper in time and memory.
+**Is the MLP projector the safest choice?** With a fixed gate, MLP, Q-Former and cross-attention show no significant
+difference (5 seeds; an equivalence test with a ±3-point margin is not passed, so "no detectable difference", not
+"equivalent"); cross-attention is about 2x cheaper in time and memory.
 
 ## Related work and where this study stands
 
