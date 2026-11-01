@@ -98,6 +98,37 @@ class StudyVLM(nn.Module):
         self.connector = build_connector(connector, vision_dim, llm_dim, mlp_pool=mlp_pool, mlp_grid=mlp_grid).to(device=device, dtype=torch.float32)
         self.register_buffer("before_ids", torch.tensor(before_ids, dtype=torch.long, device=device))
         self.device_name = device
+        self._deep_patches = None
+        if self.connector.kind == "deep":
+            self._register_deep_hooks()
+
+    def _register_deep_hooks(self):
+        """Per-layer injection: block k runs on the hidden states entering decoder layer k * L / n_blocks."""
+        stacks = [m for name, m in self.decoder.named_modules()
+                  if name.split(".")[-1] == "layers" and isinstance(m, nn.ModuleList)]
+        layers = stacks[0]
+        n = len(self.connector.blocks)
+        self.deep_layers = [k * len(layers) // n for k in range(n)]  # 32 layers, 4 blocks: 0, 8, 16, 24
+
+        def make_hook(k):
+            def hook(module, args, kwargs):
+                if self._deep_patches is None or getattr(self, "ablate_visual", False):
+                    return None
+                h = args[0] if args else kwargs["hidden_states"]
+                new, _ = self.connector.blocks[k](self._deep_patches, h.float())
+                if not self.training:
+                    with torch.no_grad():
+                        ratio = (new - h.float()).norm(dim=-1).mean() / h.float().norm(dim=-1).mean()
+                    self.inject_log = getattr(self, "inject_log", []) + [float(ratio)]
+                new = new.to(h.dtype)
+                if args:
+                    return (new,) + tuple(args[1:]), kwargs
+                kwargs["hidden_states"] = new
+                return args, kwargs
+            return hook
+
+        for k, i in enumerate(self.deep_layers):
+            layers[i].register_forward_pre_hook(make_hook(k), with_kwargs=True)
 
     def trainable_state_dict(self):
         return {k: v.detach().cpu() for k, v in self.named_parameters() if v.requires_grad}
@@ -126,6 +157,12 @@ class StudyVLM(nn.Module):
             mask = torch.cat([ones, img_ones, after_mask], dim=1)
             offset = n_before + img.shape[1]
             self.last_visual = img  # what the connector adds from the image (reused by the LTD loss)
+        elif self.connector.kind == "deep":  # injected inside the decoder by the layer hooks
+            embeds, attn = torch.cat([before, after], dim=1), None
+            self._deep_patches = patches.float()
+            self.last_visual = None
+            mask = torch.cat([ones, after_mask], dim=1)
+            offset = n_before
         else:
             text = torch.cat([before, after], dim=1)
             embeds, attn = self.connector(patches.float(), text.float())
@@ -140,6 +177,7 @@ class StudyVLM(nn.Module):
             offset = n_before
         hidden = self.decoder(inputs_embeds=embeds.to(self.compute_dtype), attention_mask=mask,
                               use_cache=False).last_hidden_state
+        # _deep_patches is kept until the next forward: gradient checkpointing re-runs the layer hooks during backward
         return hidden[:, offset:], attn, offset
 
     def logits_at(self, hidden_after: torch.Tensor, labels: torch.Tensor, one_per_row: bool = False

@@ -139,6 +139,22 @@ class TestStudy(unittest.TestCase):
         self.assertAlmostEqual(float(model.dro_q.sum()), 1.0, places=5)
         self.assertGreater(float(loss), float(torch.nn.functional.cross_entropy(feats, y)))
 
+    def test_deep_gated_connector_identity_params_and_gates(self):
+        torch.manual_seed(0)
+        h, patches = torch.randn(2, 5, 2560), torch.randn(2, 196, 768)
+        for name, start in (("xattn_deep", 0.0), ("xattn_deep_fixed", 1.0)):
+            conn = build_connector(name, 768, 2560)
+            self.assertEqual(conn.kind, "deep")
+            self.assertEqual(len(conn.blocks), 4)
+            self.assertEqual(conn.gate_values(), [start] * 4)
+            for blk in conn.blocks:  # every block starts as the identity
+                self.assertTrue(torch.allclose(blk(patches, h)[0], h))
+            n = sum(p.numel() for p in conn.parameters())
+            single = sum(p.numel() for p in build_connector("bottleneck", 768, 2560).parameters())
+            self.assertLess(abs(n - single) / single, 0.1)  # parameter-matched to the input-level block
+        self.assertEqual(len(build_connector("xattn_deep", 768, 2560).learned_gates()), 4)
+        self.assertEqual(build_connector("xattn_deep_fixed", 768, 2560).learned_gates(), [])
+
     def test_clip_and_log_reports_raw_gate_grad_and_can_exclude_gate(self):
         from src.study.engine import clip_and_log
         conn = build_connector("bottleneck", 8, 16)

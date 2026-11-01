@@ -17,10 +17,12 @@ import pandas as pd
 
 METRICS = [("avg_acc", "Avg"), ("worst_group_acc", "WGA"), ("acc_id", "ID"), ("acc_ood", "OOD"),
            ("rsr", "RSR"), ("balanced_acc", "Bal."), ("generative_acc", "Gen.")]
-SERIES = {"mlp": "#2a78d6", "qformer": "#eb6834", "bottleneck": "#1baf7a", "bottleneck_fixed": "#7a5bd6", "bottleneck_open": "#c0398f"}
+SERIES = {"mlp": "#2a78d6", "qformer": "#eb6834", "bottleneck": "#1baf7a", "bottleneck_fixed": "#7a5bd6", "bottleneck_open": "#c0398f",
+          "xattn_deep": "#c99a06", "xattn_deep_fixed": "#5c6b7a"}
 LABELS = {"mlp": "MLP projector", "qformer": "Q-Former", "bottleneck": "Cross-attn bottleneck",
           "bottleneck_fixed": "Cross-attn, fixed gate",
-          "bottleneck_open": "Cross-attn, learned gate (open init)"}
+          "bottleneck_open": "Cross-attn, learned gate (open init)",
+          "xattn_deep": "Per-layer cross-attn, learned gates", "xattn_deep_fixed": "Per-layer cross-attn, fixed gates"}
 
 
 def bootstrap_wga(preds, labels, groups, n=1000, seed=0):
@@ -96,7 +98,7 @@ def main():
     # figure: WGA per task and connector (wga selection), mean ± std over seeds
     d = df[df.rule == "wga"]
     tasks = sorted(d.task.unique())
-    conns = [c for c in ("mlp", "qformer", "bottleneck", "bottleneck_fixed", "bottleneck_open") if c in set(d.connector)]
+    conns = [c for c in SERIES if c in set(d.connector)]
     fig, ax = plt.subplots(figsize=(max(6, 2.2 * len(tasks)), 4.2), facecolor="#fcfcfb")
     width = 0.8 / len(conns)
     for i, c in enumerate(conns):

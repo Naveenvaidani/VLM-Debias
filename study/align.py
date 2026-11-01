@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from src.study.data import CaptionDataset, PromptBuilder
 from src.study.device import autocast, get_device, is_xla, step_done, torch_device
 from src.study.engine import clip_and_log
+from src.study.connectors import CONNECTOR_NAMES
 from src.study.vlm import StudyVLM
 
 CAPTION_PROMPT = ["Describe this image briefly."]
@@ -28,7 +29,7 @@ CAPTION_PROMPT = ["Describe this image briefly."]
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--llm", required=True)
-    parser.add_argument("--connector", choices=["mlp", "qformer", "bottleneck", "bottleneck_fixed", "bottleneck_open"], required=True)
+    parser.add_argument("--connector", choices=CONNECTOR_NAMES, required=True)
     parser.add_argument("--captions_dir", default="./data/tasks/captions")
     parser.add_argument("--out", required=True)
     parser.add_argument("--steps", type=int, default=1200, help="optimizer steps (equal for all connectors)")
@@ -120,6 +121,9 @@ def main():
             step_done(device)
             losses.append(loss.item())
             gate = getattr(model.connector, "gate", None)
+            if hasattr(model.connector, "gate_values") and step % 10 == 0:  # per-layer gates
+                gate_trace.append({"step": step, "gates_tanh": model.connector.gate_values(),
+                                   "grad_raw": raw, "grad_norm_total": norm})
             if isinstance(gate, torch.nn.Parameter) and step % 10 == 0:  # learned gate: value and gradient
                 gate_trace.append({"step": step, "gate": float(gate.detach()), "tanh": float(torch.tanh(gate.detach())),
                                    "grad": float(gate.grad) if gate.grad is not None else None,  # after clipping

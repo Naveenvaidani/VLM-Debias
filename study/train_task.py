@@ -21,15 +21,16 @@ from transformers import AutoTokenizer, get_cosine_schedule_with_warmup
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.study.data import TaskDataset, TaskSpec, PromptBuilder
-from src.study.engine import evaluate, train_epoch
+from src.study.engine import evaluate, learned_gates, train_epoch
 from src.study.device import get_device, is_xla, torch_device
+from src.study.connectors import CONNECTOR_NAMES
 from src.study.vlm import StudyVLM
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--llm", required=True)
-    parser.add_argument("--connector", choices=["mlp", "qformer", "bottleneck", "bottleneck_fixed", "bottleneck_open"], required=True)
+    parser.add_argument("--connector", choices=CONNECTOR_NAMES, required=True)
     parser.add_argument("--task_dir", required=True)
     parser.add_argument("--align_ckpt", default=None, help="stage-1 connector weights (recommended)")
     parser.add_argument("--run_dir", required=True)
@@ -147,11 +148,11 @@ def main():
 
     lora_params = [p for n, p in model.decoder.named_parameters() if p.requires_grad]
     groups = [{"params": lora_params, "lr": args.lr}] if lora_params else []
-    gate = getattr(model.connector, "gate", None)
-    conn = [p for p in model.connector.parameters() if not (args.gate_no_wd and p is gate)]
+    gates = learned_gates(model.connector) if args.gate_no_wd else []
+    conn = [p for p in model.connector.parameters() if id(p) not in {id(g) for g in gates}]
     param_groups = groups + [{"params": conn, "lr": args.connector_lr}]
-    if args.gate_no_wd and isinstance(gate, torch.nn.Parameter):
-        param_groups.append({"params": [gate], "lr": args.connector_lr, "weight_decay": 0.0})
+    if gates:
+        param_groups.append({"params": gates, "lr": args.connector_lr, "weight_decay": 0.0})
     model.clip_exclude_gate = args.clip_exclude_gate
     if str(device).startswith("cuda"):
         import bitsandbytes as bnb
@@ -186,6 +187,7 @@ def main():
         gate = getattr(model.connector, "gate", None)
         history.append({"epoch": epoch, "minutes": minutes, "train_loss": loss,
                         "gate_tanh": float(torch.tanh(gate.float()).item()) if gate is not None else None,
+                        "gates_tanh": model.connector.gate_values() if hasattr(model.connector, "gate_values") else None,
                         "gate_grad_abs_mean": float(np.mean(model.gate_grads)) if getattr(model, "gate_grads", None) else None,  # pre-clip
                         "grad_norm_mean": float(np.mean(model.grad_norms)) if getattr(model, "grad_norms", None) else None,
                         **{f"val_{k}": v for k, v in val.items()}})

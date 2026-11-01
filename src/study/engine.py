@@ -40,14 +40,23 @@ def step_loss(model, builder: PromptBuilder, feats, y, templates, device, groups
     return loss
 
 
+def learned_gates(connector):
+    """The learnable gate parameters of a connector (one, several for per-layer injection, or none)."""
+    if hasattr(connector, "learned_gates"):
+        return connector.learned_gates()
+    gate = getattr(connector, "gate", None)
+    return [gate] if isinstance(gate, torch.nn.Parameter) else []
+
+
 def clip_and_log(model, params, grad_clip, exclude_gate=False):
     """Global-norm gradient clipping. Returns the learned gate's raw (pre-clip) gradient, or None, and the
     pre-clip global norm. With exclude_gate the gate is left out of the clipped set, so a large gate gradient
     cannot shrink every other connector update (Flamingo also clips the global norm at 1)."""
-    gate = getattr(model.connector, "gate", None)
-    learned = isinstance(gate, torch.nn.Parameter) and gate.grad is not None
-    raw = float(gate.grad.detach().float().sum()) if learned else None
-    clipped = [p for p in params if not (exclude_gate and p is gate)]
+    gates = learned_gates(model.connector)
+    with_grad = [g for g in gates if g.grad is not None]
+    raw = float(torch.stack([g.grad.detach().float().abs().sum() for g in with_grad]).mean()) if with_grad else None
+    ids = {id(g) for g in gates} if exclude_gate else set()
+    clipped = [p for p in params if id(p) not in ids]
     norm = float(torch.nn.utils.clip_grad_norm_(clipped, grad_clip))
     return raw, norm
 

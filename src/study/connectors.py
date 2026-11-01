@@ -99,9 +99,33 @@ class CrossAttnBottleneck(nn.Module):
         return text + torch.tanh(self.gate) * self.out_proj(attended), attn  # attn: [B, T, P]
 
 
+class DeepGatedCrossAttn(nn.Module):
+    """Per-layer injection as in Flamingo and Llama 3.2 Vision: a tanh-gated cross-attention block before every
+    (L / n_blocks)-th LLM layer, starting at layer 0. The hidden states at that depth query the patches, and each
+    block has its own gate. The blocks are applied by forward pre-hooks that StudyVLM registers on the decoder
+    layers. attn_dim 320 with 4 blocks gives about the same parameter count as the single input-level block
+    (9.3M vs 8.9M for a 2560-wide LLM). gate="fixed" zero-initialises each block's output instead."""
+    kind = "deep"
+
+    def __init__(self, vision_dim: int, llm_dim: int, gate: str = "learned", n_blocks: int = 4,
+                 attn_dim: int = 320, num_heads: int = 8):
+        super().__init__()
+        self.blocks = nn.ModuleList([CrossAttnBottleneck(vision_dim, llm_dim, attn_dim, num_heads, gate=gate)
+                                     for _ in range(n_blocks)])
+
+    def learned_gates(self):
+        return [b.gate for b in self.blocks if isinstance(b.gate, nn.Parameter)]
+
+    def gate_values(self):
+        return [float(torch.tanh(b.gate.detach().float()).item()) for b in self.blocks]
+
+
 CONNECTORS = {"mlp": MLPProjector, "qformer": QFormerConnector, "bottleneck": CrossAttnBottleneck,
               "bottleneck_fixed": lambda v, l: CrossAttnBottleneck(v, l, gate="fixed"),
-              "bottleneck_open": lambda v, l: CrossAttnBottleneck(v, l, gate="open")}
+              "bottleneck_open": lambda v, l: CrossAttnBottleneck(v, l, gate="open"),
+              "xattn_deep": DeepGatedCrossAttn,
+              "xattn_deep_fixed": lambda v, l: DeepGatedCrossAttn(v, l, gate="fixed")}
+CONNECTOR_NAMES = list(CONNECTORS)
 
 
 def build_connector(name: str, vision_dim: int, llm_dim: int, mlp_pool: int = 1, mlp_grid: int = 0) -> nn.Module:
