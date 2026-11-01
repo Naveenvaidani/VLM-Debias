@@ -116,8 +116,11 @@ class StudyVLM(nn.Module):
         after = self.embed(after_ids)
         n_before = before.shape[1]
         ones = torch.ones((b, n_before), dtype=after_mask.dtype, device=after_mask.device)
+        ablate = getattr(self, "ablate_visual", False)  # inference-time pathway ablation (no image information)
         if self.connector.kind == "prefix":
             img, attn = self.connector(patches.float())
+            if ablate:
+                img = torch.zeros_like(img)
             embeds = torch.cat([before, img.to(after.dtype), after], dim=1)
             img_ones = torch.ones((b, img.shape[1]), dtype=after_mask.dtype, device=after_mask.device)
             mask = torch.cat([ones, img_ones, after_mask], dim=1)
@@ -126,6 +129,8 @@ class StudyVLM(nn.Module):
         else:
             text = torch.cat([before, after], dim=1)
             embeds, attn = self.connector(patches.float(), text.float())
+            if ablate:
+                embeds = text.float()
             self.last_visual = (embeds - text.float())[:, :n_before]  # injected visual context, header tokens
             if not self.training:  # injection strength |tanh(g) * out_proj(attended)| / |text|, all tokens
                 with torch.no_grad():

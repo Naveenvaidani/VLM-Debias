@@ -124,6 +124,8 @@ def main():
     parser.add_argument("--lora_lr", type=float, default=None, help="stage-2 LoRA learning rate")
     parser.add_argument("--attn_entropy_weight", type=float, default=0.0)
     parser.add_argument("--loss", choices=["erm", "groupdro"], default="erm")
+    parser.add_argument("--clip_exclude_gate", action="store_true", help="control: gate left out of gradient clipping")
+    parser.add_argument("--gate_no_wd", action="store_true", help="control: no weight decay on the learned gate")
     parser.add_argument("--align_ltd", type=float, default=0.0, help="LTD weight for stage-1 alignment")
     parser.add_argument("--stage3_epochs", type=int, default=3)
     parser.add_argument("--run_tag", default="", help="suffix for the runs folder, e.g. _frozen")
@@ -140,6 +142,7 @@ def main():
     runs = os.path.join(ROOT, "runs_study", tag)
     os.makedirs(runs, exist_ok=True)
     ckpt = ["--gradient_checkpointing"] if args.gradient_checkpointing else []
+    ckpt += ["--clip_exclude_gate"] if args.clip_exclude_gate else []  # alignment and task training
     ckpt += ["--mlp_pool", str(args.mlp_pool)] + (["--mlp_grid", str(args.mlp_grid)] if args.mlp_grid else []) + (["--no_4bit"] if args.no_4bit else [])
     tasks = args.tasks.split(",")
     connectors = args.connectors.split(",")
@@ -248,7 +251,8 @@ def main():
                        (["--connector_lr", str(args.connector_lr)] if args.connector_lr else []) + \
                        (["--lr", str(args.lora_lr)] if args.lora_lr else []) + \
                        (["--attn_entropy_weight", str(args.attn_entropy_weight)] if args.attn_entropy_weight else []) + \
-                       (["--loss", args.loss] if args.loss != "erm" else [])
+                       (["--loss", args.loss] if args.loss != "erm" else []) + \
+                       (["--gate_no_wd"] if args.gate_no_wd else [])
                 stages = [s for s in args.stage3.split(",") if s]
                 if not stages:
                     task_jobs.append((f"{task}/{c}/s{seed}", base, os.path.join(d, "results.json"),

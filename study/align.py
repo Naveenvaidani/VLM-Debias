@@ -19,6 +19,7 @@ from transformers import AutoTokenizer, get_cosine_schedule_with_warmup
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.study.data import CaptionDataset, PromptBuilder
 from src.study.device import autocast, get_device, is_xla, step_done, torch_device
+from src.study.engine import clip_and_log
 from src.study.vlm import StudyVLM
 
 CAPTION_PROMPT = ["Describe this image briefly."]
@@ -45,6 +46,8 @@ def main():
                         help="latent target decoding (Bleeker et al., 2024): the image-side representation must "
                              "predict a sentence embedding of the caption; weight of that cosine loss")
     parser.add_argument("--ltd_encoder", default="sentence-transformers/all-MiniLM-L6-v2")
+    parser.add_argument("--clip_exclude_gate", action="store_true",
+                        help="leave the learned gate out of global-norm gradient clipping (control)")
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -106,12 +109,12 @@ def main():
             if scaler is not None:
                 scaler.scale(loss).backward()
                 scaler.unscale_(optimizer)
-                torch.nn.utils.clip_grad_norm_(params, 1.0)
+                raw, norm = clip_and_log(model, params, 1.0, args.clip_exclude_gate)
                 scaler.step(optimizer)
                 scaler.update()
             else:
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(params, 1.0)
+                raw, norm = clip_and_log(model, params, 1.0, args.clip_exclude_gate)
                 optimizer.step()
             scheduler.step()
             step_done(device)
@@ -119,7 +122,8 @@ def main():
             gate = getattr(model.connector, "gate", None)
             if isinstance(gate, torch.nn.Parameter) and step % 10 == 0:  # learned gate: value and gradient
                 gate_trace.append({"step": step, "gate": float(gate.detach()), "tanh": float(torch.tanh(gate.detach())),
-                                   "grad": float(gate.grad) if gate.grad is not None else None})
+                                   "grad": float(gate.grad) if gate.grad is not None else None,  # after clipping
+                                   "grad_raw": raw, "grad_norm_total": norm})  # before clipping
             step += 1
             bar.update(1)
             if step % 50 == 0:

@@ -40,30 +40,44 @@ def step_loss(model, builder: PromptBuilder, feats, y, templates, device, groups
     return loss
 
 
+def clip_and_log(model, params, grad_clip, exclude_gate=False):
+    """Global-norm gradient clipping. Returns the learned gate's raw (pre-clip) gradient, or None, and the
+    pre-clip global norm. With exclude_gate the gate is left out of the clipped set, so a large gate gradient
+    cannot shrink every other connector update (Flamingo also clips the global norm at 1)."""
+    gate = getattr(model.connector, "gate", None)
+    learned = isinstance(gate, torch.nn.Parameter) and gate.grad is not None
+    raw = float(gate.grad.detach().float().sum()) if learned else None
+    clipped = [p for p in params if not (exclude_gate and p is gate)]
+    norm = float(torch.nn.utils.clip_grad_norm_(clipped, grad_clip))
+    return raw, norm
+
+
 def train_epoch(model, builder, loader, optimizer, scheduler, scaler, device, grad_clip=1.0) -> float:
     model.train()
     params = [p for p in model.parameters() if p.requires_grad]
+    exclude_gate = getattr(model, "clip_exclude_gate", False)
     total = 0.0
-    gate_grads = model.gate_grads = []  # |d loss / d gate| per step (learned-gate connectors only)
+    gate_grads = model.gate_grads = []  # |d loss / d gate| per step, before clipping (learned gates only)
+    grad_norms = model.grad_norms = []  # global gradient norm per step, before clipping
     for feats, y, g, t in tqdm(loader, desc="train", leave=False):
         optimizer.zero_grad(set_to_none=True)
         loss = step_loss(model, builder, feats, y, t, device, groups=g)
         if scaler is not None:
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(params, grad_clip)
+            raw, norm = clip_and_log(model, params, grad_clip, exclude_gate)
             scaler.step(optimizer)
             scaler.update()
         else:
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(params, grad_clip)
+            raw, norm = clip_and_log(model, params, grad_clip, exclude_gate)
             optimizer.step()
         scheduler.step()
         step_done(device)
         total += loss.item()
-        gate = getattr(model.connector, "gate", None)
-        if isinstance(gate, torch.nn.Parameter) and gate.grad is not None:
-            gate_grads.append(abs(float(gate.grad)))
+        grad_norms.append(norm)
+        if raw is not None:
+            gate_grads.append(abs(raw))
     return total / max(len(loader), 1)
 
 

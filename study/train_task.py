@@ -67,6 +67,11 @@ def main():
                              "with --epochs 0 and --init_from it only re-evaluates a trained model")
     parser.add_argument("--loss", choices=["erm", "groupdro"], default="erm",
                         help="groupdro = Group DRO over the 4 (label x spurious) groups (uses group labels)")
+    parser.add_argument("--clip_exclude_gate", action="store_true",
+                        help="leave the learned gate out of global-norm gradient clipping (control)")
+    parser.add_argument("--gate_no_wd", action="store_true", help="no weight decay on the learned gate (control)")
+    parser.add_argument("--no_ablation_eval", action="store_true",
+                        help="skip the test-time pathway ablation (visual contribution removed) of the selected model")
     parser.add_argument("--dro_eta", type=float, default=0.01, help="Group DRO step size")
     parser.add_argument("--max_eval_samples", type=int, default=0, help="cap val/test sets (smoke tests only)")
     args = parser.parse_args()
@@ -142,7 +147,12 @@ def main():
 
     lora_params = [p for n, p in model.decoder.named_parameters() if p.requires_grad]
     groups = [{"params": lora_params, "lr": args.lr}] if lora_params else []
-    param_groups = groups + [{"params": list(model.connector.parameters()), "lr": args.connector_lr}]
+    gate = getattr(model.connector, "gate", None)
+    conn = [p for p in model.connector.parameters() if not (args.gate_no_wd and p is gate)]
+    param_groups = groups + [{"params": conn, "lr": args.connector_lr}]
+    if args.gate_no_wd and isinstance(gate, torch.nn.Parameter):
+        param_groups.append({"params": [gate], "lr": args.connector_lr, "weight_decay": 0.0})
+    model.clip_exclude_gate = args.clip_exclude_gate
     if str(device).startswith("cuda"):
         import bitsandbytes as bnb
         optimizer = bnb.optim.PagedAdamW8bit(param_groups, weight_decay=0.01)
@@ -176,7 +186,8 @@ def main():
         gate = getattr(model.connector, "gate", None)
         history.append({"epoch": epoch, "minutes": minutes, "train_loss": loss,
                         "gate_tanh": float(torch.tanh(gate.float()).item()) if gate is not None else None,
-                        "gate_grad_abs_mean": float(np.mean(model.gate_grads)) if getattr(model, "gate_grads", None) else None,
+                        "gate_grad_abs_mean": float(np.mean(model.gate_grads)) if getattr(model, "gate_grads", None) else None,  # pre-clip
+                        "grad_norm_mean": float(np.mean(model.grad_norms)) if getattr(model, "grad_norms", None) else None,
                         **{f"val_{k}": v for k, v in val.items()}})
         print(f"[{os.path.basename(args.run_dir)}] epoch {epoch} ({minutes:.1f} min) loss {loss:.4f} | "
               f"val avg {val['avg_acc']:.4f} wga {val['worst_group_acc']:.4f}", flush=True)
@@ -214,6 +225,17 @@ def main():
         mean = {k: float(np.mean([per_template[t][k] for t in per_template])) for k in keys}
         results["test"][rule] = {"best_epoch": epoch, "val_score": score, "mean_over_templates": mean,
                                  "per_template": per_template}
+        if rule == "wga" and not args.no_ablation_eval:
+            # behavioural test of the visual pathway (as in Farazi et al., 2026): remove what the connector
+            # contributes from the image at inference and re-test; no change = the pathway is behaviourally closed
+            model.ablate_visual = True
+            abl = []
+            for t in range(len(spec.questions)):
+                loader = DataLoader(cap(TaskDataset(spec, "test", template=t)), batch_size=args.batch_size * 2, num_workers=2)
+                abl.append(evaluate(model, builder, loader, device, spec.group_names)["metrics"])
+            model.ablate_visual = False
+            results["test"][rule]["ablated_mean_over_templates"] = {
+                k: float(np.mean([m[k] for m in abl])) for k in abl[0] if k != "inject_ratio"}
         print(f"test [{rule}] epoch {epoch}: avg {mean['avg_acc']:.4f} wga {mean['worst_group_acc']:.4f} "
               f"held-out template wga {per_template[len(spec.questions) - 1]['worst_group_acc']:.4f}", flush=True)
     with open(os.path.join(args.run_dir, "results.json"), "w") as f:

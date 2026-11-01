@@ -139,6 +139,26 @@ class TestStudy(unittest.TestCase):
         self.assertAlmostEqual(float(model.dro_q.sum()), 1.0, places=5)
         self.assertGreater(float(loss), float(torch.nn.functional.cross_entropy(feats, y)))
 
+    def test_clip_and_log_reports_raw_gate_grad_and_can_exclude_gate(self):
+        from src.study.engine import clip_and_log
+        conn = build_connector("bottleneck", 8, 16)
+        model = type("M", (), {"connector": conn})()
+        params = list(conn.parameters())
+        for p in params:
+            p.grad = torch.ones_like(p)
+        conn.gate.grad = torch.full_like(conn.gate, 50.0)
+        raw, norm = clip_and_log(model, params, 1.0)
+        self.assertAlmostEqual(raw, 50.0)  # logged before clipping
+        self.assertGreater(norm, 50.0)
+        self.assertLess(float(conn.gate.grad), 1.0)  # clipped with everything else
+        for p in params:
+            p.grad = torch.ones_like(p)
+        conn.gate.grad = torch.full_like(conn.gate, 50.0)
+        raw, norm = clip_and_log(model, params, 1.0, exclude_gate=True)
+        self.assertAlmostEqual(float(conn.gate.grad), 50.0)  # gate untouched
+        others = torch.cat([p.grad.flatten() for p in params if p is not conn.gate])
+        self.assertAlmostEqual(float(others.norm()), 1.0, places=2)
+
 
 if __name__ == "__main__":
     unittest.main()
