@@ -114,7 +114,8 @@ assumed.
 
 **"Flamingo trains 500k steps and its gates open."**
 - *What we say:* our regime is short, adapter-style alignment, and the paper says so.
-- *The test:* 3,000 alignment steps (10×) leave the gate shut (peak 0.003) and widen the gap to +59 / +55
+- *The test:* 3,000 alignment steps (10×) leave the gate shut (peak 0.003). The learned-gate alignment then
+  diverged (caption loss 2.0 → 7.9), so the wider gap (+59 / +55) shows fragility, not a clean effect
   (README §17).
 - *Supporting evidence:* the released IDEFICS-80B gates show that near-shut gates survive full training in
   9 of 20 layers.

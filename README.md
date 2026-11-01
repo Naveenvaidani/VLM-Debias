@@ -64,7 +64,8 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
    |tanh α| < 0.05.
 7. **Controls point at the zero initialisation, not at learnability or training budget**
    ([17](#17-control-experiments-rounds-3-4)). A learnable gate that *starts* open matches the fixed gate.
-   Ten times longer alignment leaves the gate shut and widens the gap (+59 and +55). A larger connector
+   Ten times longer alignment leaves the gate shut, but the learned-gate alignment diverged (caption loss
+   2.0 → 7.9), so that run shows fragility rather than a clean effect. A larger connector
    learning rate moves the gate further and closes the gap (dose-response). The learned gate is not fully shut:
    it still injects visual signal, but 15–35× less than the fixed gate. Group DRO shrinks the gap but does not
    remove it.
@@ -425,7 +426,7 @@ Full tables, per-seed values and the code: [`results_study/extra_analyses.md`](r
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | **Open gate**: learnable, initialised at tanh = 0.995 (Waterbirds / Watermark) | 5 | 71.8 / 66.8 (open) | 72.9 / 72.1 | +1.1 / +5.3 (n.s.) | A learnable gate that starts open behaves like the fixed gate; the harm comes from the zero initialisation. Caveat: at α = 3 the gate gradient is ×0.01, so it barely moves. |
 | **Connector LR** 5e-5 / 2e-4 / 1e-3 (Waterbirds) | 2 | 35.9 / 56.8 / 65.8 | 65.6 / 73.5 / 66.5 | +29.6 / +16.7 / +0.7 | Dose-response: the faster the gate can move (final 0.002 / 0.004 / 0.018), the smaller the gap. |
-| **10× alignment** (3,000 steps) | 3 | 11.4 / 4.1 | 70.8 / 59.5 | +59.3 / +55.4 | The gate stays shut (peak 0.003) and the learned-gate model collapses; more alignment widens the gap. |
+| **10× alignment** (3,000 steps) | 3 | 11.4 / 4.1 | 70.8 / 59.5 | +59.3 / +55.4 | The gate stays shut (peak 0.003), but the learned-gate alignment diverged (caption loss 2.0 → 7.9; fixed ends at 2.5). Shows fragility; confounded, not a clean test. |
 | **Group DRO** instead of ERM | 2 | 72.5 / 69.2 | 76.0 / 79.0 | +3.5 / +9.9 | A group-robust loss rescues most of it; the fixed gate still leads. |
 | **Injection ratio** ‖injected‖ / ‖text‖ | 6 / 6 | 3.5 (1.2–7.5) | 112 (95–129) | 15–35× | The learned pathway is open (out_proj grows) but much weaker; its size does not predict WGA (ρ = 0.33, p = 0.27). |
 | **CelebA** (third task) | 3 | 37.4 | 50.7 | +13.3 (p = 0.24) | Same direction, not significant. |

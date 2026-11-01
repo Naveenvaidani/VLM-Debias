@@ -112,7 +112,10 @@ whether training opens it, not whether it closes.
   gate injects 95–129 (mean 112) and the open gate 106–145. The learned gate passes 15–35× less visual
   signal. Within learned-gate runs the ratio does not predict WGA (Spearman ρ = 0.33, p = 0.27, 13 runs).
 - *Longer alignment does not open the gate (§4):* after 3,000 alignment steps instead of 300 the gate peaks at
-  |tanh α| = 0.003 and ends at −0.0002.
+  |tanh α| = 0.003 and ends at −0.0002. The learned-gate alignment also diverged: its captioning loss fell to
+  2.0 by step ~310, then rose to 7.9, while the fixed gate's ended at 2.5. With the gate near zero, a large loss can only come
+  from `out_proj` growing until the small gated term disrupts the embeddings, so the product parametrisation
+  `tanh(α)·out_proj` is itself unstable over long training.
 
 **Attention on the shortcut.** Both cross-attention variants attend to the watermark corner more when it is
 present (uniform share 8.2%):
@@ -158,7 +161,7 @@ Yet only the learned gate fails.
 | Training length | 8 epochs, 1 seed (seeds 1–4 running) | MLP 79.1; fixed gate 44.5. Unresolved: the fixed gate may also degrade with long training |
 | Gate trainable vs initialisation | Learnable gate initialised open (`bottleneck_open`, tanh = 0.995), 5 seeds | Open gate matches the fixed gate (71.8 vs 72.9; 66.8 vs 72.1) and beats the zero-init gate (+9.9, +17.1). The harm comes from the zero initialisation |
 | Learning rate | Connector LR 5e-5 / 2e-4 / 1e-3, 2 seeds | Gap +29.6 / +16.7 / +0.7 as the gate moves further from 0 (0.002 / 0.004 / 0.018): dose-response |
-| Alignment length | 3,000 instead of 300 steps, 3 seeds | Gate still shut (peak 0.003); learned-gate WGA collapses (11.4, 4.1) while fixed stays (70.8, 59.5): gap widens to +59 and +55 |
+| Alignment length | 3,000 instead of 300 steps, 3 seeds | Gate still shut (peak 0.003), but the learned-gate alignment diverged (caption loss 2.0 → 7.9; fixed ends at 2.5). Learned-gate WGA 11.4 / 4.1 vs fixed 70.8 / 59.5. Confounded with the divergence: evidence of fragility, not a clean test |
 | Standard group-robust training | Group DRO at the full model, 2 seeds | Gap shrinks to +3.5 and +9.9; the fixed gate still leads |
 | Injection strength | ‖injected‖ / ‖text‖ at test | Learned gate ≈ 3–8, fixed and open ≈ 100–125: 15–35× less visual signal, but not zero |
 | Caption-reconstruction loss (LTD) | 3 seeds | MLP 75.9 ± 3.3 (vs 74.9); fixed gate 72.3 ± 3.7 |
@@ -241,8 +244,10 @@ on the shortcut and vary widely across seeds.
 every 4th–7th LM layer [alayrac2022flamingo]. Our connector injects once, at the input embeddings, after 300
 alignment steps. The finding is therefore scoped to short alignment and input-level injection, the regime of
 adapter-style fine-tuning on a budget. Ten times longer alignment (3,000 steps) does not move it toward
-Flamingo's behaviour: the gate stays shut and the learned-gate model collapses further (WGA 11.4 and 4.1 vs
-70.8 and 59.5 for the fixed gate). In our regime more alignment widens the gap. The IDEFICS gate
+Flamingo's behaviour: the gate stays shut. The learned-gate alignment then diverged (caption loss 2.0 → 7.9)
+and its models collapsed (WGA 11.4 and 4.1 vs 70.8 and 59.5), so this run shows the learned gate is fragile
+under longer training, but it is not a clean test of the gate alone. Flamingo also uses warmup, a smaller
+learning rate for longer schedules and far more data, which we do not replicate. The IDEFICS gate
 readings (9 of 20 layers below 0.05 after full training) show that near-shut gates also survive long training.
 Flamingo also reports that removing the gate costs 4.2 points and destabilises training. Our fixed gate is not
 "no gate": the output layer is zero-initialised, so the model still starts as the pretrained LLM, and no

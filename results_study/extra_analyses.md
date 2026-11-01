@@ -47,14 +47,14 @@ Reading: the gap shrinks as the connector learning rate grows (+29.6, +16.7, +0.
 
 ## 4. 10× longer alignment (3,000 steps vs 300), seeds 0-2
 
-| Task | Alignment | Learned | Fixed | Fixed − learned | tanh α after alignment |
-| :--- | :--- | :---: | :---: | ---: | ---: |
-| waterbirds | 300 steps (default) | 62.1 ± 14.9 | 73.5 ± 0.3 | +11.4 | ≈ 0.0006 |
-| waterbirds | 3,000 steps | 11.4 ± 4.3 | 70.8 ± 0.3 | +59.3 | -0.00020 (peak abs 0.0032) |
-| watermark_p0.95 | 300 steps (default) | 50.3 ± 16.1 | 69.6 ± 8.9 | +19.3 | ≈ 0.0006 |
-| watermark_p0.95 | 3,000 steps | 4.1 ± 1.7 | 59.5 ± 6.8 | +55.4 | -0.00020 (peak abs 0.0032) |
+| Task | Alignment | Learned | Fixed | Fixed − learned | tanh α after alignment | final caption loss L / F |
+| :--- | :--- | :---: | :---: | ---: | ---: | :---: |
+| waterbirds | 300 steps (default) | 62.1 ± 14.9 | 73.5 ± 0.3 | +11.4 | ≈ 0.0006 | ≈ 2.7 / 3.2 |
+| waterbirds | 3,000 steps | 11.4 ± 4.3 | 70.8 ± 0.3 | +59.3 | -0.00020 (peak abs 0.0032) | 7.86 / 2.53 |
+| watermark_p0.95 | 300 steps (default) | 50.3 ± 16.1 | 69.6 ± 8.9 | +19.3 | ≈ 0.0006 | ≈ 2.7 / 3.2 |
+| watermark_p0.95 | 3,000 steps | 4.1 ± 1.7 | 59.5 ± 6.8 | +55.4 | -0.00020 (peak abs 0.0032) | 7.86 / 2.53 |
 
-Reading: ten times more alignment does not open the gate (peak |tanh α| 0.003, final −0.0002), and the learned-gate model collapses to the shortcut (WGA 11 and 4: it predicts the spurious class for the minority groups), while the fixed gate changes little (−2.7 and −10.1). Longer alignment widens the gap rather than closing it, which answers the 'Flamingo trains longer' objection for our regime.
+Reading: ten times more alignment does not open the gate (peak |tanh α| 0.003, final −0.0002). But the learned-gate alignment *diverged*: its captioning loss reached 1.98 around step 310 and then rose to 7.87, while the fixed gate's fell steadily to 2.53. The learned-gate models then rely on the shortcut (ID accuracy 95–99%, OOD 5–56%) and the gap widens, but this is confounded with the failed alignment: it shows that the learned gate is fragile under longer training, not cleanly that a shut gate alone causes the drop.
 
 ## 5. Group DRO instead of ERM (seeds 0-1)
 

@@ -45,7 +45,7 @@ Each option is 10–15 words, with the keywords in the first 65 characters and n
 > Fixing the gate open raises worst-group accuracy by 10.6 and 25.2 points, large effects (paired Cohen's
 > d = 1.10 and 1.34, p < 0.001). It also eliminates the training runs that collapse below 50%, which occur in
 > up to 10 of 15 seeds with the learnable gate. A learnable gate initialised open behaves like the fixed
-> one, and ten times longer alignment leaves the zero-initialised gate shut. Once the gate is fixed, no significant difference between
+> one, and ten times longer alignment leaves the zero-initialised gate shut and destabilises it. Once the gate is fixed, no significant difference between
 > connector types is detected. Retraining only the connector on a small group-balanced set reaches 89.6% worst-group accuracy
 > on the watermark task.
 >

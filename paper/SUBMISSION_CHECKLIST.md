@@ -68,6 +68,8 @@ Status as of 2026-11-01. "Done" = addressed in code, results or text; "Running" 
 | 51 | `transformers` not pinned in Kaggle jobs (5.21.0 → 5.22.1) | Versions recorded per job; disclosed; `study/requirements-kaggle.txt` pins them for new runs | Done |
 | 52 | Headline WGA averages two training phrasings | H1 on the held-out phrasing alone: same effect, all p ≤ 0.006 (extra_analyses §8) | Done |
 | 53 | Binary first-token readout, not open-ended generation | Stated in limitations | Done |
+| 54 | 3,000-step alignment: learned-gate captioning loss diverged (2.0 → 7.9) | Reported; the run is now described as fragility under long training, not a clean test of the gate | Done |
+| 55 | Learned gate has *lower* 300-step caption loss than the fixed gate (≈ 2.7 vs 3.2) | Caption loss is not a measure of image use (captions are partly predictable from text); reported, and WGA/injection are the outcome measures | Done (text) |
 
 Optional, not queued: native zero-shot on CelebA and Watermark (needs task images on the account that runs it);
 gate excluded from clipping *and* no weight decay together; multi-layer injection.

@@ -187,8 +187,10 @@ accuracy (%). Full tables: [`results_study/extra_analyses.md`](../results_study/
 - A bigger connector learning rate lets the gate move further (0.002 → 0.018) and the gap shrinks
   (+29.6 → +0.7). A smaller one widens it. Dose-response, 2 seeds each.
 
-**"Flamingo trains longer": answered for our regime.** 10× more alignment (3,000 steps) leaves the gate shut
+**"Flamingo trains longer": partly answered.** 10× more alignment (3,000 steps) leaves the gate shut
 (peak 0.003). The learned-gate model then collapses (11.4 and 4.1) while the fixed gate stays (70.8 and 59.5).
+*Correction (§14):* the learned-gate alignment diverged in that run (loss 2.0 → 7.9), so the collapse is
+confounded with a failed alignment.
 
 **"How does the model see the shortcut if the gate is shut?": answered.** The gate is not fully shut. The output
 layer grows, so the learned gate still injects 1–7× the text-embedding norm, but 15–35× less than the fixed gate.
@@ -262,4 +264,15 @@ References now 103.
   not tested. Added to the limitations.
 - **Privacy.** Kaggle account names were removed from the documents and from git history (history rewrite
   of the 8 most recent commits; see the commit log).
+
+## 14. Correction: the 3,000-step alignment run diverged
+
+Reading the loss curves (not only the final numbers) showed that the learned-gate alignment in the 3,000-step
+run diverged: its captioning loss fell to 2.0 around step 310, then rose to 7.9, while the fixed gate's ended
+at 2.5. With the gate near zero, the loss can only blow up if `out_proj` grows until the small gated term
+disrupts the embeddings, so the product `tanh(α)·out_proj` is unstable over long training. The collapse of the
+learned-gate models after this alignment (WGA 11 and 4) is therefore confounded with a failed alignment. All
+documents now present this run as evidence of fragility, not as a clean test that a shut gate alone causes the
+drop. At 300 steps the learned gate even reaches a *lower* caption loss than the fixed gate (≈ 2.7 vs 3.2),
+which shows caption loss does not measure whether the image is used.
 

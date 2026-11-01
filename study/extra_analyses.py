@@ -166,10 +166,13 @@ def main():
 
     # 4. align3k
     L += ["## 4. 10× longer alignment (3,000 steps vs 300), seeds 0-2", "",
-          "| Task | Alignment | Learned | Fixed | Fixed − learned | tanh α after alignment |",
-          "| :--- | :--- | :---: | :---: | ---: | ---: |"]
+          "| Task | Alignment | Learned | Fixed | Fixed − learned | tanh α after alignment | final caption loss L / F |",
+          "| :--- | :--- | :---: | :---: | ---: | ---: | :---: |"]
     al3 = json.load(open(glob.glob(os.path.join(a.dl, "vlm-shortcut-r3-align3k", "results", "qwen35-4b_align3k", "align", "bottleneck", "align.json"))[0]))
     g3 = al3["gate_trace"][-1]["tanh"]
+    al3f = json.load(open(glob.glob(os.path.join(a.dl, "vlm-shortcut-r3-align3k", "results", "qwen35-4b_align3k", "align", "bottleneck_fixed", "align.json"))[0]))
+    lc = al3["loss_curve"]
+    loss3 = f"{al3['final_loss']:.2f} / {al3f['final_loss']:.2f}"
     peak3 = max(abs(x["tanh"]) for x in al3["gate_trace"])
     for t in TASKS:
         rs3 = runs(dl("vlm-shortcut-r3-align3k", "qwen35-4b_align3k", t))
@@ -178,11 +181,14 @@ def main():
             lo = [wga(rs[("bottleneck", x)]) for x in s]
             fx = [wga(rs[("bottleneck_fixed", x)]) for x in s]
             L.append(f"| {t} | {lab} | {fmt(lo)} | {fmt(fx)} | {np.mean(fx) - np.mean(lo):+.1f} | "
-                     f"{'≈ 0.0006' if g is None else f'{g:.5f} (peak abs {peak3:.4f})'} |")
-    L += ["", "Reading: ten times more alignment does not open the gate (peak |tanh α| 0.003, final −0.0002), and the "
-          "learned-gate model collapses to the shortcut (WGA 11 and 4: it predicts the spurious class for the "
-          "minority groups), while the fixed gate changes little (−2.7 and −10.1). Longer alignment widens the gap "
-          "rather than closing it, which answers the 'Flamingo trains longer' objection for our regime.", ""]
+                     f"{'≈ 0.0006' if g is None else f'{g:.5f} (peak abs {peak3:.4f})'} | "
+                     f"{'≈ 2.7 / 3.2' if g is None else loss3} |")
+    L += ["", f"Reading: ten times more alignment does not open the gate (peak |tanh α| 0.003, final −0.0002). But "
+          f"the learned-gate alignment *diverged*: its captioning loss reached {min(lc):.2f} around step "
+          f"{10 * int(np.argmin(lc))} and then rose to {lc[-1]:.2f}, while the fixed gate's fell steadily to "
+          f"{al3f['final_loss']:.2f}. The learned-gate models then rely on the shortcut (ID accuracy 95–99%, OOD "
+          "5–56%) and the gap widens, but this is confounded with the failed alignment: it shows that the "
+          "learned gate is fragile under longer training, not cleanly that a shut gate alone causes the drop.", ""]
 
     # 5. Group DRO
     L += ["## 5. Group DRO instead of ERM (seeds 0-1)", "",
