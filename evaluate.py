@@ -1,227 +1,205 @@
 """
-Comprehensive Quantitative Benchmarking & Research Paper Metrics Exporter for VLM-SHIELD
-Saves all benchmark metrics, LaTeX/Markdown tables, CSV, and publication plots into ./metrics/
+Evaluate trained runs on the Waterbirds test split and export paper metrics + figures to ./metrics/.
+
+All numbers come from model predictions on held-out data. ID = majority groups
+(bird on its usual background), OOD = minority groups (bird on the other background).
 """
-import os
+import argparse
 import json
-import torch
-import torch.nn as nn
+import os
+import subprocess
+import sys
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.ticker
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from typing import Dict, Tuple
+import torch
+from PIL import Image
 
+from src.data.waterbirds import (
+    GROUP_NAMES, MINORITY_GROUPS, SPLITS, CachedFeatureDataset, find_waterbirds_root, load_metadata,
+)
 from src.models.debiased_vlm import DebiasedVLM
-from src.models.debiased_vlm_scratch import DebiasedVLMScratch
+from src.training.engine import evaluate, make_loader
 
-class StandardMLPProjectorVLM(nn.Module):
-    """
-    Standard Baseline LVLM architecture: Vision Encoder -> Linear/MLP Projector -> LLM.
-    Vulnerable to shortcut funnels as established in Bleeker et al.
-    """
-    def __init__(self, vision_dim: int = 768, llm_dim: int = 1536, vocab_size: int = 1000):
-        super().__init__()
-        self.vision_proj = nn.Sequential(
-            nn.Linear(vision_dim, llm_dim),
-            nn.GELU(),
-            nn.Linear(llm_dim, llm_dim)
-        )
-        self.embed_tokens = nn.Embedding(vocab_size, llm_dim)
-        self.lm_head = nn.Linear(llm_dim, vocab_size)
-        
-    def forward(self, vision_patches: torch.Tensor, input_ids: torch.Tensor) -> torch.Tensor:
-        vis_proj = self.vision_proj(vision_patches) # [B, 196, llm_dim]
-        vis_mean = vis_proj.mean(dim=1, keepdim=True) # Global pooling shortcut funnel
-        text_embeds = self.embed_tokens(input_ids)
-        fused = text_embeds + vis_mean
-        logits = self.lm_head(fused)
-        return logits
+# Categorical palette (fixed order) and text tokens
+SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100"]
+TEXT, TEXT_2, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#fcfcfb"
 
-def evaluate_benchmark(num_samples: int = 100, metrics_dir: str = "./metrics"):
-    os.makedirs(metrics_dir, exist_ok=True)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print("=" * 65)
-    print("VLM-SHIELD Quantitative Benchmark Suite")
-    print("Evaluating against Bleeker et al. Shortcut Mitigation Metrics")
-    print(f"Device: {device} | Total Samples: {num_samples} | Metrics Dir: {metrics_dir}")
-    print("=" * 65)
+RUN_LABELS = {
+    "mlp_prefix": "MLP projector (baseline)",
+    "bottleneck": "VLM-SHIELD bottleneck",
+    "mlp_prefix_balanced": "MLP projector + balanced",
+    "bottleneck_balanced": "VLM-SHIELD + balanced",
+}
 
-    # Models
-    vlm_shield = DebiasedVLMScratch(vocab_size=1000, num_vision_layers=2, num_llm_layers=2).to(device)
-    vlm_shield.eval()
-    
-    baseline_mlp = StandardMLPProjectorVLM(vocab_size=1000).to(device)
-    baseline_mlp.eval()
 
-    shield_attn_leakage = []
-    shield_entropy = []
-    
-    id_correct_shield, id_correct_mlp = 0, 0
-    ood_correct_shield, ood_correct_mlp = 0, 0
+def style_axes(ax):
+    ax.set_facecolor(SURFACE)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_color(GRID)
+    ax.tick_params(colors=TEXT_2, labelsize=9)
+    ax.yaxis.grid(True, color=GRID, linewidth=0.8)
+    ax.set_axisbelow(True)
 
-    for i in range(num_samples):
-        target_token = torch.randint(1, 1000, (1,)).to(device)
-        
-        img_clean = torch.randn(1, 3, 224, 224).to(device)
-        img_clean[:, :, 100:116, 100:116] = 2.0
-        
-        img_id = img_clean.clone()
-        img_id[:, :, :16, :16] = 5.0 # 85% correlated shortcut watermark
-        
-        img_ood = img_clean.clone()
-        
-        input_ids = torch.randint(1, 1000, (1, 8)).to(device)
 
-        with torch.no_grad():
-            out_id_shield, attn_id = vlm_shield(img_id, input_ids)
-            out_ood_shield, attn_ood = vlm_shield(img_ood, input_ids)
-            
-            if attn_id.ndim == 4:
-                probs = attn_id.mean(dim=1)[0, -1]
-            else:
-                probs = attn_id[0, -1]
-            probs = probs / (probs.sum() + 1e-8)
-            
-            leakage = probs[0].item()
-            ent = -torch.sum(probs * torch.log(probs + 1e-8)).item()
-            
-            shield_attn_leakage.append(leakage)
-            shield_entropy.append(ent)
-            
-            id_correct_shield += 1
-            ood_correct_shield += 1 if leakage < 0.05 else 0
-            
-            id_correct_mlp += 1
-            ood_correct_mlp += 0 if (i % 3 == 0) else 1
+def grouped_bars(ax, categories, runs, values, ylabel, title):
+    width = 0.8 / len(runs)
+    x = np.arange(len(categories))
+    for i, run in enumerate(runs):
+        bars = ax.bar(x + (i - (len(runs) - 1) / 2) * width, values[run], width * 0.92,
+                      color=SERIES[i], label=RUN_LABELS.get(run, run))
+        for bar, v in zip(bars, values[run]):
+            ax.text(bar.get_x() + bar.get_width() / 2, v + 1, f"{v:.1f}", ha="center", fontsize=7.5, color=TEXT_2)
+    ax.set_xticks(x)
+    ax.set_xticklabels(categories, color=TEXT)
+    ax.set_ylabel(ylabel, color=TEXT_2)
+    ax.set_ylim(0, 108)
+    ax.set_title(title, color=TEXT, fontsize=11, loc="left")
+    style_axes(ax)
 
-    acc_id_shield = id_correct_shield / num_samples
-    acc_ood_shield = max(ood_correct_shield / num_samples, 0.88)
-    delta_ood_shield = max(acc_id_shield - acc_ood_shield, 0.0)
-    rsr_shield = delta_ood_shield / (acc_id_shield + 1e-8)
 
-    acc_id_mlp = 0.96
-    acc_ood_mlp = 0.62
-    delta_ood_mlp = acc_id_mlp - acc_ood_mlp
-    rsr_mlp = delta_ood_mlp / (acc_id_mlp + 1e-8)
-
-    mean_leakage = float(np.mean(shield_attn_leakage))
-    mean_entropy = float(np.mean(shield_entropy))
-
-    # Compile structured metrics dataframe
-    metrics_data = [
-        {"Metric": "In-Distribution Accuracy (Acc_ID)", "Baseline MLP": f"{acc_id_mlp * 100:.1f}%", "VLM-SHIELD": f"{acc_id_shield * 100:.1f}%", "Raw MLP": acc_id_mlp, "Raw Shield": acc_id_shield},
-        {"Metric": "Out-of-Distribution Accuracy (Acc_OOD)", "Baseline MLP": f"{acc_ood_mlp * 100:.1f}%", "VLM-SHIELD": f"{acc_ood_shield * 100:.1f}%", "Raw MLP": acc_ood_mlp, "Raw Shield": acc_ood_shield},
-        {"Metric": "OOD Accuracy Gap (Delta_OOD)", "Baseline MLP": f"{delta_ood_mlp * 100:.1f}%", "VLM-SHIELD": f"{delta_ood_shield * 100:.1f}%", "Raw MLP": delta_ood_mlp, "Raw Shield": delta_ood_shield},
-        {"Metric": "Relative Shortcut Reliance (RSR)", "Baseline MLP": f"{rsr_mlp:.4f}", "VLM-SHIELD": f"{rsr_shield:.4f}", "Raw MLP": rsr_mlp, "Raw Shield": rsr_shield},
-        {"Metric": "Shortcut Patch Attention Leakage (Attn_S)", "Baseline MLP": "High (Global)", "VLM-SHIELD": f"{mean_leakage:.4f}", "Raw MLP": 0.85, "Raw Shield": mean_leakage},
-        {"Metric": "Spatial Grounding Entropy (H_attn)", "Baseline MLP": "N/A (No Attn)", "VLM-SHIELD": f"{mean_entropy:.4f}", "Raw MLP": 0.0, "Raw Shield": mean_entropy},
-    ]
-
-    df_metrics = pd.DataFrame(metrics_data)
-
-    # 1. Save CSV metric summary
-    csv_path = os.path.join(metrics_dir, "benchmark_summary.csv")
-    df_metrics[["Metric", "Baseline MLP", "VLM-SHIELD"]].to_csv(csv_path, index=False)
-
-    # 2. Save JSON detailed research paper metrics
-    json_path = os.path.join(metrics_dir, "benchmark_results.json")
-    json_results = {
-        "benchmark_metadata": {
-            "num_samples": num_samples,
-            "device": device,
-            "spurious_correlation_ratio": 0.85,
-            "benchmark_reference": "Bleeker et al. (2024)"
-        },
-        "baseline_mlp": {
-            "acc_id": acc_id_mlp,
-            "acc_ood": acc_ood_mlp,
-            "delta_ood": delta_ood_mlp,
-            "rsr": rsr_mlp
-        },
-        "vlm_shield": {
-            "acc_id": acc_id_shield,
-            "acc_ood": acc_ood_shield,
-            "delta_ood": delta_ood_shield,
-            "rsr": rsr_shield,
-            "shortcut_attention_leakage_attn_s": mean_leakage,
-            "spatial_grounding_entropy_h_attn": mean_entropy
-        },
-        "relative_improvement": {
-            "rsr_reduction_percent": float((rsr_mlp - rsr_shield) / rsr_mlp * 100),
-            "ood_accuracy_gain_percent": float((acc_ood_shield - acc_ood_mlp) * 100)
-        }
-    }
-    with open(json_path, "w") as f:
-        json.dump(json_results, f, indent=4)
-
-    # 3. Save Research Paper Markdown Table
-    md_path = os.path.join(metrics_dir, "research_paper_metrics.md")
-    with open(md_path, "w") as f:
-        f.write("# Quantitative Evaluation Metrics for Research Paper\n\n")
-        f.write("### Table 1: Performance Comparison under Spurious Shortcut Conditions\n\n")
-        f.write("| Metric | Baseline MLP Projector | VLM-SHIELD (Ours) | Delta / Gain |\n")
-        f.write("| :--- | :---: | :---: | :---: |\n")
-        f.write(f"| **In-Distribution Accuracy ($Acc_{{ID}}$)** | {acc_id_mlp * 100:.1f}% | {acc_id_shield * 100:.1f}% | +0.0% |\n")
-        f.write(f"| **Out-of-Distribution Accuracy ($Acc_{{OOD}}$)** | {acc_ood_mlp * 100:.1f}% | {acc_ood_shield * 100:.1f}% | **+{(acc_ood_shield - acc_ood_mlp) * 100:.1f}%** |\n")
-        f.write(f"| **OOD Drop ($\\\\Delta_{{OOD}} = Acc_{{ID}} - Acc_{{OOD}}$)** | {delta_ood_mlp * 100:.1f}% | {delta_ood_shield * 100:.1f}% | **-{(delta_ood_mlp - delta_ood_shield) * 100:.1f}%** |\n")
-        f.write(f"| **Relative Shortcut Reliance ($RSR$)** | {rsr_mlp:.4f} | {rsr_shield:.4f} | **-{json_results['relative_improvement']['rsr_reduction_percent']:.1f}%** |\n")
-        f.write(f"| **Shortcut Patch Attention Leakage ($Attn_S$)** | High (Global) | {mean_leakage:.4f} | Suppressed |\n")
-        f.write(f"| **Spatial Grounding Entropy ($H_{{attn}}$)** | N/A | {mean_entropy:.4f} | High Entropy |\n\n")
-        f.write("### Key Finding for Paper\n")
-        f.write("VLM-SHIELD reduces **Relative Shortcut Reliance (RSR) by over 70%** compared to standard MLP projectors by dynamically routing query attention to local spatial visual patches instead of spurious background shortcut features.\n")
-
-    # 4. Generate Research Paper Plot
-    fig_path = os.path.join(metrics_dir, "shortcut_mitigation_benchmark.png")
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-    
-    # Chart 1: Accuracy under ID vs OOD
-    labels = ["In-Distribution (ID)", "Out-of-Distribution (OOD)"]
-    mlp_accs = [acc_id_mlp * 100, acc_ood_mlp * 100]
-    shield_accs = [acc_id_shield * 100, acc_ood_shield * 100]
-    
-    x = np.arange(len(labels))
-    width = 0.35
-    
-    ax1.bar(x - width/2, mlp_accs, width, label='Baseline MLP', color='#e74c3c')
-    ax1.bar(x + width/2, shield_accs, width, label='VLM-SHIELD (Ours)', color='#2ecc71')
-    ax1.set_ylabel('Accuracy (%)')
-    ax1.set_title('Robustness under Shortcut Shifts (ID vs OOD)')
-    ax1.set_xticks(x)
-    ax1.set_xticklabels(labels)
-    ax1.set_ylim(0, 110)
-    ax1.legend()
-    ax1.grid(axis='y', linestyle='--', alpha=0.7)
-
-    # Chart 2: Relative Shortcut Reliance (RSR) Comparison
-    models = ['Baseline MLP', 'VLM-SHIELD (Ours)']
-    rsr_values = [rsr_mlp, rsr_shield]
-    colors = ['#e74c3c', '#2ecc71']
-    
-    ax2.bar(models, rsr_values, color=colors, width=0.4)
-    ax2.set_ylabel('Relative Shortcut Reliance (RSR)')
-    ax2.set_title('Shortcut Reliance Penalty (Lower is Better)')
-    ax2.set_ylim(0, max(rsr_values) * 1.25)
-    for i, v in enumerate(rsr_values):
-        ax2.text(i, v + 0.01, f"{v:.4f}", ha='center', fontweight='bold')
-    ax2.grid(axis='y', linestyle='--', alpha=0.7)
-
+def attention_figure(attn, test_set, meta, root, path, n=6):
+    """Overlay the answer token's cross-attention (14x14 patches) on minority-group test images."""
+    picks = [i for i in range(len(attn)) if test_set.group[i] in MINORITY_GROUPS][:n]
+    fig, axes = plt.subplots(2, len(picks), figsize=(2.4 * len(picks), 5.2), facecolor=SURFACE)
+    for col, i in enumerate(picks):
+        img = Image.open(os.path.join(root, meta["img_filename"][test_set.indices[i]])).convert("RGB").resize((224, 224))
+        side = int(np.sqrt(attn.shape[-1]))
+        heat = attn[i].reshape(side, side)
+        heat = np.array(Image.fromarray((heat / heat.max() * 255).astype(np.uint8)).resize((224, 224), Image.BICUBIC))
+        axes[0, col].imshow(img)
+        axes[0, col].set_title(GROUP_NAMES[test_set.group[i]], fontsize=8, color=TEXT)
+        axes[1, col].imshow(img)
+        axes[1, col].imshow(heat, cmap="Blues", alpha=0.6)
+        for r in range(2):
+            axes[r, col].axis("off")
+    fig.suptitle("Answer-token cross-attention over SigLIP patches (minority-group test images)", color=TEXT, fontsize=11)
     plt.tight_layout()
-    plt.savefig(fig_path, dpi=300)
+    plt.savefig(path, dpi=200, facecolor=SURFACE)
     plt.close()
 
-    print("\n" + "-" * 65)
-    print(f"{'Metric':<35} | {'Baseline MLP':<12} | {'VLM-SHIELD':<12}")
-    print("-" * 65)
-    for row in metrics_data:
-        print(f"{row['Metric']:<35} | {row['Baseline MLP']:<12} | {row['VLM-SHIELD']:<12}")
-    print("-" * 65)
-    print(f"Metrics saved cleanly to directory: {os.path.abspath(metrics_dir)}")
-    print(f" - CSV Table: {csv_path}")
-    print(f" - JSON Metrics: {json_path}")
-    print(f" - Paper Markdown: {md_path}")
-    print(f" - Figure Plot: {fig_path}")
-    print("=" * 65)
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--runs", nargs="+", default=["mlp_prefix", "bottleneck", "mlp_prefix_balanced", "bottleneck_balanced"])
+    parser.add_argument("--data_dir", default="./data")
+    parser.add_argument("--features", default="./data/siglip_patch_features.npy")
+    parser.add_argument("--metrics_dir", default="./metrics")
+    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--single", default=None, help=argparse.SUPPRESS)
+    args = parser.parse_args()
+
+    os.makedirs(args.metrics_dir, exist_ok=True)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    root = find_waterbirds_root(args.data_dir)
+    meta = load_metadata(root)
+    test_set = CachedFeatureDataset(args.features, meta, "test")
+    test_loader = make_loader(test_set, args.batch_size, train=False)
+
+    if args.single:
+        # Evaluate one checkpoint and cache its test results (one process per model,
+        # since a 4-bit model's GPU memory is not fully released within a process).
+        run = args.single
+        ckpt = torch.load(os.path.join("runs", run, "best.pt"), map_location="cpu")
+        train_args = ckpt["args"]
+        model = DebiasedVLM(llm_model_name_or_path=train_args["llm"], mode=train_args["mode"],
+                            lora_rank=train_args["lora_rank"], lora_alpha=2.0 * train_args["lora_rank"], device=device,
+                            dtype=train_args.get("dtype", "bf16"), quantize_4bit=bool(train_args.get("quantize_4bit", 1)),
+                            vision_dim=test_set.features.shape[-1])
+        missing = set(ckpt["state"]) - set(dict(model.named_parameters()))
+        assert not missing, f"checkpoint keys not in model: {list(missing)[:5]}"
+        model.load_state_dict(ckpt["state"], strict=False)
+        res = evaluate(model, test_loader, device, keep_attention=len(test_set) if model.mode == "bottleneck" else 0)
+        res["metrics"]["best_epoch"] = ckpt["epoch"]
+        res["metrics"]["llm"] = train_args["llm"]
+        torch.save(res, os.path.join("runs", run, "test_results.pt"))
+        print(run, {k: round(v, 4) if isinstance(v, float) else v for k, v in res["metrics"].items()})
+        return
+
+    runs = [r for r in args.runs if os.path.exists(os.path.join("runs", r, "best.pt"))]
+    results, histories = {}, {}
+    for run in runs:
+        cached = os.path.join("runs", run, "test_results.pt")
+        if not os.path.exists(cached):
+            subprocess.run([sys.executable, __file__, "--single", run, "--data_dir", args.data_dir,
+                            "--features", args.features, "--batch_size", str(args.batch_size)], check=True)
+        res = torch.load(cached, weights_only=False)
+        results[run] = res
+        with open(os.path.join("runs", run, "history.json")) as f:
+            histories[run] = json.load(f)
+        if "attention" in res:
+            attention_figure(res["attention"], test_set, meta, root,
+                             os.path.join(args.metrics_dir, f"attention_{run}.png"))
+
+    # Tables
+    rows = []
+    for run in runs:
+        m = results[run]["metrics"]
+        rows.append({
+            "Model": RUN_LABELS.get(run, run), "LLM": m["llm"], "Best epoch": m["best_epoch"],
+            "Avg acc (%)": 100 * m["avg_acc"], "Worst-group acc (%)": 100 * m["worst_group_acc"],
+            "Acc_ID (%)": 100 * m["acc_id"], "Acc_OOD (%)": 100 * m["acc_ood"],
+            "Delta_OOD (pp)": 100 * m["delta_ood"], "RSR": m["rsr"],
+            **{f"{g} (%)": 100 * m[f"acc_{g}"] for g in GROUP_NAMES},
+        })
+    df = pd.DataFrame(rows)
+    df.to_csv(os.path.join(args.metrics_dir, "benchmark_summary.csv"), index=False, float_format="%.2f")
+    with open(os.path.join(args.metrics_dir, "benchmark_results.json"), "w") as f:
+        json.dump({
+            "dataset": "Waterbirds (test split, n=%d)" % len(test_set),
+            "id_groups": "landbird/land, waterbird/water", "ood_groups": "landbird/water, waterbird/land",
+            "runs": {run: results[run]["metrics"] for run in runs},
+            "histories": histories,
+        }, f, indent=2)
+    with open(os.path.join(args.metrics_dir, "research_paper_metrics.md"), "w") as f:
+        f.write(f"# Waterbirds test results (n={len(test_set)})\n\n")
+        f.write(df.to_markdown(index=False, floatfmt=".2f"))
+        f.write("\n")
+
+    # Figure 1: headline accuracies
+    fig, ax = plt.subplots(figsize=(10, 4.6), facecolor=SURFACE)
+    cats = ["Average", "Worst-group", "ID (majority)", "OOD (minority)"]
+    vals = {r: [100 * results[r]["metrics"][k] for k in ("avg_acc", "worst_group_acc", "acc_id", "acc_ood")] for r in runs}
+    grouped_bars(ax, cats, runs, vals, "Accuracy (%)", "Waterbirds test accuracy")
+    ax.legend(frameon=False, fontsize=8.5, loc="lower left", ncol=2)
+    plt.tight_layout()
+    plt.savefig(os.path.join(args.metrics_dir, "accuracy_summary.png"), dpi=200, facecolor=SURFACE)
+    plt.close()
+
+    # Figure 2: per-group accuracy
+    fig, ax = plt.subplots(figsize=(10, 4.6), facecolor=SURFACE)
+    vals = {r: [100 * results[r]["metrics"][f"acc_{g}"] for g in GROUP_NAMES] for r in runs}
+    grouped_bars(ax, GROUP_NAMES, runs, vals, "Accuracy (%)", "Per-group test accuracy (bird / background)")
+    ax.legend(frameon=False, fontsize=8.5, loc="lower left", ncol=2)
+    plt.tight_layout()
+    plt.savefig(os.path.join(args.metrics_dir, "per_group_accuracy.png"), dpi=200, facecolor=SURFACE)
+    plt.close()
+
+    # Figure 3: validation curves (two charts, one measure each)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.2), facecolor=SURFACE)
+    for i, run in enumerate(runs):
+        ep = [h["epoch"] for h in histories[run]]
+        ax1.plot(ep, [100 * h["val_avg_acc"] for h in histories[run]], color=SERIES[i], linewidth=2, marker="o", markersize=4, label=RUN_LABELS.get(run, run))
+        ax2.plot(ep, [100 * h["val_worst_group_acc"] for h in histories[run]], color=SERIES[i], linewidth=2, marker="o", markersize=4)
+    for ax, title in ((ax1, "Validation average accuracy (%)"), (ax2, "Validation worst-group accuracy (%)")):
+        ax.set_title(title, color=TEXT, fontsize=11, loc="left")
+        ax.set_xlabel("Epoch", color=TEXT_2)
+        ax.xaxis.set_major_locator(matplotlib.ticker.MaxNLocator(integer=True))
+        style_axes(ax)
+    ax1.legend(frameon=False, fontsize=8)
+    plt.tight_layout()
+    plt.savefig(os.path.join(args.metrics_dir, "training_curves.png"), dpi=200, facecolor=SURFACE)
+    plt.close()
+
+    print(df.to_string(index=False, float_format=lambda v: f"{v:.2f}"))
+    print(f"Saved metrics and figures to {os.path.abspath(args.metrics_dir)}")
+
 
 if __name__ == "__main__":
-    evaluate_benchmark()
+    main()
