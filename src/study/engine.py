@@ -13,12 +13,24 @@ def _to(batch: Dict[str, torch.Tensor], device: str) -> Dict[str, torch.Tensor]:
     return {k: v.to(device, non_blocking=True) for k, v in batch.items()}
 
 
-def step_loss(model, builder: PromptBuilder, feats, y, templates, device):
+def step_loss(model, builder: PromptBuilder, feats, y, templates, device, groups=None):
     b = _to(builder.answer_batch(templates.tolist(), y.tolist()), device)
     with autocast(device, model.compute_dtype):
         hidden, attn, _ = model(feats.to(device, non_blocking=True), b["after_ids"], b["after_mask"])
         logits, target = model.logits_at(hidden, b["labels"], one_per_row=True)
-    loss = F.cross_entropy(logits, target)
+    q = getattr(model, "dro_q", None)
+    if q is not None and groups is not None:
+        # Group DRO (Sagawa et al., 2020): exponentiated-gradient weights over groups, loss = sum_g q_g L_g
+        per = F.cross_entropy(logits, target, reduction="none")
+        g = groups.to(per.device)
+        n = q.numel()
+        counts = torch.bincount(g, minlength=n).float()
+        group_loss = torch.zeros(n, device=per.device).scatter_add_(0, g, per) / counts.clamp_min(1)
+        with torch.no_grad():
+            q.mul_(torch.exp(model.dro_eta * group_loss.detach() * (counts > 0))).div_(q.sum())
+        loss = (q * group_loss).sum()
+    else:
+        loss = F.cross_entropy(logits, target)
     w = getattr(model, "attn_entropy_weight", 0.0)
     if w and attn is not None:
         # 1 - H(A)/log(P): penalise attention that collapses onto a few patches (as in DualGroundingLoss)
@@ -33,9 +45,9 @@ def train_epoch(model, builder, loader, optimizer, scheduler, scaler, device, gr
     params = [p for p in model.parameters() if p.requires_grad]
     total = 0.0
     gate_grads = model.gate_grads = []  # |d loss / d gate| per step (learned-gate connectors only)
-    for feats, y, _, t in tqdm(loader, desc="train", leave=False):
+    for feats, y, g, t in tqdm(loader, desc="train", leave=False):
         optimizer.zero_grad(set_to_none=True)
-        loss = step_loss(model, builder, feats, y, t, device)
+        loss = step_loss(model, builder, feats, y, t, device, groups=g)
         if scaler is not None:
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
@@ -65,6 +77,7 @@ def evaluate(model, builder: PromptBuilder, loader, device, group_names: List[st
     (bottleneck) or averaged over queries (Q-Former).
     """
     model.eval()
+    model.inject_log = []
     answer_ids = torch.tensor(builder.answer_ids, device=device)
     preds, gen_correct, labels, groups, attn_keep = [], [], [], [], []
     for feats, y, g, t in tqdm(loader, desc="eval", leave=False):
@@ -86,6 +99,8 @@ def evaluate(model, builder: PromptBuilder, loader, device, group_names: List[st
     preds, labels, groups = (torch.cat(x).numpy() for x in (preds, labels, groups))
     metrics = group_metrics(preds, labels, groups, group_names)
     metrics["generative_acc"] = float(torch.cat(gen_correct).float().mean())
+    if getattr(model, "inject_log", None):  # cross-attention connectors only
+        metrics["inject_ratio"] = float(np.mean(model.inject_log))
     out = {"metrics": metrics, "preds": preds, "labels": labels, "groups": groups}
     if attn_keep:
         out["attention"] = torch.cat(attn_keep).numpy()

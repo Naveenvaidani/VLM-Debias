@@ -109,6 +109,36 @@ class TestStudy(unittest.TestCase):
         self.assertAlmostEqual(m["balanced_acc"], 0.75)
         self.assertAlmostEqual(m["positive_rate"], 0.75)
 
+    def test_group_dro_upweights_worst_group(self):
+        from src.study import engine
+
+        class Stub(torch.nn.Module):
+            compute_dtype = torch.float32
+
+            def __init__(self):
+                super().__init__()
+                self.dro_q, self.dro_eta = torch.ones(4) / 4, 1.0
+
+            def forward(self, feats, after_ids, after_mask):
+                return feats, None, 0
+
+            def logits_at(self, hidden, labels, one_per_row=True):
+                return hidden, labels.max(1).values
+
+        class Builder:
+            def answer_batch(self, templates, ys):
+                return {"after_ids": torch.zeros(len(ys), 1, dtype=torch.long),
+                        "after_mask": torch.ones(len(ys), 1, dtype=torch.long),
+                        "labels": torch.tensor(ys).unsqueeze(1)}
+
+        model = Stub()
+        feats = torch.tensor([[5.0, 0], [5.0, 0], [0, 5.0], [5.0, 0]])  # last sample (group 3) is wrong
+        y, g = torch.tensor([0, 0, 1, 1]), torch.tensor([0, 1, 2, 3])
+        loss = engine.step_loss(model, Builder(), feats, y, torch.zeros(4), "cpu", groups=g)
+        self.assertEqual(int(model.dro_q.argmax()), 3)
+        self.assertAlmostEqual(float(model.dro_q.sum()), 1.0, places=5)
+        self.assertGreater(float(loss), float(torch.nn.functional.cross_entropy(feats, y)))
+
 
 if __name__ == "__main__":
     unittest.main()

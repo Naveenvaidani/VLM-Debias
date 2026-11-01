@@ -65,6 +65,9 @@ def main():
     parser.add_argument("--instruction", default="",
                         help="text put before every question, e.g. to tell the model to ignore the background; "
                              "with --epochs 0 and --init_from it only re-evaluates a trained model")
+    parser.add_argument("--loss", choices=["erm", "groupdro"], default="erm",
+                        help="groupdro = Group DRO over the 4 (label x spurious) groups (uses group labels)")
+    parser.add_argument("--dro_eta", type=float, default=0.01, help="Group DRO step size")
     parser.add_argument("--max_eval_samples", type=int, default=0, help="cap val/test sets (smoke tests only)")
     args = parser.parse_args()
 
@@ -154,6 +157,8 @@ def main():
     else:
         train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, generator=g, num_workers=2)
     model.attn_entropy_weight = args.attn_entropy_weight
+    if args.loss == "groupdro":
+        model.dro_q, model.dro_eta = torch.ones(4, device=device) / 4, args.dro_eta
     val_loader = DataLoader(val_set, batch_size=args.batch_size * 2, num_workers=2)
     total_steps = max(1, args.epochs * len(train_loader))
     scheduler = get_cosine_schedule_with_warmup(optimizer, int(0.05 * total_steps), total_steps)

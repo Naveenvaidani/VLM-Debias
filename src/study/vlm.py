@@ -127,6 +127,10 @@ class StudyVLM(nn.Module):
             text = torch.cat([before, after], dim=1)
             embeds, attn = self.connector(patches.float(), text.float())
             self.last_visual = (embeds - text.float())[:, :n_before]  # injected visual context, header tokens
+            if not self.training:  # injection strength |tanh(g) * out_proj(attended)| / |text|, all tokens
+                with torch.no_grad():
+                    ratio = (embeds - text.float()).norm(dim=-1).mean() / text.float().norm(dim=-1).mean()
+                self.inject_log = getattr(self, "inject_log", []) + [float(ratio)]
             mask = torch.cat([ones, after_mask], dim=1)
             offset = n_before
         hidden = self.decoder(inputs_embeds=embeds.to(self.compute_dtype), attention_mask=mask,
