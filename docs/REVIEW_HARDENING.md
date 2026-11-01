@@ -205,3 +205,19 @@ fixed gate now 4 seeds: +13.3 over learned on 3 paired seeds, not significant.
 
 **Still running:** pathway ablation, gate left out of clipping, no weight decay on the gate, shortcut strength
 p-sweep, 8-epoch seeds (round 4-5); per-layer gated cross-attention and fp16 LLM (round 6).
+
+## 10. Fifth pass: closing the remaining reviewer gaps (1 Nov 2026, late)
+
+What a strict reviewer would still raise after §9, and what was done.
+
+| Concern | What we did |
+| :--- | :--- |
+| The open-gate control barely moves (tanh 0.995, gradient × 0.01), so it does not really test "learnable" | New connector `bottleneck_half`: learnable gate starting at tanh = 0.5 (gradient × 0.75), `out_proj` zero like the fixed gate. 5 seeds × 2 tasks running (Kaggle `account E/vlm-shortcut-r7-halfgate`). If it stays near 0.5 and matches the fixed gate, the harm is tied to starting at zero; if it drifts shut and loses accuracy, trainability itself is the problem. |
+| The two arms differ in the output-layer initialisation too | This is forced: if the gate and the output layer both start at zero, neither gets a gradient and nothing trains. Now explained in METHODOLOGY, the README connector notes and the code. |
+| "Group DRO gets the same result, why bother?" | Group DRO needs group labels; fixing the gate needs none and costs nothing. Written into D8 and the abstract as "a label-free default", not as better than label-using methods. |
+| The fixed gate also fails on Phi-4-mini Watermark (6 of 10 seeds) | Stated plainly: the fixed gate removes one cause of failure, not all. |
+| Too few seeds in some controls | Round 7 extends Group DRO to 4 seeds, the LR settings to 3, SigLIP-large Watermark to 5 and CelebA to 5 paired seeds. |
+| Generality (one synthetic task, small 4-bit LLMs) | Two of three tasks are natural images (Waterbirds, CelebA), now said explicitly; fp16 and per-layer runs are in round 6. An open-ended VQA benchmark stays future work. |
+| Mechanism only correlational | Said in limitations; the pathway-ablation test (round 5) is the behavioural check. |
+
+Accounts and quota: gp1, gp2 and jeyadevr are close to their weekly 30 GPU-hours, so round 7 runs on account E (2 jobs), account C and account D (1 each).

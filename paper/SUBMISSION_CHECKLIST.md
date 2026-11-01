@@ -57,6 +57,13 @@ Status as of 2026-11-01. "Done" = addressed in code, results or text; "Running" 
 | 40 | On Phi-4-mini Watermark the fixed gate also collapses (6 of 10 seeds < 50) | Reported in R1 and Table 1; H2 not claimed for Phi-4-mini | Done |
 | 41 | LR sweep and Group DRO have 2 seeds each | Labelled descriptive; no tests claimed | Done |
 | 42 | Learned-gate pathway is not shut (injection ratio 3.5) | Wording: "15–35× weaker injection", not "closed"; NOVELTY claims-not-made | Done |
+| 43 | Open-gate control saturated (gradient × 0.01), so trainability vs zero start is not separated | Half-open gate `bottleneck_half` (tanh = 0.5, gradient × 0.75), 2 tasks × 5 seeds | Done (code) · Running (round 7) |
+| 44 | Arms differ in `out_proj` init as well as the gate (confound) | Shown to be forced: with gate and `out_proj` both zero neither gets a gradient (METHODOLOGY §6, connector docstring) | Done |
+| 45 | "Just use Group DRO" | Stated: fixed gate is the label-free, zero-cost default; label-using fixes add on top (D8) | Done |
+| 46 | Fixed gate also fails on Phi-4-mini Watermark | Stated as "removes one cause, not all" in D8, limitations, abstract contribution | Done |
+| 47 | 2-seed controls (LR, Group DRO, SigLIP-large Watermark), CelebA 3 paired | Extended: Group DRO → 4, LR → 3, SigLIP-large Watermark → 5, CelebA → 5 paired | Running (round 7) |
+| 48 | Mechanism correlational (injection ratio does not predict WGA) | Stated in limitations; pathway ablation is the behavioural test | Done (text) · Running (round 5) |
+| 49 | Fixed gate fell to 44.5 at 8 epochs (1 seed) | Seeds 1–4 | Running (round 4) |
 
 Optional, not queued: native zero-shot on CelebA and Watermark (needs task images on the account that runs it);
 gate excluded from clipping *and* no weight decay together; multi-layer injection.

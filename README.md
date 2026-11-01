@@ -408,6 +408,10 @@ Phi-4-mini Waterbirds 0.0086, Phi-4-mini Watermark 0.0086 (10 seeds). All four s
 | Shortcut strength p = 0.9 / 0.99 on Watermark (MLP, both gates, 3 seeds) | running (round 5) |
 | Per-layer gated cross-attention (layers 0/8/16/24, Flamingo / Llama 3.2 layout), learned vs fixed, 5 seeds | queued (round 6) |
 | Full-precision LLM (fp16 weights), learned vs fixed gate, 3 seeds | running (round 6) |
+| Half-open learnable gate (`bottleneck_half`, tanh = 0.5, gradient not saturated), 2 tasks × 5 seeds | running (round 7) |
+| Group DRO seeds 2–3 (→ 4 per arm); connector LR seed 2 (→ 3 per setting) | running (round 7) |
+| SigLIP-large Watermark seeds 2–4 (→ 5 per arm) | running (round 7) |
+| CelebA learned seed 4, fixed seed 1 (→ 5 paired seeds) | running (round 7) |
 
 ### 17. Control experiments (rounds 3-4)
 
