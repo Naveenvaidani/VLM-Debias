@@ -1,0 +1,399 @@
+\subsection{Research design and paradigm}
+
+\textbf{Design.}
+- The study is a \textbf{controlled, between-architecture experiment with repeated randomised runs}: a full
+factorial over connector × task with seeds as replicates, plus targeted follow-ups.
+- Only one factor varies at a time: the vision-language connector, or one specified follow-up factor.
+- Everything else is held fixed: the LLM, the frozen vision features, the data, the prompt, the optimiser and
+the training budget.
+
+\textbf{Why this design.}
+- The research question is causal: \emph{does the connector change shortcut reliance?}
+- Observational comparisons of released VLMs cannot answer it, because released models differ in data, scale,
+encoder and training recipe at the same time.
+- Design studies of VLMs \cite{mckinzie2024mm1,karamcheti2024prismatic} show that only controlled ablations can
+attribute effects to one component.
+- Seed-level replication is required because a single seed can reverse conclusions in deep learning
+\cite{henderson2018matters,picard2021seed,bouthillier2021variance}.
+
+\textbf{Paradigm.}
+- The study is positivist and hypothesis-testing.
+- The primary hypotheses (H1, H2), their tests, the significance level (one-sided α = 0.025) and the
+equivalence margin (±3 WGA points) were written down before the seed-extension runs (see
+\href{OUTLINE.md}{\texttt{OUTLINE.md}} and \href{../study/hypotheses.py}{\texttt{study/hypotheses.py}}).
+- Analyses beyond these are labelled exploratory.
+
+\subsection{Data sources, sampling and inclusion criteria}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1290}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1290}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1290}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1290}}
+  >{\centering\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1613}}
+  >{\centering\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1613}}
+  >{\centering\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1613}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Task
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Source
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Shortcut (spurious attribute \emph{a})
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Label \emph{y}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Train
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Val
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Test
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Waterbirds & CUB-200 birds on Places backgrounds \cite{wah2011cub,zhou2018places}, official splits \cite{sagawa2020groupdro} & background (land / water) & landbird / waterbird & 4,795 & 1,199 & 5,794 \\
+Watermark (ours) & MS-COCO images \cite{lin2014coco} & stock-photo text watermark in the corner & dog present & 4,800 (95\% shortcut-aligned) & 1,200 (group-balanced) & 2,400 (group-balanced) \\
+CelebA & CelebA, official partitions \cite{liu2015celeba} & gender (Male) & Blond\_Hair & 8,000 (stratified subsample) & 5,000 (≥ 100 per group) & full official test \\
+VQA-CP v2 (open-ended) & VQA-CP v2 \cite{agrawal2018vqacp} on COCO images & question-type answer prior (text side) & free-form answer & 8,000 questions from the VQA-CP train split & 1,000 (same split, in-distribution) & 2,000 in-distribution + 3,000 from the VQA-CP test split (shifted priors); image-disjoint \\
+Alignment captions & MS-COCO captions & -- & -- & 10,000 pairs & -- & -- \\
+\end{longtable}
+}
+
+\textbf{Sampling.}
+- \emph{Waterbirds:} official splits, kept unchanged for comparability with the group-robustness literature
+\cite{sagawa2020groupdro,kirichenko2023dfr}.
+- \emph{Watermark:}
+- Training uses stratified sampling with 95\% of examples shortcut-aligned (watermark ↔ dog), the same
+strength as Waterbirds.
+- Validation and test are \textbf{group-balanced}, so every group is measured with equal precision.
+- All splits are deterministic (\texttt{study/build\_tasks.py}, seed 0).
+- \emph{CelebA:} train and validation are stratified subsamples that preserve group proportions, to fit the
+compute budget; the official test set is used in full.
+
+\textbf{Inclusion and exclusion.}
+- Alignment captions exclude every image in any task's validation or test split, to prevent leakage.
+- The Watermark label comes from the COCO object annotations: an image is positive if any annotation is
+``dog''.
+- No run was excluded after the fact. Runs that crashed (out-of-memory, session limits) were re-run with the
+same seed, and every finished run is reported (\texttt{results\_study/*/all\_runs.csv}).
+
+\textbf{Power analysis (sample size = seeds).}
+- The unit of replication is the training seed. Each seed varies data order, LoRA initialisation and
+stage-2 sampling \cite{bouthillier2021variance}.
+- Power for the one-sided paired t-test at α = 0.025 was computed from the non-central t distribution
+\cite{cohen1988power}.
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\centering\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\centering
+Paired effect size d\_z
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Power with 3 seeds
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+5 seeds
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+10 seeds
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+15 seeds
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Seeds for 80\% power
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+0.8 (large) & 0.13 & 0.28 & 0.62 & 0.82 & 15 \\
+1.0 & 0.18 & 0.40 & 0.80 & 0.95 & 10 \\
+1.5 & 0.32 & 0.71 & 0.99 & 1.00 & 6 \\
+2.0 & 0.47 & 0.91 & 1.00 & 1.00 & 5 \\
+\end{longtable}
+}
+
+The initial 3-seed design had power below 0.5 even for large effects. The gate comparison was therefore
+extended to \textbf{15 seeds per arm on both tasks}, enough for 80\% power at d\_z ≥ 0.8. Observed effects
+(Section 4 of the results) are d\_z = 1.10 and 1.34, giving achieved power of 0.98 and \textgreater{} 0.99. Phi-4-mini
+Watermark (d\_z ≈ 1.0, power 0.40 at 5 seeds) was extended to 10 seeds \emph{after} its 5-seed test missed
+α = 0.025 (p = 0.044). This data-dependent extension is disclosed, and the new seeds 5--9 are also tested on
+their own as fresh data (p = 0.023).
+
+\subsection{Variables and instrumentation}
+
+\textbf{Independent variable: connector}, four levels:
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2222}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2222}}
+  >{\centering\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2778}}
+  >{\centering\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2778}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Level
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Design
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Image tokens
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Trainable params
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+MLP projector \cite{liu2024llava15} & LayerNorm--Linear--GELU--Linear over 2×2-pooled patches & 49 & 8.5M \\
+Q-Former \cite{li2023blip2} & 32 learned queries, 8 heads, 1 block & 32 & 11.4M \\
+Cross-attention, learned gate \cite{alayrac2022flamingo} & prompt tokens attend to patches; \texttt{e\ ←\ e\ +\ tanh(α)·attn}, α₀ = 0 & 0 & 8.9M \\
+Cross-attention, fixed gate & identical block; gate fixed open, output layer zero-initialised & 0 & 8.9M \\
+\end{longtable}
+}
+
+The two cross-attention levels have the \textbf{same parameters and FLOPs}; only whether \texttt{α} is trainable
+differs. Both start as the identity map. This isolates the gate as the manipulated mechanism and removes
+capacity as a rival explanation.
+
+\textbf{Dependent variables.}
+- \textbf{Primary: test worst-group accuracy (WGA)} \cite{sagawa2020groupdro}.
+- Mean over three question phrasings, one of them never seen in training.
+- Checkpoint chosen by validation WGA.
+- \textbf{Secondary:}
+- average accuracy: the plain mean over test images. It is \emph{not} reweighted to the training-group
+frequencies, as some Waterbirds papers do \cite{sagawa2020groupdro}, so it is not directly comparable to their
+``average accuracy'';
+- ID and OOD accuracy and their gap \cite{koh2021wilds};
+- balanced accuracy;
+- seed variance of WGA (H2);
+- WGA with the label-free checkpoint rule (validation average accuracy).
+- \textbf{Mechanism measures:} the learned gate value \texttt{tanh(α)} and its gradient, logged every 10 alignment steps.
+Up to round 4 the logged gradient is the value after global-norm clipping at 1 (as in Flamingo); from round 5
+the raw pre-clip gradient and the pre-clip global norm are logged as well (\texttt{grad\_raw}, \texttt{grad\_norm\_total}).
+- \textbf{Behavioural pathway test:} from round 5, every selected checkpoint is re-tested with the connector's visual
+contribution removed (\texttt{ablated\_mean\_over\_templates}). If WGA does not change, the pathway is behaviourally
+closed, the criterion of \cite{farazi2026gate}.
+Also the share of attention on the watermark corner.
+
+\textbf{Controlled variables, and why each is controlled.}
+- \textbf{LLM:} Qwen3.5-4B \cite{qwen2026qwen35}, NF4 4-bit with LoRA r = 16 \cite{dettmers2023qlora,hu2022lora}.
+Controlled because LLM capacity and pretraining change shortcut reliance \cite{sagawa2020overparam}. Varied once
+(Phi-4-mini \cite{abouelenin2025phi4mini}) to test generality.
+- \textbf{Vision features:} frozen SigLIP \cite{zhai2023siglip}, cached once, so every connector receives
+bit-identical inputs. Encoder choice strongly affects MLLMs \cite{tong2024cambrian,tong2024eyes}. Varied once
+(SigLIP-large).
+- \textbf{Data, prompts and answer read-out:}
+- The same splits, the same chat template and the same 2 training phrasings for every connector.
+- The prediction is the more likely of the two answer tokens, which removes free-text parsing as a
+confounder.
+- \textbf{Optimisation and budget:}
+- \emph{Stage 1:} 300 alignment steps on 10k COCO captions with the LLM frozen.
+- \emph{Stage 2:} 4 epochs, batch 16, learning rate 2e-4, cosine schedule.
+- The same for every connector, with early stopping after 2 epochs without validation-WGA gain.
+- The budget is equalised in steps, not wall-clock time, so faster connectors gain no extra training.
+- \textbf{Image-token count:} differs by design (49 / 32 / 0). It is checked with a 36-token MLP ablation,
+because token count is a known design factor \cite{cha2024honeybee,mckinzie2024mm1}.
+
+\subsection{Procedure}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Data preparation} (\texttt{study/build\_tasks.py}, \texttt{study/cache\_features.py}): build splits and cache frozen
+  patch features (one Kaggle CPU/GPU session per encoder).
+\item
+  \textbf{Stage 1, alignment} (\texttt{study/align.py}): train only the connector on COCO captions, with the LLM frozen.
+  This follows the two-stage practice of \cite{liu2023llava,liu2024llava15}. 300 steps suffice because alignment
+  is coarse and data-efficient \cite{groger2026rethinking}.
+\item
+  \textbf{Stage 2, task training} (\texttt{study/train\_task.py}): train LoRA and the connector on each task under ERM
+  with natural (shortcut-biased) sampling.
+\item
+  \textbf{Stage 3, optional connector-only fixes:} freeze the LLM and LoRA, then retrain only the connector:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \textbf{Connector-DFR:} on a group-balanced half of validation, the other half selecting the model
+    \cite{kirichenko2023dfr}.
+  \item
+    \textbf{Connector-JTT:} stage-2 errors upweighted ×20 \cite{liu2021jtt}.
+  \end{itemize}
+\item
+  \textbf{Evaluation:}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Test metrics for each phrasing.
+  \item
+    Per-image predictions saved (\texttt{arrays.npz}) for the bootstrap.
+  \item
+    \texttt{environment.txt} (exact package versions and GPU) written next to every result.
+  \end{itemize}
+\item
+  \textbf{Execution:}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Runs on Kaggle (2× NVIDIA T4, 16 GB), one job per GPU.
+  \item
+    Jobs are resumable; results are exported after every run.
+  \item
+    Seeds were assigned before the runs; no run was selected after seeing its result.
+  \end{itemize}
+\end{enumerate}
+
+\textbf{Bias-minimisation steps.}
+- Identical code paths for all connectors: one \texttt{train\_task.py} with a \texttt{-\/-connector} flag.
+- A held-out question phrasing is used to detect prompt over-fitting.
+- Two checkpoint-selection rules are reported: one uses group labels, one does not.
+- Group-label use is stated for every method.
+- The full per-seed results are released.
+
+\subsection{Analysis strategy}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Question
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Test
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Why this test
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+H1: fixed \textgreater{} learned gate & One-sided \textbf{paired t-test} over seeds, with a \textbf{Wilcoxon signed-rank} test as the assumption-free check \cite{dror2018hitchhiker}; \textbf{Holm} correction across the four H1 cells (2 LLMs × 2 tasks); unpaired Welch and Mann--Whitney tests as checks & Seeds pair the two arms (same data order and initialisation), removing between-seed variance \\
+H2: learned gate more variable & One-sided \textbf{variance-ratio F-test}, with the \textbf{Brown--Forsythe} test as a robust check, and \textbf{Fisher's exact test} on the number of collapsed runs (WGA \textless{} 50) & The F-test is sensitive to non-normality; Brown--Forsythe is not; the collapse count tests the practical claim directly \\
+Pairwise connector differences & \textbf{Stratified bootstrap} of test images (2,000 resamples) and a \textbf{hierarchical bootstrap} over seeds and images \cite{efron1993bootstrap}; \textbf{Holm--Bonferroni} correction within each task \cite{holm1979simple} & The hierarchical bootstrap covers training variance, not just test-sample noise \\
+``Connector type does not matter'' & \textbf{Two one-sided tests (TOST)}, margin ±3 points \cite{schuirmann1987tost} & A non-significant difference is not evidence of equivalence \\
+Effect size & Paired \textbf{Cohen's d\_z} (mean difference / s.d. of differences), plus d\_av for comparison across designs \cite{cohen1988power} & p-values alone do not show practical importance \\
+\end{longtable}
+}
+
+\textbf{Confirmatory vs exploratory.} Only the four H1 tests (2 LLMs × 2 tasks, Holm-corrected) and H2 on
+Qwen3.5-4B are confirmatory. Every control (open and half-open gate, learning rate, alignment length, Group DRO,
+injection ratio, SigLIP-large, CelebA, p-sweep, per-layer, fp16) is exploratory: its p-values are reported
+without correction and are not used as evidence for the hypotheses.
+
+\textbf{Hypothesis timeline (stated openly, since there is no public pre-registration).}
+- 28 Oct 2026: 3-seed pilot of all connectors, including the fixed gate (commit \texttt{2c948b4}).
+- 28 Oct 2026, after the pilot: seed-extension runs launched (Kaggle kernels \texttt{h1a}, \texttt{h1b}, \texttt{seeds34}).
+- 29 Oct 2026: H1/H2 and their tests committed with the extended results (\texttt{7ab0563}, \texttt{study/hypotheses.py}).
+- Because H1 was formed after seeing the pilot, it is also tested on the confirmation seeds only (seeds ≥ 3):
+Waterbirds +10.5, t(11) = 4.06, p = 9.5 × 10⁻⁴, d\_z = 1.17; Watermark +26.7, t(11) = 4.86, p = 2.5 × 10⁻⁴,
+d\_z = 1.40. The pilot alone was not significant (p = 0.16 and 0.12). (\texttt{results\_study/robustness\_checks.md})
+
+\textbf{Assumption checks (reported in full).}
+- \emph{Normality of the paired differences (Shapiro--Wilk):}
+- Violated for Qwen Waterbirds (p = 0.009), which is why the Wilcoxon test is reported alongside;
+it agrees (p = 3e-5).
+- Not violated elsewhere (p ≥ 0.34).
+- \emph{Normality of the learned-gate WGA:} violated on Qwen Waterbirds (p = 0.003), driven by the collapsed
+seeds. The robust Brown--Forsythe test is therefore reported for H2.
+- \emph{Independence:} each seed is a separate training run with its own random state. The two arms share only
+the seed value, which is the intended pairing.
+
+\subsection{Validity, reliability and ethics}
+
+\textbf{Internal validity.}
+- One factor varies at a time. The two gate arms share every parameter, but differ in two ways: whether \texttt{α}
+trains, and where the zero initialisation sits (the learned gate starts with α = 0 and a default-initialised
+\texttt{out\_proj}; the fixed gate starts with tanh α = 1 and \texttt{out\_proj} = 0).
+- The second difference is forced, not chosen. If both α and \texttt{out\_proj} start at zero, the gradient of the
+output with respect to α is proportional to \texttt{out\_proj} and that with respect to \texttt{out\_proj} to tanh α, so
+both stay at zero and the visual pathway never trains. A learnable zero-initialised gate therefore needs a
+non-zero \texttt{out\_proj}, as in Flamingo and LLaMA-Adapter.
+- Two further arms separate trainability from the starting value. The design follows the residual-scaling
+literature, where the start value of a learnable scale is the variable: ReZero and SkipInit start it at 0
+\cite{bachlechner2021rezero,de2020skipinit}, and LayerScale at a small ε, reporting that ε trains better than 0
+\cite{touvron2021cait}. Those scales are linear; Flamingo's gate passes through tanh, so its gradient is scaled
+by 1 − tanh² α and vanishes as the gate saturates. Both arms are learnable, with \texttt{out\_proj} = 0 like the
+fixed gate: \texttt{bottleneck\_open} starts at tanh α = 0.995 and \texttt{bottleneck\_half} at tanh α = 0.5. The open
+gate's gradient is scaled by 1 − tanh² ≈ 0.01, so it is nearly fixed in practice; the half-open gate's is
+scaled by 0.75, so it can move toward 0 or 1. The value 0.5 is our choice, not taken from prior work: it
+is the midpoint of the gate's range at which the gradient is still within 25\% of its maximum (at tanh α = 0). If the half-open gate also matches the fixed gate, the harm is
+tied to starting at zero; if it drifts shut and loses WGA, trainability itself is the problem.
+- Pairing by seed shares the data order and the LoRA initialisation between the two arms of a seed (the
+connector initialisations differ by design, see above). A seed does not replay a run exactly: GPU kernels
+(4-bit matrix multiplies, linear-attention kernels, atomic additions) are non-deterministic, and library
+versions drifted between jobs (transformers 5.21.0 to 5.22.1, recorded per job in \texttt{environment.txt}).
+Rerunning seeds 0--1 changed WGA by 12.7 points on average for the learned gate and 5.2 for the fixed gate
+(\texttt{results\_study/extra\_analyses.md} §9). Seeds are therefore treated as random replicates. Pairing is a
+design choice, so unpaired Welch and Mann--Whitney tests are reported as well
+(\texttt{results\_study/robustness\_checks.md}); they agree.
+- The headline WGA averages three question phrasings, two of which were used in training. On the held-out
+phrasing alone the gate effect is the same (+10.8, +25.5, +10.2 and +25.8; all p ≤ 0.006;
+\texttt{extra\_analyses.md} §8).
+- Model selection uses validation WGA (group labels), as is standard \cite{sagawa2020groupdro,kirichenko2023dfr};
+the label-free rule (best validation average accuracy) is reported for every run and gives a larger gate
+effect.
+- Missing runs: Watermark seeds 8 and 14 were never launched because of the session budget; no finished run
+was excluded. Both are being added so that each arm has 15 seeds.
+- Rival explanations are tested directly: capacity (identical parameters), token count (36-token
+ablation), encoder (SigLIP-large), LLM (Phi-4-mini) and training length (8 epochs).
+
+\textbf{Construct validity.}
+- Shortcut reliance is measured behaviourally, as WGA and the ID--OOD gap on test sets where the shortcut is
+broken, not inferred from attention. Attention is not explanation \cite{jain2019attention}.
+- The mechanism is measured directly: the logged gate value and its gradient and, from round 4, the injected
+signal \texttt{‖tanh(α)·out\_proj(attn)‖\ /\ ‖e‖}, since a small gate can be offset by large output weights.
+- Worst-group accuracy is reported with average and in-distribution accuracy, so a robustness gain cannot hide
+an accuracy loss.
+
+\textbf{External validity.}
+- Coverage:
+- three tasks: a natural background shortcut, a synthetic text shortcut and a demographic attribute;
+- two LLM families;
+- two encoder sizes;
+- released 9B and 80B IDEFICS checkpoints, inspected for gate closure.
+- Bounds:
+- models are 4B scale or smaller and 4-bit;
+- the vision encoder is frozen;
+- the alignment budget is short.
+
+\textbf{Reliability and replicability.}
+- Deterministic splits.
+- Exact scripts for every run in \href{../study/kaggle_kernels/}{\texttt{study/kaggle\_kernels/}}.
+- Requirements (\href{../requirements-study.txt}{\texttt{requirements-study.txt}}, Kaggle pins in
+\href{../study/requirements-kaggle.txt}{\texttt{study/requirements-kaggle.txt}}) and an \texttt{environment.txt} per run.
+- Not bit-reproducible: GPU kernels are non-deterministic and Kaggle jobs installed the latest
+\texttt{transformers}; same-seed reruns differ (§6, internal validity), so seeds are random replicates.
+- 23 unit tests.
+- All per-seed results and figure scripts.
+
+\textbf{Ethics.}
+- All data are public research datasets used under their terms:
+- Waterbirds \cite{sagawa2020groupdro}: CUB-200-2011 birds \cite{wah2011cub} on Places backgrounds \cite{zhou2017places};
+both are for non-commercial research.
+- MS-COCO 2017 \cite{lin2014coco}: annotations CC BY 4.0; images under Flickr terms of use.
+- CelebA \cite{liu2015celeba}: non-commercial research purposes only.
+- VQA-CP v2 \cite{agrawal2018vqacp}: re-split of the VQA v2 annotations (CC BY 4.0) on COCO images. The JSON files
+were taken from a public Kaggle mirror because the original host was unreachable; the mirror was checked
+against the published split sizes (438,183 train and 219,928 test questions).
+- Models: Qwen3.5-4B (Apache-2.0), Phi-4-mini-instruct (MIT), SigLIP (Apache-2.0). Check each model card
+for the exact version used (\texttt{environment.txt}).
+- SigLIP was pre-trained on web data (WebLI) that may contain CUB, Places or COCO images; this affects every
+connector equally, because the encoder is frozen and shared.
+- No new human-subject data were collected, so no IRB approval was required.
+- CelebA contains face images and a binary gender attribute. It is used only as the standard
+group-robustness benchmark \cite{sagawa2020groupdro}; no identity inference is performed.
+- Compute: about 150 T4 GPU-hours of task training across 222 logged runs (from \texttt{train\_minutes}), plus data
+preparation, alignment and evaluation, on Kaggle free-tier accounts. Rounds 3--5 (controls and extensions)
+add roughly 120--150 GPU-hours. Preliminary work (the VLM-SHIELD pilot, failed or cancelled sessions) is not
+in these totals and should be estimated by the authors for the NeurIPS-style compute statement.

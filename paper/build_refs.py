@@ -229,7 +229,7 @@ R = [
   "Variance analysis of deep RL results", "Random seeds alone change conclusions", "", "Justifies 13-15 seeds and per-seed reporting"),
  ("bouthillier2021variance", "inproceedings", "Bouthillier, Xavier", "Accounting for Variance in Machine Learning Benchmarks", "Conference on Machine Learning and Systems (MLSys)", 2021, "", "", "", "", "2103.03098", "E2 Seeds and statistics",
   "Sources of variance in ML benchmarks", "Randomising more sources of variation improves conclusions", "", "Seeds vary data order, LoRA init and sampling"),
- ("picard2021seed", "misc", "Picard, David", "Torch.manual_seed(3407) is all you need: On the influence of random seeds in deep learning architectures for computer vision", "arXiv preprint", 2021, "", "", "", "", "2109.08203", "E2 Seeds and statistics",
+ ("picard2021seed", "misc", "Picard, David", "Torch.manual\\_seed(3407) is all you need: On the influence of random seeds in deep learning architectures for computer vision", "arXiv preprint", 2021, "", "", "", "", "2109.08203", "E2 Seeds and statistics",
   "Seed sweep on vision models", "Seed choice changes accuracy by more than many method gains", "", "Supports H2 (variance) as a first-class outcome"),
  ("dror2018hitchhiker", "inproceedings", "Dror, Rotem", "The Hitchhiker's Guide to Testing Statistical Significance in Natural Language Processing", "Annual Meeting of the Association for Computational Linguistics (ACL)", 2018, "ACL", "", "1383--1392", "10.18653/v1/P18-1128", "", "E2 Seeds and statistics",
   "Guide to significance testing", "Choose paired / non-parametric tests by data properties", "", "Paired t-test + Wilcoxon"),
