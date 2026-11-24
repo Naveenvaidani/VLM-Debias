@@ -193,6 +193,9 @@ Also seen, cited as context only: ProjLens (2604.19083, projector-level backdoor
 language-prior exploitation in the encoder-projector-LLM design, conceptual), and modality-bias work in MLLMs
 (2505.18657, 2508.10552, 2510.22836). These were classified from abstracts, not read in full.
 
+Point-by-point comparison with each paper, including where our data contradicts theirs:
+[`CONTRADICTIONS.md`](CONTRADICTIONS.md).
+
 **Consequences for round 9 (applied):**
 - The pathway tests are named to match Farazi et al.: `absent` equals their "absent" for our fused connector (and
   their "zeroed" for prefix connectors); `zero_features` and `shuffle` are additional controls. The shuffled-image

@@ -92,6 +92,16 @@ class TestStudy(unittest.TestCase):
         self.assertLessEqual(ratio.max().item(), 1.0 + 1e-4)
         self.assertGreater(ratio.min().item(), 0.99)
 
+    def test_clip_and_log_keeps_gate_gradient_sign(self):
+        from types import SimpleNamespace
+        from src.study.engine import clip_and_log
+        conn = build_connector("bottleneck", 64, 32)
+        conn.gate.grad = torch.tensor([-0.7])
+        model = SimpleNamespace(connector=conn)
+        raw, _ = clip_and_log(model, [conn.gate], 1.0)
+        self.assertAlmostEqual(raw, 0.7, places=6)                      # magnitude, as before
+        self.assertAlmostEqual(model._gate_grad_signed, -0.7, places=6)  # sign kept
+
     def test_pathway_ablation_modes(self):
         import src.study.vlm as vlm
 

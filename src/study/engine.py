@@ -55,6 +55,8 @@ def clip_and_log(model, params, grad_clip, exclude_gate=False):
     gates = learned_gates(model.connector)
     with_grad = [g for g in gates if g.grad is not None]
     raw = float(torch.stack([g.grad.detach().float().abs().sum() for g in with_grad]).mean()) if with_grad else None
+    # signed version (mean over gates of each gate's signed gradient), kept for the sign/cancellation analysis
+    model._gate_grad_signed = float(torch.stack([g.grad.detach().float().sum() for g in with_grad]).mean()) if with_grad else None
     ids = {id(g) for g in gates} if exclude_gate else set()
     clipped = [p for p in params if id(p) not in ids]
     norm = float(torch.nn.utils.clip_grad_norm_(clipped, grad_clip))
@@ -67,6 +69,7 @@ def train_epoch(model, builder, loader, optimizer, scheduler, scaler, device, gr
     exclude_gate = getattr(model, "clip_exclude_gate", False)
     total = 0.0
     gate_grads = model.gate_grads = []  # |d loss / d gate| per step, before clipping (learned gates only)
+    gate_signed = model.gate_grads_signed = []  # the same, with sign: shows whether the gradient cancels itself
     grad_norms = model.grad_norms = []  # global gradient norm per step, before clipping
     for feats, y, g, t in tqdm(loader, desc="train", leave=False):
         optimizer.zero_grad(set_to_none=True)
@@ -87,6 +90,7 @@ def train_epoch(model, builder, loader, optimizer, scheduler, scaler, device, gr
         grad_norms.append(norm)
         if raw is not None:
             gate_grads.append(abs(raw))
+            gate_signed.append(model._gate_grad_signed)
     return total / max(len(loader), 1)
 
 

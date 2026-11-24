@@ -189,6 +189,10 @@ def main():
                         "gate_tanh": float(torch.tanh(gate.float()).item()) if gate is not None else None,
                         "gates_tanh": model.connector.gate_values() if hasattr(model.connector, "gate_values") else None,
                         "gate_grad_abs_mean": float(np.mean(model.gate_grads)) if getattr(model, "gate_grads", None) else None,  # pre-clip
+                        # signed gradient: mean, and the fraction of steps pushing the gate up (0.5 = fully cancelling)
+                        "gate_grad_signed_mean": float(np.mean(model.gate_grads_signed)) if getattr(model, "gate_grads_signed", None) else None,
+                        "gate_grad_frac_positive": float(np.mean(np.array(model.gate_grads_signed) > 0)) if getattr(model, "gate_grads_signed", None) else None,
+                        "gate_grad_sign_flip_rate": float(np.mean(np.diff(np.sign(model.gate_grads_signed)) != 0)) if len(getattr(model, "gate_grads_signed", []) or []) > 1 else None,
                         "grad_norm_mean": float(np.mean(model.grad_norms)) if getattr(model, "grad_norms", None) else None,
                         **{f"val_{k}": v for k, v in val.items()}})
         print(f"[{os.path.basename(args.run_dir)}] epoch {epoch} ({minutes:.1f} min) loss {loss:.4f} | "
