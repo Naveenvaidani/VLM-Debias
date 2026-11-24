@@ -38,16 +38,17 @@ def hypotheses(path, llm):
 def forest():
     rows = hypotheses(os.path.join(ROOT, "results_study/hypotheses.md"), "Qwen3.5-4B") + \
         hypotheses(os.path.join(ROOT, "results_study/phi/hypotheses.md"), "Phi-4-mini")
-    fig, ax = plt.subplots(figsize=(84 * MM, 48 * MM))
+    fig, ax = plt.subplots(figsize=(84 * MM, 58 * MM))
     y = np.arange(len(rows))[::-1]
     ax.axvline(0, color="#444", lw=0.6)
     for yi, (llm, task, n, g, lo, hi) in zip(y, rows):
         ax.plot([lo, hi], [yi, yi], color="#222", lw=1.2)
         ax.plot(g, yi, marker="s" if llm.startswith("Qwen") else "o", color="#222", ms=4)
-        ax.text(hi + 1, yi, f"+{g:.1f}", va="center", fontsize=7)
-    ax.set_yticks(y, [f"{llm}, {task} (n = {n})" for llm, task, n, *_ in rows], fontsize=7)
-    ax.set_xlabel("Fixed minus learnable gate, worst-group accuracy (points)")
-    ax.set_xlim(-2, max(r[5] for r in rows) + 9)
+        ax.text(g, yi + 0.18, f"+{g:.1f}", ha="center", va="bottom", fontsize=7)  # above the marker, inside the axes
+    ax.set_yticks(y, [f"{llm}\n{task}, n = {n}" for llm, task, n, *_ in rows], fontsize=7)
+    ax.set_xlabel("Fixed minus learnable gate,\nworst-group accuracy (points)")
+    ax.set_xlim(min(-2, min(r[4] for r in rows) - 2), max(r[5] for r in rows) + 3)
+    ax.set_ylim(-0.6, len(rows) - 0.4)
     fig.tight_layout()
     fig.savefig(os.path.join(OUT, "forest_gain.pdf"))
     plt.close(fig)

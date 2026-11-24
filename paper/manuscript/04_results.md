@@ -20,7 +20,7 @@ cross-attention connector with a learnable gate falls well below them (Table \re
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/main_connectors.pdf}
-\caption{Test worst-group accuracy of the four connectors (Qwen3.5-4B, SigLIP-base) on (a) Waterbirds and (b) Watermark. Bars are means with one standard deviation; dots are single seeds; hatching distinguishes connectors. Only the learnable, zero-start gate fails, and it is also the least stable}\label{fig:main}
+\caption{Test worst-group accuracy of the four connectors (Qwen3.5-4B, SigLIP-base) on (a) Waterbirds and (b) Watermark. Bars are means with one standard deviation; dots are single seeds; hatching distinguishes connectors; the numbers under each bar give the mean and the number of seeds. Only the learnable, zero-start gate fails, and it is also the least stable}\label{fig:main}
 \end{figure*}
 
 Fixing the gate raises worst-group accuracy in all four LLM and task cells (Table \ref{tab:h1}, Figure \ref{fig:forest}). The
@@ -145,7 +145,7 @@ arms fail (6.7 and 20.1). The gap is largest at the 95% used in the main experim
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/encoder_scale.pdf}
-\caption{Waterbirds worst-group accuracy with SigLIP-base and SigLIP-large features. Bars are means with one standard deviation and dots are single seeds. Every connector gains from the larger encoder; the learnable gate still lags}\label{fig:encoder}
+\caption{Waterbirds worst-group accuracy with SigLIP-base and SigLIP-large features. Bars are means with one standard deviation, dots are single seeds, and the numbers under each bar give the mean and the number of seeds. Every connector gains from the larger encoder; the learnable gate still lags}\label{fig:encoder}
 \end{figure*}
 
 ## Free-form answers under shifted priors
@@ -193,7 +193,7 @@ threshold calibrated on validation, reaches only 35.5 on Waterbirds.
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/fixes.pdf}
-\caption{Connector-only deep feature reweighting (conn-DFR), group-balanced sampling and a linear probe on the frozen features. Bars are means with one standard deviation and dots are single seeds; (a) Waterbirds, (b) Watermark. Conn-DFR on the fixed gate reaches 89.6\% worst-group accuracy on Watermark and gives no gain on Waterbirds}\label{fig:fixes}
+\caption{Connector-only deep feature reweighting (conn-DFR), group-balanced sampling and a linear probe on the frozen features. Bars are means with one standard deviation, dots are single seeds, and the numbers under each bar give the mean and the number of seeds; (a) Waterbirds, (b) Watermark. Starred bars use group labels during training (group-balanced sampling). Conn-DFR on the fixed gate reaches 89.6\% worst-group accuracy on Watermark and gives no gain on Waterbirds}\label{fig:fixes}
 \end{figure*}
 
 ## Gates in released models

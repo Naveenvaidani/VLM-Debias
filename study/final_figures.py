@@ -38,15 +38,25 @@ def bars(ax, groups, title):
     """groups: list of (label, color, per-seed values)."""
     for i, (lab, col, vals) in enumerate(groups):
         vals = np.asarray(vals, dtype=float)
-        ax.bar(i, vals.mean(), color=col, alpha=0.35, width=0.7, edgecolor=col,
-               hatch=HATCH.get(col, "") if JOURNAL else None)
+        ax.bar(i, vals.mean(), color=col, alpha=0.35, width=0.7, edgecolor=col)
+        if JOURNAL and HATCH.get(col):
+            # hatch drawn as its own unfilled, opaque layer: with a translucent fill the PDF backend drops the pattern
+            # on the second of two adjacent bars that share colour and hatch
+            ax.bar(i, vals.mean(), width=0.7, fill=False, hatch=HATCH[col], edgecolor=col, linewidth=0, alpha=0.6)
         ax.errorbar(i, vals.mean(), yerr=vals.std(ddof=1) if len(vals) > 1 else 0, color=col, capsize=4, lw=1.4)
         ax.scatter(np.full(len(vals), i) + np.linspace(-0.15, 0.15, len(vals)), vals, color=col, s=14, zorder=3)
-        ax.text(i, 2, f"{vals.mean():.1f}\nn={len(vals)}", ha="center", va="bottom", fontsize=7.5, color="#222")
-    ax.set_xticks(range(len(groups)), [g[0] for g in groups], fontsize=8)
+        if not JOURNAL:  # journal artwork: mean and n go in the tick label, where no data point can cover them
+            ax.text(i, 2, f"{vals.mean():.1f}\nn={len(vals)}", ha="center", va="bottom", fontsize=7.5, color="#222")
+    if JOURNAL:
+        ticks = [f"{g[0]}\n{np.mean(g[2]):.1f} (n={len(g[2])})" for g in groups]
+        ax.set_xticks(range(len(groups)), ticks, fontsize=6.5 if len(groups) > 5 else 7)
+    else:
+        ax.set_xticks(range(len(groups)), [g[0] for g in groups], fontsize=8)
+    ax.set_xlim(-0.6, len(groups) - 0.4)
     ax.set_ylim(0, 100)
     if JOURNAL:
-        ax.text(0.01, 0.98, title, transform=ax.transAxes, ha="left", va="top", fontsize=8, fontweight="bold")
+        if title:  # panel label only; single-panel journal figures pass an empty title (the caption names them)
+            ax.text(0.01, 0.98, title, transform=ax.transAxes, ha="left", va="top", fontsize=8, fontweight="bold")
     else:
         ax.set_title(title, fontsize=10)
     ax.grid(axis="y", alpha=0.3)
@@ -110,25 +120,26 @@ def main():
     for c in conns:
         base = vals(h1 if c.startswith("bottleneck") else main_df, "waterbirds", c)
         groups += [(LABELS[c] + "\nbase", COLORS[c], base), (LABELS[c] + "\nlarge", COLORS[c], vals(large, "waterbirds", c))]
-    bars(ax, groups, "Waterbirds: SigLIP-base vs SigLIP-large features")
+    bars(ax, groups, "" if JOURNAL else "Waterbirds: SigLIP-base vs SigLIP-large features")
     ax.set_ylabel("Test worst-group accuracy (%)")
     save(fig, args.out, "encoder_scale")
 
     # 4. Fixes: connector-only DFR and group-balanced sampling, plus linear DFR on the same features
     s3, bal = load(args.results, "stage3"), load(args.results, "balanced")
     lin = pd.read_csv(os.path.join(args.results, "linear_baselines.csv"))
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.2), sharey=True)
+    # panel widths follow the number of bars (5 and 7), so every bar has the same width
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.2), sharey=True, gridspec_kw={"width_ratios": [5, 7]})
     for ax, task in zip(axes, ["waterbirds", "watermark_p0.95"]):
         groups = [("MLP", COLORS["mlp"], vals(s3, task, "mlp")),
-                  ("MLP\n+ conn-DFR", COLORS["mlp"], vals(s3, task, "mlp_dfr")),
-                  ("Fixed gate", COLORS["bottleneck_fixed"], vals(s3, task, "bottleneck_fixed")),
-                  ("Fixed gate\n+ conn-DFR", COLORS["bottleneck_fixed"], vals(s3, task, "bottleneck_fixed_dfr"))]
+                  ("MLP +\nconn-DFR", COLORS["mlp"], vals(s3, task, "mlp_dfr")),
+                  ("Fixed\ngate", COLORS["bottleneck_fixed"], vals(s3, task, "bottleneck_fixed")),
+                  ("Fixed +\nconn-DFR", COLORS["bottleneck_fixed"], vals(s3, task, "bottleneck_fixed_dfr"))]
         if task == "watermark_p0.95":
             groups += [("MLP\nbalanced*", "#555", vals(bal, task, "mlp")),
-                       ("Fixed gate\nbalanced*", "#555", vals(bal, task, "bottleneck_fixed"))]
+                       ("Fixed\nbalanced*", "#555", vals(bal, task, "bottleneck_fixed"))]
         l = lin[(lin.task == task) & (lin.method == "dfr")]
         groups.append(("Linear DFR\n(no LLM)", "#999", l["worst_group_acc"].to_numpy() * 100))
-        bars(ax, groups, TASKS[task])
+        bars(ax, groups, ("(%s) " % "ab"[list(axes).index(ax)] if JOURNAL else "") + TASKS[task])
     axes[0].set_ylabel("Test worst-group accuracy (%)")
     fig.suptitle("Fixes. conn-DFR: connector retrained on a balanced half of val. *balanced sampling uses group labels",
                  fontsize=10)
