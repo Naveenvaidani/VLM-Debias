@@ -1,72 +1,80 @@
-Vision-language models (VLMs) that connect a pretrained vision encoder to a large language model (LLM) have
-become the default way to build general-purpose multimodal systems \cite{yin2024mllmsurvey,zhang2024vlmsurvey,awais2025foundation}. As these systems move into screening, moderation and medical triage, a failure mode
-inherited from earlier deep networks becomes critical: \textbf{shortcut learning}, the use of a cue that predicts the
-label in training but not in deployment \cite{geirhos2020shortcut}. Shortcuts have already produced high-accuracy
-models that read hospital markers instead of lung pathology \cite{degrave2021covid} and watermarks instead of
-objects \cite{lapuschkin2019clever}. They fail silently on exactly the under-represented groups where errors are
-most costly \cite{brown2023shortcut,ongly2024shortcut}.
+Multimodal large language models (MLLMs) are now built by joining a pretrained vision encoder to a large language
+model (LLM) through a small trainable connector \cite{yin2024mllmsurvey,huang2025vitsurvey,awais2025foundation}.
+The connector decides what visual information reaches the LLM, and in the most widely shipped design it does so
+through a learnable injection gate. As these systems move into screening, moderation and medical triage, a failure
+mode inherited from earlier deep networks becomes critical: \textbf{shortcut learning}, the use of a cue that predicts
+the label in training but not in deployment \cite{geirhos2020shortcut}. Shortcuts have produced accurate models that
+read hospital markers instead of lung pathology \cite{degrave2021covid} and watermarks instead of objects
+\cite{lapuschkin2019clever}, and they fail silently on exactly the under-represented groups where errors cost most
+\cite{brown2023shortcut,ongly2024shortcut}.
 
-A substantial body of work on spurious correlations establishes how to measure and mitigate such failures in
-classifiers:
-- worst-group accuracy over groups defined by label and spurious attribute \cite{sagawa2020groupdro};
-- group-aware or label-free reweighting \cite{liu2021jtt,idrissi2022balancing};
-- the finding that features usually retain the core signal, so retraining only the readout recovers most
-robustness \cite{izmailov2022feature,kirichenko2023dfr}.
+Work on spurious correlations shows how to measure and reduce such failures in classifiers: worst-group accuracy
+over groups defined by label and spurious attribute \cite{sagawa2020groupdro}, group-aware and label-free reweighting
+\cite{liu2021jtt,idrissi2022balancing}, invariance-seeking training \cite{huang2024losingtickets,mitchell2026wule}, and the
+finding that features usually keep the core signal, so retraining only the readout recovers most robustness
+\cite{izmailov2022feature,kirichenko2023dfr}. For vision-language models, recent studies show that MLLMs inherit spurious
+cues and language priors and fail under shift \cite{hosseini2025spurlens,yang2025spuriverse,ye2026mmspubench,zhu2024vlalignood}. They attribute this to the vision encoder \cite{tong2024eyes}, to data rather than scale
+\cite{sarridis2026scaling}, or remove it after training \cite{sarker2026purge}. A separate line of work compares the
+connectors themselves (MLP projectors, Q-Formers and gated cross-attention \cite{liu2024llava15,li2023blip2,alayrac2022flamingo}) by benchmark accuracy and efficiency \cite{mckinzie2024mm1,cha2024honeybee,karamcheti2024prismatic}.
 
-For VLMs, recent studies show that multimodal LLMs inherit spurious cues and fail on minority groups
-\cite{hosseini2025spurlens,yang2025spuriverse,zhang2024oodmllm}. They attribute this to the vision encoder
-\cite{tong2024eyes}, to data rather than scale \cite{sarridis2026scaling}, or remove it post hoc by unlearning
-\cite{sarker2026purge}. In parallel, a separate line of work compares the connectors that map visual features into
-the LLM, such as MLP projectors, Q-Formers and gated cross-attention \cite{liu2024llava15,li2023blip2,alayrac2022flamingo}, and ranks them by benchmark accuracy and efficiency \cite{mckinzie2024mm1,cha2024honeybee,karamcheti2024prismatic}.
+These lines of work have not met, which leaves three gaps.
+1. \textbf{No controlled test of the connector.} Robustness studies keep the connector fixed. Connector studies measure
+average accuracy, or compare released models that also differ in encoder, LLM and scale \cite{balaji2026forget}.
+Whether the component that decides \emph{what visual information reaches the LLM} also decides \emph{whether the model
+relies on a shortcut} is untested.
+2. \textbf{The injection gate is common but poorly understood.} Zero-initialised learnable tanh gates are the standard
+way to inject a modality into a pretrained LLM: Flamingo, IDEFICS, LLaMA-Adapter and Llama 3.2 Vision all use
+them \cite{alayrac2022flamingo,zhang2024llamaadapter,grattafiori2024llama3}. Farazi et al.~show that such gates can
+end up near zero and their pathways behaviourally closed, through a vanishing first-order gradient when the
+injected signal does not depend on the text \cite{farazi2026gate}; Li et al.~show that visual tokens far larger than
+text tokens lose information \cite{li2025unseen}. Neither measures what a near-shut gate does to \emph{what the model
+relies on}, and Farazi et al.~leave text-coupled injection, where the gradient need not vanish, as an open case.
+Every attention gate in the released Llama 3.2 Vision weights is at most 0.012.
+3. \textbf{Results from too few seeds.} Comparisons rest on one or a few training runs, although seed variance alone
+can reverse conclusions \cite{henderson2018matters,bouthillier2021variance}.
 
-However, these two lines of work have not met, which leaves three limitations.
-1. \textbf{No controlled test of the connector.} Every robustness study of VLMs treats the connector as fixed, and
-every connector study measures average accuracy rather than worst-group behaviour. Whether the component
-that decides \emph{what visual information reaches the LLM} also decides \emph{whether the model relies on a
-shortcut} is untested.
-2. \textbf{Conflicting evidence on gated cross-attention.} Zero-initialised, learnable tanh gates are the standard
-way to inject a new modality into a pretrained LLM: Flamingo, IDEFICS, LLaMA-Adapter and Llama 3.2 Vision
-all use them \cite{alayrac2022flamingo,zhang2024llamaadapter,grattafiori2024llama3}. Cross-attention
-injection performs well with frozen backbones \cite{laurencon2024matters}. Yet learnable injection gates can end
-up behaviourally closed \cite{farazi2026gate}, and every attention gate in the released Llama 3.2 Vision
-checkpoints is below 0.012. The consequence of a near-shut gate for \emph{what the model relies on} has never
-been measured. Work on modality imbalance shows that multimodal networks can greedily ignore a modality
-\cite{wu2022greedy,huang2022modality}, but not which component of an LLM-based VLM causes it, nor what it does
-to spurious-group robustness.
-3. \textbf{Results from too few seeds.} Comparisons rest on one or a few training runs, although seed variance
-alone can reverse conclusions in deep learning \cite{henderson2018matters,bouthillier2021variance}.
+We test whether the vision-language connector, and specifically its injection gate, determines shortcut reliance
+in LLM-based VLMs.
+- \textbf{Held fixed:} the LLM (Qwen3.5-4B, replicated with Phi-4-mini), frozen SigLIP features, data, prompts and
+training budget.
+- \textbf{Varied:} only the connector: an MLP projector, a Q-Former, and text-coupled gated cross-attention whose tanh
+gate is learnable from zero, learnable from a non-zero start, or fixed. The gate variants have identical
+parameters.
+- \textbf{Measured:} worst-group accuracy on Waterbirds, a controlled watermark task and CelebA, and free-form answers
+under shifted answer priors on VQA-CP v2 \cite{agrawal2018vqacp}.
+- \textbf{Tested:} hypotheses formed on a 3-seed pilot and confirmed on new paired seeds (15 in total), with effect
+sizes, robust and non-parametric tests, Holm correction and an equivalence test; mechanism controls on gate start,
+learning rate, clipping, weight decay, alignment length, injection depth and weight precision; and a behavioural
+test that removes the visual pathway at inference.
 
-The field therefore cannot say whether a widely used architectural choice silently causes shortcut learning,
-or how to avoid it.
+We do not propose a robustness method that competes with label-using approaches, which reach higher absolute
+worst-group accuracy \cite{park2026scer}. We isolate a cause.
 
-To address these limitations, this study tests whether the vision-language connector, and specifically its
-injection gate, determines shortcut reliance in LLM-based VLMs.
-- \textbf{What is held fixed:} the LLM (Qwen3.5-4B, replicated with Phi-4-mini), frozen SigLIP features, data,
-prompts and training budget.
-- \textbf{What varies:} only the connector, at four levels: an MLP projector, a Q-Former, and gated
-cross-attention with a learnable or a fixed gate. The two gate variants have identical parameters; a third,
-learnable gate initialised open separates trainability from initialisation.
-- \textbf{Where it is measured:} worst-group accuracy on Waterbirds, a controlled watermark task and CelebA.
-- \textbf{How it is tested:} hypotheses formed on a 3-seed pilot and confirmed on up to 12 new paired
-seeds (15 in total), with effect sizes,
-robust and non-parametric tests, and an equivalence test.
-- \textbf{Fixes and rival explanations:} we log the gate during training, read the gates of released IDEFICS
-checkpoints, test a connector-only analogue of deep feature reweighting, and probe rival explanations
-(token count, encoder scale, frozen LLM, training length).
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{A controlled architectural cause.} In a single input-level connector, a learnable gate that starts at zero
+  makes shortcut reliance more likely. Fixing the gate raises worst-group accuracy by 10.6 and 25.2 points
+  (d\_z = 1.10 and 1.34, 15 paired seeds; all four LLM × task cells survive Holm correction). A learnable gate that
+  starts half open behaves like the fixed one, so the zero start, not learnability, is the cause.
+\item
+  \textbf{A different mechanism from the one known.} Our connector is text-coupled, so the dead-gradient account does
+  not apply: the gate's gradient is large, yet the gate barely moves, which implies a self-cancelling gradient. The
+  pathway is weak, not closed: removing it drops the model to the majority-class share. Gate value is therefore not
+  evidence of use in either direction.
+\item
+  \textbf{Robustness as a seed-level outcome.} The zero-start gate collapses below 50\% worst-group accuracy in up to 10 of
+  15 seeds on Qwen3.5-4B, the fixed gate in none (on Phi-4-mini Watermark the fixed gate still collapses in 6 of 10). With the gate fixed, connector type has no detectable effect (equivalence not
+  established).
+\item
+  \textbf{Boundaries, reported as found.} Per-layer gated injection shows no gap; a stronger encoder narrows the gap on
+  one task but not the other; and on open-ended VQA-CP the strong fixed injection harms free-form generation. Gate
+  start value and injection strength must therefore be chosen together.
+\item
+  \textbf{A cheap fix and reproducible evidence.} Retraining only the connector on a small group-balanced set reaches
+  89.6\% worst-group accuracy on the watermark task. Code, job scripts, pinned versions and per-seed results are public.
+\end{enumerate}
 
-This paper makes three contributions.
-1. \textbf{A transmission mechanism.} We identify the learnable injection gate as a \emph{transmission bottleneck}
-between features and readout. Initialised at zero, the gate never opens, and the model then relies on the shortcut; fixing it raises
-worst-group accuracy by 10.6 and 25.2 points (d\_z = 1.10 and 1.34). This extends the feature--readout account
-of shortcut learning and links gate closure to robustness.
-2. \textbf{Variance as an outcome.} The learnable gate turns robustness into a seed lottery, with up to 10 of 15
-runs collapsing. Once the gate is fixed, we detect no significant difference between connector types, although equivalence
-is not established. Together these establish
-that architectural robustness claims require seed-level evaluation.
-3. \textbf{A practical fix and its boundary.} Retraining only the connector on a small group-balanced set raises
-watermark worst-group accuracy to 89.6\% with near-zero seed variance, but not when the shortcut is entangled
-with the object.
-
-Section 2 reviews related work. Section 3 describes the design and statistical protocol. Section 4 reports the
-results, Section 5 discusses mechanisms and implications, and Section 6 concludes. Code, per-seed results and
-figures are public.
+Section 2 reviews related work. Section 3 describes the design and the statistical protocol. Section 4 reports and
+discusses the results, including their limits.

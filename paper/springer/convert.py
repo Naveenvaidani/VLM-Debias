@@ -39,6 +39,7 @@ def convert(md: str) -> str:
 
 def main():
     jobs = {"introduction": ("INTRODUCTION.md", {}),
+            "related_work": ("RELATED_WORK.md", {}),
             "methods": ("METHODOLOGY.md", {"drop_from": "## 7. Statements required at submission"}),
             "results_discussion": ("RESULTS_DISCUSSION.md", {})}
     for name, (src, kw) in jobs.items():

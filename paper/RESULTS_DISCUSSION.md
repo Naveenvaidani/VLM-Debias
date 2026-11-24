@@ -67,6 +67,22 @@ With n = 5 the smallest attainable one-sided Wilcoxon p is 0.031, so the Wilcoxo
 α = 0.025 for Phi-4-mini Waterbirds. Figure 1: `results_study/h1_gate_seeds.png`, `results_study/phi/h1_gate_seeds.png`
 (one line per seed).
 
+Figure \ref{fig:main} shows every seed of the four connectors, and Figure \ref{fig:forest} the paired gain with its 95% interval in all four LLM × task cells.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/main_connectors.png}
+\caption{Test worst-group accuracy of the four connectors (Qwen3.5-4B, SigLIP-base). Bars are means over seeds; dots are individual seeds. Only the learnable, zero-initialised gate fails, and it is also the least stable.}\label{fig:main}
+\end{figure}
+
+
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/forest_gain.png}
+\caption{Paired gain from fixing the gate (fixed minus learnable gate, worst-group accuracy points) with 95% confidence intervals, for both LLMs and both tasks. All four cells survive Holm correction.}\label{fig:forest}
+\end{figure}
+
 ### R2. H2: the learned gate is less stable across seeds
 
 **Target and test.**
@@ -90,6 +106,14 @@ collapsed runs (Fisher's exact test, which assumes nothing about the distributio
   Brown–Forsythe.
 - For Phi-4-mini no instability test is significant (F p = 0.20 and 0.23; collapses 0/0 and 8/6). H2 is not
   claimed for Phi-4-mini.
+
+Figure \ref{fig:seeds} pairs each seed's learnable-gate and fixed-gate runs.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/h1_seeds_qwen.png}
+\caption{Each line joins one seed's learnable-gate run to its fixed-gate run (Qwen3.5-4B). The learnable gate collapses on many seeds; the fixed gate on none.}\label{fig:seeds}
+\end{figure}
 
 ### R3. Mechanism: the learned gate stays closed
 
@@ -172,6 +196,22 @@ Yet only the learned gate fails.
 | Injection strength | ‖injected‖ / ‖text‖ at test | Learned gate ≈ 3–8, fixed and open ≈ 100–125: 15–35× less visual signal, but not zero |
 | Caption-reconstruction loss (LTD) | 3 seeds | MLP 75.9 ± 3.3 (vs 74.9); fixed gate 72.3 ± 3.7 |
 
+Figures \ref{fig:encoder} and \ref{fig:ablations} summarise the encoder-scale comparison and the ablations.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/encoder_scale.png}
+\caption{Waterbirds worst-group accuracy with SigLIP-base and SigLIP-large features. Every connector gains from the larger encoder; the learnable gate still lags.}\label{fig:encoder}
+\end{figure}
+
+
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/ablations.png}
+\caption{Ablations on Waterbirds (MLP unless noted): image-token count, caption loss, training length, and the frozen-LLM control.}\label{fig:ablations}
+\end{figure}
+
 ### R6. Connector-only fixes
 
 Table 2, Figure 2: `docs/figures/final/fixes.png`. Stage-2 baseline vs connector-DFR, 5 seeds each:
@@ -194,6 +234,14 @@ features.
 - Group-balanced sampling, which uses group labels in training, reaches 89.1 ± 0.9 (MLP) and 87.1 ± 3.5
   (fixed gate) on Watermark.
 - Connector-JTT (1 seed) did not help.
+
+Figure \ref{fig:fixes} compares the connector-only fixes with group-balanced sampling and a linear probe on the same features.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fixes.png}
+\caption{Connector-only deep feature reweighting (conn-DFR), group-balanced sampling and a linear DFR probe on the frozen features. Conn-DFR on the fixed gate reaches 89.6% worst-group accuracy on the watermark task but gives no gain on Waterbirds.}\label{fig:fixes}
+\end{figure}
 
 ### R7. Generalisation to CelebA and to native VLMs (exploratory)
 
@@ -323,7 +371,7 @@ significant.
 
 **Finding.** With SigLIP-large all connectors improve on Waterbirds, and the gate effect shrinks (74.5 vs 80.9,
 paired +8.0, p = 0.09, 4 seeds), although the gate value is still 0.0006. On Watermark, 5 seeds give 53.2 vs 75.6
-(+22.4, d_z = 0.85, p = 0.13, underpowered); the 2-seed reading in earlier drafts (68.8 vs 68.2) did not hold up.
+(+22.4, d_z = 0.85, p = 0.13, underpowered); the first two seeds alone had shown no gap (68.8 vs 68.2).
 A shut gate is therefore not sufficient for shortcut reliance: it is a risk factor whose effect depends on the task
 and on how separable the features are.
 
