@@ -435,6 +435,10 @@ Phi-4-mini Waterbirds 0.0086, Phi-4-mini Watermark 0.0086 (10 seeds). All four s
 | SigLIP-large Watermark seeds 2–4 (→ 5 per arm) | done, [4](#4-vision-encoder-scale-siglip-base-vs-siglip-large-waterbirds) |
 | CelebA learned seed 4, fixed seed 1 (→ 5 paired seeds) | done (one seed added per arm; the other planned seeds were not reached) |
 | VQA-CP v2 open-ended benchmark, learned vs fixed gate, 3 seeds | done, [18](#18-open-ended-answers-on-natural-images-vqa-cp-v2) |
+| Norm-capped fixed gate (`bottleneck_capped`: injected norm ≤ text norm per token), 2 tasks × 5 seeds | running (round 9, `r9-capped`) |
+| Norm-capped fixed gate on VQA-CP, and a text-only VQA-CP baseline (same LLM, LoRA, budget), 3 seeds each | running (round 9, `r9-vqacp`) |
+| Gate start sweep: learnable gate started at tanh α = 0.01 / 0.1, 2 tasks × 5 seeds | running (round 9, `r9-eps01`, `r9-eps1`) |
+| Pathway tests on 5 seeds (removed, zero features, shuffled image), with the signed gate gradient logged | running (round 9, `r9-ablate`) |
 
 ### 17. Control experiments (rounds 3-7)
 

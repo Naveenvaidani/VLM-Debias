@@ -82,3 +82,16 @@ gate excluded from clipping *and* no weight decay together; multi-layer injectio
 - One larger or full-precision LLM run (limited by T4 memory; otherwise state as a limitation).
 - Position the contribution against Farazi et al. (2026): they show gates stay closed; we show what the
   model then relies on, and that it turns robustness into a seed lottery.
+
+## Round 9 (launched 24 Nov 2026)
+
+Chosen from the full-text reading of the closest prior work ([`docs/NOVELTY.md`](../docs/NOVELTY.md) §6) and the
+contradiction analysis ([`docs/CONTRADICTIONS.md`](../docs/CONTRADICTIONS.md)).
+
+| # | Reviewer question | Job | Status |
+| :--- | :--- | :--- | :--- |
+| 57 | Does matched-norm injection (Farazi et al.'s advice) keep the robustness gain? | `r9-capped` (2 tasks × 5 seeds) | Running |
+| 58 | Can the VQA-CP failure be repaired, and how much image information do VQA-CP models use? | `r9-vqacp` (capped connector + text-only baseline, 3 seeds) | Running |
+| 59 | Is there a dose-response in the gate's start value; what start is safe? | `r9-eps01`, `r9-eps1` (start 0.01 / 0.1, 5 seeds) | Running |
+| 60 | Is the learned pathway used, on more than 1–2 seeds, and is the gate stuck by a self-cancelling gradient? | `r9-ablate` (5 seeds; removed / zero features / shuffled; signed gradient) | Running |
+
