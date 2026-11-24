@@ -18,45 +18,58 @@ cues and language priors and fail under shift \cite{hosseini2025spurlens,yang202
 connectors themselves (MLP projectors, Q-Formers and gated cross-attention \cite{liu2024llava15,li2023blip2,alayrac2022flamingo}) by benchmark accuracy and efficiency \cite{mckinzie2024mm1,cha2024honeybee,karamcheti2024prismatic}.
 
 These lines of work have not met, which leaves three gaps.
-1. \textbf{No controlled test of the connector.} Robustness studies keep the connector fixed. Connector studies measure
-average accuracy, or compare released models that also differ in encoder, LLM and scale \cite{balaji2026forget}.
-Whether the component that decides \emph{what visual information reaches the LLM} also decides \emph{whether the model
-relies on a shortcut} is untested.
-2. \textbf{The injection gate is common but poorly understood.} Zero-initialised learnable tanh gates are the standard
-way to inject a modality into a pretrained LLM: Flamingo, IDEFICS, LLaMA-Adapter and Llama 3.2 Vision all use
-them \cite{alayrac2022flamingo,zhang2024llamaadapter,grattafiori2024llama3}. Farazi et al.~show that such gates can
-end up near zero and their pathways behaviourally closed, through a vanishing first-order gradient when the
-injected signal does not depend on the text \cite{farazi2026gate}; Li et al.~show that visual tokens far larger than
-text tokens lose information \cite{li2025unseen}. Neither measures what a near-shut gate does to \emph{what the model
-relies on}, and Farazi et al.~leave text-coupled injection, where the gradient need not vanish, as an open case.
-Every attention gate in the released Llama 3.2 Vision weights is at most 0.012.
-3. \textbf{Results from too few seeds.} Comparisons rest on one or a few training runs, although seed variance alone
-can reverse conclusions \cite{henderson2018matters,bouthillier2021variance}.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{No controlled test of the connector.} Robustness studies keep the connector fixed. Connector studies measure
+  average accuracy, or compare released models that also differ in encoder, LLM and scale \cite{balaji2026forget}.
+  Whether the component that decides \emph{what visual information reaches the LLM} also decides \emph{whether the model
+  relies on a shortcut} is untested.
+\item
+  \textbf{The injection gate is common but poorly understood.} Zero-initialised learnable tanh gates are the standard
+  way to inject a modality into a pretrained LLM: Flamingo, IDEFICS, LLaMA-Adapter and Llama 3.2 Vision all use
+  them \cite{alayrac2022flamingo,zhang2024llamaadapter,grattafiori2024llama3}. Farazi et al.~show that such gates can
+  end up near zero and their pathways behaviourally closed, through a vanishing first-order gradient when the
+  injected signal does not depend on the text \cite{farazi2026gate}; Li et al.~show that visual tokens far larger than
+  text tokens lose information \cite{li2025unseen}. Neither measures what a near-shut gate does to \emph{what the model
+  relies on}, and Farazi et al.~leave text-coupled injection, where the gradient need not vanish, as an open case.
+  Every attention gate in the released Llama 3.2 Vision weights is at most 0.012.
+\item
+  \textbf{Results from too few seeds.} Comparisons rest on one or a few training runs, although seed variance alone
+  can reverse conclusions \cite{henderson2018matters,bouthillier2021variance}.
+\end{enumerate}
 
 We test whether the vision-language connector, and specifically its injection gate, determines shortcut reliance
 in LLM-based VLMs.
-- \textbf{Held fixed:} the LLM (Qwen3.5-4B, replicated with Phi-4-mini), frozen SigLIP features, data, prompts and
-training budget.
-- \textbf{Varied:} only the connector: an MLP projector, a Q-Former, and text-coupled gated cross-attention whose tanh
-gate is learnable from zero, learnable from a non-zero start, or fixed. The gate variants have identical
-parameters.
-- \textbf{Measured:} worst-group accuracy on Waterbirds, a controlled watermark task and CelebA, and free-form answers
-under shifted answer priors on VQA-CP v2 \cite{agrawal2018vqacp}.
-- \textbf{Tested:} hypotheses formed on a 3-seed pilot and confirmed on new paired seeds (15 in total), with effect
-sizes, robust and non-parametric tests, Holm correction and an equivalence test; mechanism controls on gate start,
-learning rate, clipping, weight decay, alignment length, injection depth and weight precision; and a behavioural
-test that removes the visual pathway at inference.
+
+\begin{itemize}
+\item
+  \textbf{Held fixed:} the LLM (Qwen3.5-4B, replicated with Phi-4-mini), frozen SigLIP features, data, prompts and
+  training budget.
+\item
+  \textbf{Varied:} only the connector: an MLP projector, a Q-Former, and text-coupled gated cross-attention whose tanh
+  gate is learnable from zero, learnable from a non-zero start, or fixed. The gate variants have identical
+  parameters.
+\item
+  \textbf{Measured:} worst-group accuracy on Waterbirds, a controlled watermark task and CelebA, and free-form answers
+  under shifted answer priors on VQA-CP v2 \cite{agrawal2018vqacp}.
+\item
+  \textbf{Tested:} hypotheses formed on a 3-seed pilot and confirmed on new paired seeds (15 in total), with effect
+  sizes, robust and non-parametric tests, Holm correction and an equivalence test; mechanism controls on gate start,
+  learning rate, clipping, weight decay, alignment length, injection depth and weight precision; and a behavioural
+  test that removes the visual pathway at inference.
+\end{itemize}
 
 We do not propose a robustness method that competes with label-using approaches, which reach higher absolute
 worst-group accuracy \cite{park2026scer}. We isolate a cause.
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
-\tightlist
 \item
   \textbf{A controlled architectural cause.} In a single input-level connector, a learnable gate that starts at zero
   makes shortcut reliance more likely. Fixing the gate raises worst-group accuracy by 10.6 and 25.2 points
-  (d\_z = 1.10 and 1.34, 15 paired seeds; all four LLM × task cells survive Holm correction). A learnable gate that
+  (\(d_z\) = 1.10 and 1.34, 15 paired seeds; all four LLM × task cells survive Holm correction). A learnable gate that
   starts half open behaves like the fixed one, so the zero start, not learnability, is the cause.
 \item
   \textbf{A different mechanism from the one known.} Our connector is text-coupled, so the dead-gradient account does

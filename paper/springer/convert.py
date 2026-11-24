@@ -26,6 +26,9 @@ def clean(md: str, drop_until_rule: bool = True, drop_from: str = None) -> str:
     md = re.sub(r"^#\s.*$", "", md, count=1, flags=re.M)               # the file's own top heading
     md = re.sub(r"^(#{2,6})\s+(?:Part [IVX]+ — |\d+(?:\.\d+)*\.\s+|[A-Z]\d+\.\s+)?", lambda m: m.group(1) + " ", md, flags=re.M)
     md = md.replace("\u202f", " ").replace("\u00a0", " ").replace("\u2009", " ")
+    # pandoc needs a blank line before a list that follows a paragraph line
+    md = re.sub(r"(?m)^(?!\s*$)(?!\s*(?:[-*+]|\d+\.)\s)(.+)\n(?=\s*(?:[-*+]|\d+\.)\s)", r"\1\n\n", md)
+    md = re.sub(r"(?<![\w$\\])d_z(?![\w])", r"$d_z$", md)
     md = CITE.sub(lambda m: "\\cite{" + ",".join(k.strip() for k in re.split(r"[;,]", m.group(1))) + "}", md)
     md = re.sub(r"\]\((?:\.\./)*docs/figures/final/", "](figures/", md)
     md = re.sub(r"\]\((?:\.\./)*results_study/h1_gate_seeds\.png", "](figures/h1_seeds_qwen.png", md)

@@ -3,42 +3,86 @@
 \subsubsection{H1: a fixed gate yields higher worst-group accuracy than a learned gate}
 
 \textbf{Target and test.}
-- Target: H1, fixed gate \textgreater{} learned gate.
-- Test: one-sided paired t-test over seeds, with the Wilcoxon signed-rank test as an assumption-free check
-(Table 1, Figure 1).
+
+\begin{itemize}
+\tightlist
+\item
+  Target: H1, fixed gate \textgreater{} learned gate.
+\item
+  Test: one-sided paired t-test over seeds, with the Wilcoxon signed-rank test as an assumption-free check
+  (Table 1, Figure 1).
+\end{itemize}
 
 \textbf{Verdict: supported for Qwen3.5-4B on both tasks.}
-- \emph{Waterbirds:} the fixed gate exceeds the learned gate by 10.6 points.
-- Paired test: 95\% CI {[}5.3, 16.0{]}, t(14) = 4.26, p = 4.0 × 10⁻⁴, d\_z = 1.10.
-- Wilcoxon: p = 3.1 × 10⁻⁵.
-- \emph{Watermark:} the gain is 25.2 points.
-- Paired test: 95\% CI {[}14.8, 35.6{]}, t(14) = 5.21, p = 6.6 × 10⁻⁵, d\_z = 1.34.
-- Wilcoxon: p = 6.1 × 10⁻⁵.
-- Both effects are large by conventional thresholds \cite{cohen1988power}. Achieved power is 0.98 and 0.99.
-- \emph{Robustness of the verdict} (\texttt{results\_study/robustness\_checks.md}):
-- Unpaired tests, which do not rely on seed pairing, agree: Welch p = 7.6 × 10⁻⁴ and 5.1 × 10⁻⁵;
-Mann--Whitney p = 1.2 × 10⁻⁵ and 2.5 × 10⁻⁴.
-- With label-free model selection (best validation average accuracy) the gain is +17.7 and +25.5
-(paired p = 0.002 and 6.0 × 10⁻⁵), so it does not depend on using group labels for selection.
-- The fixed gate also raises average accuracy (84.1 → 88.0, p = 0.007; 76.9 → 86.1, p = 7.4 × 10⁻⁴), with
-in-distribution accuracy unchanged (≈ 98\%). The worst-group gain is not a trade-off against accuracy.
-- \emph{Confirmation sample.} H1 was formed after a 3-seed pilot, so it is also tested on the later seeds only:
-Waterbirds +10.5 (12 seeds, t(11) = 4.06, p = 9.5 × 10⁻⁴, d\_z = 1.17); Watermark +26.7 (12 seeds,
-t(11) = 4.86, p = 2.5 × 10⁻⁴, d\_z = 1.40). The pilot alone was not significant (p = 0.16 and 0.12).
-- \emph{Multiplicity.} With Holm correction across the four H1 tests (2 LLMs × 2 tasks), all four survive at 0.025
-(adjusted p = 0.0012 and 2.7 × 10⁻⁴ for Qwen3.5-4B, 0.0086 and 0.0086 for Phi-4-mini;
-\texttt{results\_study/extra\_analyses.md} §1).
+
+\begin{itemize}
+\tightlist
+\item
+  \emph{Waterbirds:} the fixed gate exceeds the learned gate by 10.6 points.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Paired test: 95\% CI {[}5.3, 16.0{]}, t(14) = 4.26, p = 4.0 × 10⁻⁴, \(d_z\) = 1.10.
+  \item
+    Wilcoxon: p = 3.1 × 10⁻⁵.
+  \end{itemize}
+\item
+  \emph{Watermark:} the gain is 25.2 points.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Paired test: 95\% CI {[}14.8, 35.6{]}, t(14) = 5.21, p = 6.6 × 10⁻⁵, \(d_z\) = 1.34.
+  \item
+    Wilcoxon: p = 6.1 × 10⁻⁵.
+  \end{itemize}
+\item
+  Both effects are large by conventional thresholds \cite{cohen1988power}. Achieved power is 0.98 and 0.99.
+\item
+  \emph{Robustness of the verdict} (\texttt{results\_study/robustness\_checks.md}):
+
+  \begin{itemize}
+  \item
+    Unpaired tests, which do not rely on seed pairing, agree: Welch p = 7.6 × 10⁻⁴ and 5.1 × 10⁻⁵;
+    Mann--Whitney p = 1.2 × 10⁻⁵ and 2.5 × 10⁻⁴.
+  \item
+    With label-free model selection (best validation average accuracy) the gain is +17.7 and +25.5
+    (paired p = 0.002 and 6.0 × 10⁻⁵), so it does not depend on using group labels for selection.
+  \item
+    The fixed gate also raises average accuracy (84.1 → 88.0, p = 0.007; 76.9 → 86.1, p = 7.4 × 10⁻⁴), with
+    in-distribution accuracy unchanged (≈ 98\%). The worst-group gain is not a trade-off against accuracy.
+  \item
+    \emph{Confirmation sample.} H1 was formed after a 3-seed pilot, so it is also tested on the later seeds only:
+    Waterbirds +10.5 (12 seeds, t(11) = 4.06, p = 9.5 × 10⁻⁴, \(d_z\) = 1.17); Watermark +26.7 (12 seeds,
+    t(11) = 4.86, p = 2.5 × 10⁻⁴, \(d_z\) = 1.40). The pilot alone was not significant (p = 0.16 and 0.12).
+  \item
+    \emph{Multiplicity.} With Holm correction across the four H1 tests (2 LLMs × 2 tasks), all four survive at 0.025
+    (adjusted p = 0.0012 and 2.7 × 10⁻⁴ for Qwen3.5-4B, 0.0086 and 0.0086 for Phi-4-mini;
+    \texttt{results\_study/extra\_analyses.md} §1).
+  \end{itemize}
+\end{itemize}
 
 \textbf{Phi-4-mini, second LLM.}
-- \emph{Waterbirds:} H1 is supported (+9.7, t(4) = 4.52, p = 0.005, d\_z = 2.02).
-- \emph{Watermark, 10 seeds:} H1 is supported (+25.5, 95\% CI {[}8.2, 42.7{]}, t(9) = 3.34, p = 0.0043,
-Wilcoxon p = 9.8 × 10⁻⁴, d\_z = 1.06).
-- With the first 5 seeds the gain (+31.6) missed α = 0.025 (p = 0.044). Seeds 5--9 were added \emph{after} that
-result, to reach the ≈ 10 seeds a power analysis asked for. Because the extension depended on the first
-result, it is also tested on the new seeds alone, which are fresh data: +19.4, t(4) = 2.88, p = 0.023,
-fixed \textgreater{} learned in 5 of 5.
-- The fixed gate is not robust on this task either: 6 of 10 fixed-gate seeds fall below 50\% WGA (8 of 10
-learned). Phi-4-mini finds the watermark task harder with any gate.
+
+\begin{itemize}
+\item
+  \emph{Waterbirds:} H1 is supported (+9.7, t(4) = 4.52, p = 0.005, \(d_z\) = 2.02).
+\item
+  \emph{Watermark, 10 seeds:} H1 is supported (+25.5, 95\% CI {[}8.2, 42.7{]}, t(9) = 3.34, p = 0.0043,
+  Wilcoxon p = 9.8 × 10⁻⁴, \(d_z\) = 1.06).
+
+  \begin{itemize}
+  \item
+    With the first 5 seeds the gain (+31.6) missed α = 0.025 (p = 0.044). Seeds 5--9 were added \emph{after} that
+    result, to reach the ≈ 10 seeds a power analysis asked for. Because the extension depended on the first
+    result, it is also tested on the new seeds alone, which are fresh data: +19.4, t(4) = 2.88, p = 0.023,
+    fixed \textgreater{} learned in 5 of 5.
+  \item
+    The fixed gate is not robust on this task either: 6 of 10 fixed-gate seeds fall below 50\% WGA (8 of 10
+    learned). Phi-4-mini finds the watermark task harder with any gate.
+  \end{itemize}
+\end{itemize}
 
 \textbf{Table 1.} Gate hypotheses (WGA, \%).
 
@@ -75,7 +119,7 @@ p (t)
 \end{minipage} & \begin{minipage}[b]{\linewidth}\centering
 p (Wilcoxon)
 \end{minipage} & \begin{minipage}[b]{\linewidth}\centering
-d\_z
+\(d_z\)
 \end{minipage} & \begin{minipage}[b]{\linewidth}\centering
 Collapsed \textless{} 50 (L / F)
 \end{minipage} \\
@@ -111,9 +155,15 @@ Figure \ref{fig:main} shows every seed of the four connectors, and Figure \ref{f
 \subsubsection{H2: the learned gate is less stable across seeds}
 
 \textbf{Target and test.}
-- Target: H2, the learned gate is more variable.
-- Test: one-sided F-test on seed variances, with the Brown--Forsythe test as a robust check, since learned-gate
-WGA is non-normal on Qwen Waterbirds (Shapiro--Wilk p = 0.003).
+
+\begin{itemize}
+\tightlist
+\item
+  Target: H2, the learned gate is more variable.
+\item
+  Test: one-sided F-test on seed variances, with the Brown--Forsythe test as a robust check, since learned-gate
+  WGA is non-normal on Qwen Waterbirds (Shapiro--Wilk p = 0.003).
+\end{itemize}
 
 \textbf{Verdict: supported for Qwen3.5-4B, by different tests on the two tasks.} The variance tests and a count of
 collapsed runs (Fisher's exact test, which assumes nothing about the distribution) are reported side by side
@@ -151,7 +201,6 @@ Watermark & F = 3.1, p = 0.023 & p = 0.097 & 10 / 15 vs 0 / 15 & p = 1.0 × 10�
 }
 
 \begin{itemize}
-\tightlist
 \item
   On Waterbirds the learned gate spreads more but rarely collapses; on Watermark the spread test is weak but
   collapses are frequent with the learned gate and absent with the fixed gate. The ``seed lottery'' claim rests
@@ -178,25 +227,34 @@ Figure \ref{fig:seeds} pairs each seed's learnable-gate and fixed-gate runs.
 whether training opens it, not whether it closes.
 
 \textbf{Gate value.}
-- After 300 alignment steps, \textbar tanh α\textbar{} = 0.0005 with SigLIP-base and 0.0006 with SigLIP-large.
-- It never opens: in the logged trace it peaks at about 0.006 within 20 steps and decays to ≈ 0.001.
-- The logged gradient is near ±1 and changes sign between logged steps (\texttt{align.json}, \texttt{gate\_trace}). It is the
-value \emph{after} global-norm clipping at 1, so it means the gate's gradient made up almost all of the clipped
-norm, not that its raw gradient is 1. Global clipping therefore shrinks every other connector update when the
-gate is learnable. Flamingo uses the same clipping; a control that leaves the gate out of clipping, and raw
-gradient logging, are in round 5.
-- A small gate is not by itself a small injection, because \texttt{out\_proj} is unconstrained and can grow to
-offset it. The injected signal \texttt{‖tanh(α)·out\_proj(attn)‖\ /\ ‖e‖} is therefore logged on every evaluation
-from round 4 on (\texttt{inject\_ratio}), for SigLIP-base and SigLIP-large.
-- \emph{Result (\texttt{results\_study/extra\_analyses.md} §6):} \texttt{out\_proj} does partly compensate. With tanh α ≈ 0.003 the
-learned gate still injects 1.2--7.5 times the text-embedding norm (mean 3.5, Qwen, 6 runs), but the fixed
-gate injects 95--129 (mean 112) and the open gate 106--145. The learned gate passes 15--35× less visual
-signal. Within learned-gate runs the ratio does not predict WGA (Spearman ρ = 0.33, p = 0.27, 13 runs).
-- \emph{Longer alignment does not open the gate (§4):} after 3,000 alignment steps instead of 300 the gate peaks at
-\textbar tanh α\textbar{} = 0.003 and ends at −0.0002. The learned-gate alignment also diverged: its captioning loss fell to
-2.0 by step \textasciitilde310, then rose to 7.9, while the fixed gate's ended at 2.5. With the gate near zero, a large loss can only come
-from \texttt{out\_proj} growing until the small gated term disrupts the embeddings, so the product parametrisation
-\texttt{tanh(α)·out\_proj} is itself unstable over long training.
+
+\begin{itemize}
+\item
+  After 300 alignment steps, \textbar tanh α\textbar{} = 0.0005 with SigLIP-base and 0.0006 with SigLIP-large.
+\item
+  It never opens: in the logged trace it peaks at about 0.006 within 20 steps and decays to ≈ 0.001.
+\item
+  The logged gradient is near ±1 and changes sign between logged steps (\texttt{align.json}, \texttt{gate\_trace}). It is the
+  value \emph{after} global-norm clipping at 1, so it means the gate's gradient made up almost all of the clipped
+  norm, not that its raw gradient is 1. Global clipping therefore shrinks every other connector update when the
+  gate is learnable. Flamingo uses the same clipping; a control that leaves the gate out of clipping, and raw
+  gradient logging, are in round 5.
+\item
+  A small gate is not by itself a small injection, because \texttt{out\_proj} is unconstrained and can grow to
+  offset it. The injected signal \texttt{‖tanh(α)·out\_proj(attn)‖\ /\ ‖e‖} is therefore logged on every evaluation
+  from round 4 on (\texttt{inject\_ratio}), for SigLIP-base and SigLIP-large.
+\item
+  \emph{Result (\texttt{results\_study/extra\_analyses.md} §6):} \texttt{out\_proj} does partly compensate. With tanh α ≈ 0.003 the
+  learned gate still injects 1.2--7.5 times the text-embedding norm (mean 3.5, Qwen, 6 runs), but the fixed
+  gate injects 95--129 (mean 112) and the open gate 106--145. The learned gate passes 15--35× less visual
+  signal. Within learned-gate runs the ratio does not predict WGA (Spearman ρ = 0.33, p = 0.27, 13 runs).
+\item
+  \emph{Longer alignment does not open the gate (§4):} after 3,000 alignment steps instead of 300 the gate peaks at
+  \textbar tanh α\textbar{} = 0.003 and ends at −0.0002. The learned-gate alignment also diverged: its captioning loss fell to
+  2.0 by step \textasciitilde310, then rose to 7.9, while the fixed gate's ended at 2.5. With the gate near zero, a large loss can only come
+  from \texttt{out\_proj} growing until the small gated term disrupts the embeddings, so the product parametrisation
+  \texttt{tanh(α)·out\_proj} is itself unstable over long training.
+\end{itemize}
 
 \textbf{Attention on the shortcut.} Both cross-attention variants attend to the watermark corner more when it is
 present (uniform share 8.2\%):
@@ -217,12 +275,18 @@ Fixed gate & 18.2\% & 7.0\% \\
 Yet only the learned gate fails.
 
 \textbf{Released checkpoints.} Gates with \textbar tanh α\textbar{} \textless{} 0.05:
-- IDEFICS-80B: 9 of 20 cross-attention layers. IDEFICS-9B: 1 of 8.
-- Llama 3.2 Vision: all of them. Mean \textbar tanh α\textbar{} is 0.003 at 11B (8 of 8 layers) and 0.001 at 90B (20 of 20).
-Values rise with depth (0.001 at layer 3 to 0.009 at layer 38 in 11B).
-- These fully trained models clearly use the image, so a small gate there must be offset by large
-cross-attention outputs. The gate parameter alone is therefore not a measure of transmitted signal, which is
-why we add the injection ratio and the ablation test.
+
+\begin{itemize}
+\item
+  IDEFICS-80B: 9 of 20 cross-attention layers. IDEFICS-9B: 1 of 8.
+\item
+  Llama 3.2 Vision: all of them. Mean \textbar tanh α\textbar{} is 0.003 at 11B (8 of 8 layers) and 0.001 at 90B (20 of 20).
+  Values rise with depth (0.001 at layer 3 to 0.009 at layer 38 in 11B).
+\item
+  These fully trained models clearly use the image, so a small gate there must be offset by large
+  cross-attention outputs. The gate parameter alone is therefore not a measure of transmitted signal, which is
+  why we add the injection ratio and the ablation test.
+\end{itemize}
 
 \subsubsection{Connector type, once the gate is fixed}
 
@@ -257,7 +321,6 @@ Watermark & +3.0 & p = 0.40 & {[}−3.9, 9.9{]} & Not significant; equivalence n
 }
 
 \begin{itemize}
-\tightlist
 \item
   Neither difference is significant.
 \item
@@ -357,18 +420,30 @@ Waterbirds & 73.9 ± 2.5 & 74.1 ± 5.6 & 74.9 ± 1.4 & 75.0 ± 3.6 & 84.2 ± 1.5
 }
 
 \textbf{Watermark.}
-- Connector-DFR raises fixed-gate WGA by 17.1 points.
-- It also reduces seed s.d. from 9.5 to 0.5.
-- Fixed + DFR exceeds MLP + DFR by 8.4 points (bootstrap 95\% CI {[}6.0, 9.8{]}; Holm-corrected hierarchical
-p \textless{} 0.001).
+
+\begin{itemize}
+\tightlist
+\item
+  Connector-DFR raises fixed-gate WGA by 17.1 points.
+\item
+  It also reduces seed s.d. from 9.5 to 0.5.
+\item
+  Fixed + DFR exceeds MLP + DFR by 8.4 points (bootstrap 95\% CI {[}6.0, 9.8{]}; Holm-corrected hierarchical
+  p \textless{} 0.001).
+\end{itemize}
 
 \textbf{Waterbirds.} Connector-DFR gives no gain, and every VLM stays about 10 points below linear DFR on the same
 features.
 
 \textbf{Other fixes.}
-- Group-balanced sampling, which uses group labels in training, reaches 89.1 ± 0.9 (MLP) and 87.1 ± 3.5
-(fixed gate) on Watermark.
-- Connector-JTT (1 seed) did not help.
+
+\begin{itemize}
+\item
+  Group-balanced sampling, which uses group labels in training, reaches 89.1 ± 0.9 (MLP) and 87.1 ± 3.5
+  (fixed gate) on Watermark.
+\item
+  Connector-JTT (1 seed) did not help.
+\end{itemize}
 
 Figure \ref{fig:fixes} compares the connector-only fixes with group-balanced sampling and a linear probe on the same features.
 
@@ -381,7 +456,6 @@ Figure \ref{fig:fixes} compares the connector-only fixes with group-balanced sam
 \subsubsection{Generalisation to CelebA and to native VLMs (exploratory)}
 
 \begin{itemize}
-\tightlist
 \item
   \textbf{CelebA} (8k-image stratified training subsample, so not comparable to full-data results): the ordering
   matches the other tasks, but no difference is significant:
@@ -406,10 +480,18 @@ Figure \ref{fig:fixes} compares the connector-only fixes with group-balanced sam
 
 A learnable injection gate, not the connector family, determines how strongly a generative VLM relies on a
 shortcut:
-- Fixing the gate open raised worst-group accuracy by 10--24 points with large effect sizes (d\_z = 1.1--1.3).
-- It removed every collapsed seed.
-- The direction replicated on a second LLM.
-- Once the gate was fixed, MLP, Q-Former and cross-attention connectors were not significantly different.
+
+\begin{itemize}
+\tightlist
+\item
+  Fixing the gate open raised worst-group accuracy by 10--24 points with large effect sizes (\(d_z\) = 1.1--1.3).
+\item
+  It removed every collapsed seed.
+\item
+  The direction replicated on a second LLM.
+\item
+  Once the gate was fixed, MLP, Q-Former and cross-attention connectors were not significantly different.
+\end{itemize}
 
 \subsubsection{The gate as a transmission bottleneck}
 
@@ -417,27 +499,40 @@ shortcut:
 on the shortcut and vary widely across seeds.
 
 \textbf{Comparison with the literature.}
-- \emph{Gate closure:} this confirms \cite{farazi2026gate}, who found that learnable gates in frozen VLMs end up closed
-across five designs. We extend that observation from \emph{whether} the gate stays closed to \emph{what the model then
-relies on}, which they did not measure.
-- \emph{Feature--readout view:} the result also refines the decomposition of \cite{izmailov2022feature} and
-\cite{kirichenko2023dfr}. Between features and readout sits a transmission stage, and its failure produces
-shortcut reliance even when the features are adequate. Linear DFR on the same frozen features reaches about
-85 WGA.
-- \emph{Conflicting cross-attention evidence:} it helps explain why reports on cross-attention connectors disagree
-{[}laurencon2024matters vs farazi2026gate{]}. Averages over a few seeds hide a seed lottery: some learned-gate
-runs match the fixed gate, others collapse.
+
+\begin{itemize}
+\item
+  \emph{Gate closure:} this confirms \cite{farazi2026gate}, who found that learnable gates in frozen VLMs end up closed
+  across five designs. We extend that observation from \emph{whether} the gate stays closed to \emph{what the model then
+  relies on}, which they did not measure.
+\item
+  \emph{Feature--readout view:} the result also refines the decomposition of \cite{izmailov2022feature} and
+  \cite{kirichenko2023dfr}. Between features and readout sits a transmission stage, and its failure produces
+  shortcut reliance even when the features are adequate. Linear DFR on the same frozen features reaches about
+  85 WGA.
+\item
+  \emph{Conflicting cross-attention evidence:} it helps explain why reports on cross-attention connectors disagree
+  {[}laurencon2024matters vs farazi2026gate{]}. Averages over a few seeds hide a seed lottery: some learned-gate
+  runs match the fixed gate, others collapse.
+\end{itemize}
 
 \textbf{Mechanism.}
-- With \texttt{tanh(α)\ ≈\ 0}, unless \texttt{out\_proj} grows enough to offset it, the visual pathway contributes little to
-the language stream, so the LoRA-adapted LLM must fit the training labels from whatever survives. The
-injection ratio confirms a 15--35× weaker visual signal (R3).
-- On shortcut-aligned training data, the cue with the largest, most linearly available signal wins. This
-matches the ``easiest rule'' account of \cite{geirhos2020shortcut}.
-- Whether a run escapes depends on a near-zero gate with a sign-flipping gradient. That is a fragile,
-seed-dependent event, which is exactly what H2 predicts.
-- The frozen-LLM result supports this. Without LoRA to compensate, the learned gate falls to 24.2 WGA while
-MLP and Q-Former stay near 74.
+
+\begin{itemize}
+\item
+  With \texttt{tanh(α)\ ≈\ 0}, unless \texttt{out\_proj} grows enough to offset it, the visual pathway contributes little to
+  the language stream, so the LoRA-adapted LLM must fit the training labels from whatever survives. The
+  injection ratio confirms a 15--35× weaker visual signal (R3).
+\item
+  On shortcut-aligned training data, the cue with the largest, most linearly available signal wins. This
+  matches the ``easiest rule'' account of \cite{geirhos2020shortcut}.
+\item
+  Whether a run escapes depends on a near-zero gate with a sign-flipping gradient. That is a fragile,
+  seed-dependent event, which is exactly what H2 predicts.
+\item
+  The frozen-LLM result supports this. Without LoRA to compensate, the learned gate falls to 24.2 WGA while
+  MLP and Q-Former stay near 74.
+\end{itemize}
 
 \textbf{Scope relative to Flamingo.} Flamingo's gates ``quickly grow'' from zero over 500k steps with one gated block
 every 4th--7th LM layer \cite{alayrac2022flamingo}. Our connector injects once, at the input embeddings, after 300
@@ -489,10 +584,15 @@ answer.
 on it.
 
 \textbf{Comparison.}
-- Attention-based diagnostics of spurious features \cite{chakraborty2024exmap,lapuschkin2019clever} therefore
-need care in VLMs. This aligns with \cite{jain2019attention}.
-- It also shows the condition under which \cite{wiegreffe2019attention} expect attention to be informative:
-attention indicates reliance only when the pathway carrying it is open.
+
+\begin{itemize}
+\item
+  Attention-based diagnostics of spurious features \cite{chakraborty2024exmap,lapuschkin2019clever} therefore
+  need care in VLMs. This aligns with \cite{jain2019attention}.
+\item
+  It also shows the condition under which \cite{wiegreffe2019attention} expect attention to be informative:
+  attention indicates reliance only when the pathway carrying it is open.
+\end{itemize}
 
 \textbf{Mechanism.} The learned gate multiplies attended features by \textasciitilde0.0005. Attention can be focused on the
 watermark while transmitting almost nothing, so the shortcut reaches the answer through the LLM's own priors
@@ -504,10 +604,15 @@ and LoRA instead.
 significant.
 
 \textbf{Comparison.}
-- This agrees with \cite{mckinzie2024mm1}, who found connector type matters little for benchmark accuracy, and
-with \cite{sarridis2026scaling}, who found data rather than architecture drives bias.
-- It is less consistent with \cite{huang2024mir}, whose MLP-over-Q-Former advantage in alignment quality does not
-appear as a robustness advantage here.
+
+\begin{itemize}
+\item
+  This agrees with \cite{mckinzie2024mm1}, who found connector type matters little for benchmark accuracy, and
+  with \cite{sarridis2026scaling}, who found data rather than architecture drives bias.
+\item
+  It is less consistent with \cite{huang2024mir}, whose MLP-over-Q-Former advantage in alignment quality does not
+  appear as a robustness advantage here.
+\end{itemize}
 
 \textbf{Caveat.} Our TOST does not establish equivalence with 5 seeds, so the defensible claim is
 \emph{no detectable difference}, not \emph{no difference}.
@@ -516,14 +621,19 @@ appear as a robustness advantage here.
 
 \textbf{Finding.} With SigLIP-large all connectors improve on Waterbirds, and the gate effect shrinks (74.5 vs 80.9,
 paired +8.0, p = 0.09, 4 seeds), although the gate value is still 0.0006. On Watermark, 5 seeds give 53.2 vs 75.6
-(+22.4, d\_z = 0.85, p = 0.13, underpowered); the first two seeds alone had shown no gap (68.8 vs 68.2).
+(+22.4, \(d_z\) = 0.85, p = 0.13, underpowered); the first two seeds alone had shown no gap (68.8 vs 68.2).
 A shut gate is therefore not sufficient for shortcut reliance: it is a risk factor whose effect depends on the task
 and on how separable the features are.
 
 \textbf{Comparison.}
-- This fits the encoder-centric account of MLLM failures \cite{tong2024eyes,tong2024cambrian}: better features
-help.
-- It also warns, in line with \cite{sagawa2020overparam}, that more capacity does not fix the mechanism.
+
+\begin{itemize}
+\item
+  This fits the encoder-centric account of MLLM failures \cite{tong2024eyes,tong2024cambrian}: better features
+  help.
+\item
+  It also warns, in line with \cite{sagawa2020overparam}, that more capacity does not fix the mechanism.
+\end{itemize}
 
 \textbf{Mechanism.} Larger, more separable features let even a nearly closed pathway carry enough signal, or let
 LoRA compensate. The fragility remains: one of five SigLIP-large learned-gate seeds still drops to 65.8 on Waterbirds.
@@ -535,19 +645,24 @@ Watermark seeds 2--4 (round 7) show the effect is still there.
 Waterbirds.
 
 \textbf{Comparison.}
-- This extends DFR \cite{kirichenko2023dfr} and its contrastive-VLM analogue \cite{you2024calibrating} to the connector
-of generative VLMs.
-- It also qualifies their premise that readout retraining suffices. It suffices when the shortcut is a
-localised, separable cue (a corner watermark). It does not suffice when the core and spurious features are
-entangled across the image (bird and background).
-- Linear DFR's Waterbirds advantage (84.2) shows the core information is present but not recoverable through
-this LLM readout with a few hundred balanced examples.
+
+\begin{itemize}
+\item
+  This extends DFR \cite{kirichenko2023dfr} and its contrastive-VLM analogue \cite{you2024calibrating} to the connector
+  of generative VLMs.
+\item
+  It also qualifies their premise that readout retraining suffices. It suffices when the shortcut is a
+  localised, separable cue (a corner watermark). It does not suffice when the core and spurious features are
+  entangled across the image (bird and background).
+\item
+  Linear DFR's Waterbirds advantage (84.2) shows the core information is present but not recoverable through
+  this LLM readout with a few hundred balanced examples.
+\end{itemize}
 
 \subsubsection{Theoretical implications}
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
-\tightlist
 \item
   \textbf{A transmission stage in the feature--readout account.} Shortcut reliance in modular models can arise
   between features and readout, through what an interface lets through. The gate is a concrete, measurable
@@ -571,7 +686,6 @@ this LLM readout with a few hundred balanced examples.
 \subsubsection{Practical implications}
 
 \begin{itemize}
-\tightlist
 \item
   \textbf{Fixed injection:} prefer fixed (or zero-initialised-output) injection over learnable tanh gates when
   adding cross-attention adapters to an LLM. Log the gate value if a learnable gate is kept.
@@ -612,34 +726,62 @@ amount of image information used cannot be bounded from this run.
 \subsubsection{Limitations and future research}
 
 \textbf{Limitations.}
-- Models are 4-bit and 4B parameters or smaller.
-- The encoder is frozen.
-- SigLIP-large Watermark has 5 seeds, CelebA 5 paired, the 8-epoch runs 4--5, the pathway ablation 1--2 seeds.
-- The three classification tasks are binary questions answered by the first token of the class word. Open-ended
-generation is tested only on a VQA-CP v2 subset (3 seeds), not on the full benchmark, and there the gate
-effect did not appear (D10).
-- Runs are not bit-reproducible: same-seed reruns differ by 12.7 (learned) and 5.2 (fixed) WGA points on
-average, so seeds are treated as random replicates.
-- The learning-rate sweep has 2 seeds per setting (the third seed did not run) and is descriptive; Group DRO has 4.
-- The open-gate control separates initialisation from learnability only partly: at α = 3 the gate gradient
-is scaled by 1 − tanh² ≈ 0.01, so the open gate barely moves.
-- One of five fixed-gate 8-epoch runs collapsed (44.5), so long training can hurt the fixed gate occasionally.
-- CelebA trains on an 8k subsample.
-- Group DRO is the only full-model group-robust baseline; JTT is tested only at the connector.
-- Phi-4-mini Watermark is underpowered (0.40).
-- The Watermark shortcut is partly textual \cite{materzynska2022disentangling}.
-- Equivalence of connector types is not established.
-- Injection is input-level (one block), not per-layer as in Flamingo, and alignment is 300 steps.
-- In stage 2 the learned gate has weight decay 0.01 (none in alignment); it shrinks α by a relative
-2 × 10⁻⁶ per step (lr × decay), negligible, and a no-weight-decay control is in round 5.
-- Watermark uses one shortcut strength (p = 0.95); a dose--response at p = 0.9 and 0.99 is in round 5.
-- SigLIP's web pre-training may include CUB, Places or COCO images (shared by every arm).
-- CelebA and Waterbirds are licensed for non-commercial research only.
+
+\begin{itemize}
+\item
+  Models are 4-bit and 4B parameters or smaller.
+\item
+  The encoder is frozen.
+\item
+  SigLIP-large Watermark has 5 seeds, CelebA 5 paired, the 8-epoch runs 4--5, the pathway ablation 1--2 seeds.
+\item
+  The three classification tasks are binary questions answered by the first token of the class word. Open-ended
+  generation is tested only on a VQA-CP v2 subset (3 seeds), not on the full benchmark, and there the gate
+  effect did not appear (D10).
+\item
+  Runs are not bit-reproducible: same-seed reruns differ by 12.7 (learned) and 5.2 (fixed) WGA points on
+  average, so seeds are treated as random replicates.
+\item
+  The learning-rate sweep has 2 seeds per setting (the third seed did not run) and is descriptive; Group DRO has 4.
+\item
+  The open-gate control separates initialisation from learnability only partly: at α = 3 the gate gradient
+  is scaled by 1 − tanh² ≈ 0.01, so the open gate barely moves.
+\item
+  One of five fixed-gate 8-epoch runs collapsed (44.5), so long training can hurt the fixed gate occasionally.
+\item
+  CelebA trains on an 8k subsample.
+\item
+  Group DRO is the only full-model group-robust baseline; JTT is tested only at the connector.
+\item
+  Phi-4-mini Watermark is underpowered (0.40).
+\item
+  The Watermark shortcut is partly textual \cite{materzynska2022disentangling}.
+\item
+  Equivalence of connector types is not established.
+\item
+  Injection is input-level (one block), not per-layer as in Flamingo, and alignment is 300 steps.
+\item
+  In stage 2 the learned gate has weight decay 0.01 (none in alignment); it shrinks α by a relative
+  2 × 10⁻⁶ per step (lr × decay), negligible, and a no-weight-decay control is in round 5.
+\item
+  Watermark uses one shortcut strength (p = 0.95); a dose--response at p = 0.9 and 0.99 is in round 5.
+\item
+  SigLIP's web pre-training may include CUB, Places or COCO images (shared by every arm).
+\item
+  CelebA and Waterbirds are licensed for non-commercial research only.
+\end{itemize}
 
 \textbf{Three directions for future work.}
-1. Test gate dynamics in full-precision, larger models with trainable encoders: IDEFICS-scale models and
-Llama 3 vision adapters \cite{grattafiori2024llama3}.
-2. Design injection schemes that start as the identity but cannot close, and test them on natural-image
-benchmarks of spurious cues \cite{yang2025spuriverse,hosseini2025spurlens}.
-3. Explain why connector-DFR fails on entangled shortcuts, for example with subspace explanations
-\cite{chormai2024disentangled}, and combine it with data-level fixes \cite{noohdani2024decompose}.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Test gate dynamics in full-precision, larger models with trainable encoders: IDEFICS-scale models and
+  Llama 3 vision adapters \cite{grattafiori2024llama3}.
+\item
+  Design injection schemes that start as the identity but cannot close, and test them on natural-image
+  benchmarks of spurious cues \cite{yang2025spuriverse,hosseini2025spurlens}.
+\item
+  Explain why connector-DFR fails on entangled shortcuts, for example with subspace explanations
+  \cite{chormai2024disentangled}, and combine it with data-level fixes \cite{noohdani2024decompose}.
+\end{enumerate}
