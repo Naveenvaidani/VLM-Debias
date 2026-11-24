@@ -17,8 +17,10 @@ TPAMI or IJCV first. Pattern Recognition is a strong alternative with a faster t
 Each option is 10–15 words, with the keywords in the first 65 characters and no fluff.
 
 1. **Declarative (recommended):** *Learnable Injection Gates Induce Shortcut Learning in Vision-Language Models*
-   (10 words). "Induce" rather than "Cause": with a stronger encoder the shut gate no longer hurts, so the gate
-   is a risk factor, not a sufficient cause.
+   (10 words). "Induce" rather than "Cause": a stronger encoder narrows the gap on Waterbirds, and per-layer gates
+   and VQA-CP show no gap, so the gate is a risk factor, not a sufficient cause. After round 5-8 the title should
+   keep a scope word, for example *A Zero-Initialised Injection Gate Makes Shortcut Learning More Likely in
+   Vision-Language Models*, or add "in Input-Level Connectors".
 2. **Structured:** *Shortcut Learning in Vision-Language Models: The Role of the Vision-Language Connector
    and Its Injection Gate* (16 words; can drop "Its Injection Gate")
 3. **Hook and subtitle:** *When the Gate Stays Shut: Connector Design and Spurious Correlations in Multimodal

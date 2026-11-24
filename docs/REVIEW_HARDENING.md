@@ -26,7 +26,7 @@ comparable with the earlier ones.
 | Before | After | Why |
 | :--- | :--- | :--- |
 | "the learned gate **closes** during training" | "initialised at zero, the gate **never opens**" | `tanh(0) = 0` at the start. The logged trace peaks at ≈ 0.006 and decays to ≈ 0.001, so nothing "closes". |
-| "learnable gates **cause** shortcut learning" (title) | "**induce**" | With SigLIP-large the gate is still ≈ 0.0006, the gap shrinks to +8.0 (p = 0.09, 4 seeds; 2-seed reading was 79.3 vs 80.1). A shut gate is a risk factor, not a sufficient cause. |
+| "learnable gates **cause** shortcut learning" (title) | "**induce**" | With SigLIP-large the gate is still ≈ 0.0006, the gap shrinks to +8.0 on Waterbirds (p = 0.09, 4 seeds) but is +22.4 on Watermark (5 seeds, p = 0.13). Per-layer gates show no gap and VQA-CP reverses it. A shut gate is a risk factor, not a sufficient cause. |
 | "connector type makes **no difference**" | "**no significant difference detected; equivalence not established**" | The ±3-point TOST does not pass, and on CelebA MLP led by 5 points (n.s.; 1.2 with 4 fixed-gate seeds). |
 | "**Flamingo-style** cross-attention" | "**input-level** gated cross-attention with a **Flamingo-type** `tanh` gate" | Flamingo inserts a gated block before every 4th (9B) or 7th (80B) LM layer and trains for 500k steps. Ours injects once, into the input embeddings, after 300 steps. |
 | "**pre-declared** hypotheses" | "formulated after a 3-seed pilot, confirmed on new seeds" | Git shows the hypotheses were committed (29 Oct, `7ab0563`) after the pilot (28 Oct, `2c948b4`). There is no public pre-registration. |
@@ -205,8 +205,8 @@ does not use it.
 so a stronger encoder weakens the effect, as the "risk factor, not sufficient cause" wording says. CelebA
 fixed gate now 4 seeds: +13.3 over learned on 3 paired seeds, not significant.
 
-**Still running:** pathway ablation, gate left out of clipping, no weight decay on the gate, shortcut strength
-p-sweep, 8-epoch seeds (round 4-5); per-layer gated cross-attention and fp16 LLM (round 6).
+**Update (24 Nov 2026):** all of these jobs finished; results are in `results_study/rounds_4_8.md` and README
+§17-18. See section 16.
 
 ## 10. Fifth pass: closing the remaining reviewer gaps (1 Nov 2026, late)
 
@@ -302,5 +302,29 @@ What was built (code read first, then extended; nothing in the existing pipeline
   real Qwen3.5 tokenizer.
 - Data: the original VQA-CP host was unreachable, so the JSONs come from a public Kaggle mirror, verified
   against the published split sizes.
-- Kaggle job `r8-vqacp` (learned vs fixed gate, 3 seeds, pinned library versions) is running.
+- Kaggle job `r8-vqacp` (learned vs fixed gate, 3 seeds, pinned library versions) finished; result in section 16.
+
+## 16. Rounds 4-8 results and what they change (24 Nov 2026)
+
+All 14 Kaggle jobs of rounds 4-8 finished. Analysis: `study/rounds_4_8.py` → `results_study/rounds_4_8.md`. All tests are
+exploratory (small n, paired t, two-sided).
+
+| Question a reviewer would ask | Answer from the new runs |
+| :--- | :--- |
+| Is the learned pathway behaviourally closed? | No. With the image off the learned-gate model drops to the majority-class share (Waterbirds avg 89.4 → 77.8, Watermark 77.9 → 50.0), so it uses the image through a signal ≈ 38× weaker than the fixed gate's. 1-2 seeds. |
+| Is it learnability or the zero start? | The zero start. A learnable gate starting at tanh 0.5 matches the fixed gate and beats the zero start by +11.4 (p = 0.014) and +20.1 (p = 0.006), 5 seeds. |
+| Do clipping or weight decay keep the gate shut? | No. Excluding the gate from either leaves it at \|tanh α\| ≤ 0.0024 with no rescue. |
+| Is it 4-bit quantisation? | No. fp16 gives +10.0 and +21.1, same direction (n.s. with 3 seeds). |
+| Does it hold with per-layer (Flamingo-style) gates? | **No gap** (−0.4 and +2.3, n.s.). The claim must be limited to one input-level block. |
+| Does a stronger encoder remove it? | Narrows it on Waterbirds (+8.0, p = 0.09); not on Watermark (+22.4, 5 seeds, p = 0.13). The earlier 2-seed "no gap" reading is retracted. |
+| Does it carry over to open-ended natural-image VQA? | **No.** On VQA-CP v2 the fixed gate is worse (−5.0 test-ID, p = 0.010; −1.5 shifted priors, p = 0.054). The learned gate answers with the prior more often (39.9% vs 33.8%) but does not score lower. |
+| Does Group DRO remove it? | Waterbirds yes (+2.3, p = 0.70); Watermark no (+17.5, p = 0.059). |
+| Is the 8-epoch fixed-gate collapse systematic? | No: one of five runs (seed 0, 44.5); the others 78-80. |
+
+**What did not run:** the connector-LR third seed (alignment only, session time), and the extra CelebA seeds (one added
+per arm). The LR sweep stays at 2 seeds.
+
+**Consequences for the paper:** (1) the title keeps "induce" only with a scope word (input-level block, zero start);
+(2) VQA-CP is a reported negative result and a limitation, not supporting evidence; (3) per-layer gates are a
+boundary of the claim; (4) "a stronger encoder masks the problem" is replaced by "narrows it on Waterbirds".
 

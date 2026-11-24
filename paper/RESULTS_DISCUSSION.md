@@ -155,14 +155,20 @@ Yet only the learned gate fails.
 | Rival explanation | Check | Result |
 | :--- | :--- | :--- |
 | Image-token count | MLP with 36 instead of 49 tokens, 2 seeds | 74.7 ± 1.1 vs 74.9 ± 1.4 |
-| Encoder capacity | SigLIP-large, 4–5 seeds | All connectors +6 to +11; learned 74.5 ± 7.4 (5) vs fixed 80.9 ± 2.6 (4); paired +8.0, p = 0.088. Watermark, 2 seeds: 68.8 vs 68.2 |
+| Encoder capacity | SigLIP-large, 4–5 seeds | All connectors +6 to +11; learned 74.5 ± 7.4 (5) vs fixed 80.9 ± 2.6 (4); paired +8.0, p = 0.088. Watermark, 5 seeds: 53.2 ± 17.2 vs 75.6 ± 12.3 (+22.4, p = 0.13, underpowered); the earlier 2-seed reading was 68.8 vs 68.2 |
 | LLM adaptation | Frozen LLM, 3 seeds | Learned gate 24.2 ± 2.8; MLP 73.4 ± 1.1; Q-Former 74.6 ± 0.9 |
 | Single alignment per seed | Alignment repeated per seed, 3 seeds | MLP 76.1 ± 2.1, fixed gate 74.2 ± 0.8 |
-| Training length | 8 epochs, 1 seed (seeds 1–4 running) | MLP 79.1; fixed gate 44.5. Unresolved: the fixed gate may also degrade with long training |
+| Training length | 8 epochs, seeds 0–4 | MLP 73.0 ± 5.7 (5); learned gate 67.9 ± 5.3 (seeds 1–4); fixed gate 72.1 ± 15.4 (5, one collapse to 44.5). Fixed − learned on seeds 1–4: +11.0, p = 0.023 (exploratory) |
 | Gate trainable vs initialisation | Learnable gate initialised open (`bottleneck_open`, tanh = 0.995), 5 seeds | Open gate matches the fixed gate (71.8 vs 72.9; 66.8 vs 72.1) and beats the zero-init gate (+9.9, +17.1). The harm comes from the zero initialisation |
 | Learning rate | Connector LR 5e-5 / 2e-4 / 1e-3, 2 seeds | Gap +29.6 / +16.7 / +0.7 as the gate moves further from 0 (0.002 / 0.004 / 0.018): dose-response |
 | Alignment length | 3,000 instead of 300 steps, 3 seeds | Gate still shut (peak 0.003), but the learned-gate alignment diverged (caption loss 2.0 → 7.9; fixed ends at 2.5). Learned-gate WGA 11.4 / 4.1 vs fixed 70.8 / 59.5. Confounded with the divergence: evidence of fragility, not a clean test |
-| Standard group-robust training | Group DRO at the full model, 2 seeds | Gap shrinks to +3.5 and +9.9; the fixed gate still leads |
+| Standard group-robust training | Group DRO at the full model, 4 seeds | Gap shrinks to +2.3 (Waterbirds, p = 0.70) and +17.5 (Watermark, p = 0.059); the fixed gate still leads on Watermark |
+| Learnable gate that starts half open | `bottleneck_half`, tanh α = 0.5 (gradient not saturated), 5 seeds | Matches the fixed gate (72.6 vs 73.1; 62.7 vs 67.2) and beats the zero-start gate (+11.4, p = 0.014; +20.1, p = 0.006); final \|tanh α\| 0.44. Learnability is not the cause; the zero start is (exploratory) |
+| Gate protected from clipping / weight decay | Gate left out of gradient clipping (3 seeds) or of weight decay (2 seeds) | No rescue (+2.9 / +13.5 and −8.7 / −16.9, all n.s.); the gate still ends at \|tanh α\| ≤ 0.0024 |
+| Behavioural pathway test | Image switched off at test time, 1–2 seeds | Learned-gate model falls to the majority-class share (average accuracy 89.4 → 77.8 on Waterbirds; 77.9 → 50.0 on Watermark): it still uses the image, with a signal ≈ 38× weaker than the fixed gate's (injection ratio 2.6 vs 99) |
+| Shortcut strength | Watermark p = 0.9 / 0.99, 2–3 seeds | Gap +1.8 at p = 0.9, +25 at 0.95, +13.4 at 0.99 where every arm collapses (WGA 7–20) |
+| Depth of injection | Per-layer gated cross-attention (4 layers), 4–5 seeds | **No gap:** learned 70.8 vs fixed 70.4 (Waterbirds), 68.3 vs 70.6 (Watermark), both n.s.; learned per-layer gates also small (mean \|tanh α\| 0.027) |
+| Weight precision | fp16 LLM instead of 4-bit, 3 seeds | Same direction and size (+10.0 Waterbirds, +21.1 Watermark; p = 0.34 / 0.39 with 3 seeds) |
 | Injection strength | ‖injected‖ / ‖text‖ at test | Learned gate ≈ 3–8, fixed and open ≈ 100–125: 15–35× less visual signal, but not zero |
 | Caption-reconstruction loss (LTD) | 3 seeds | MLP 75.9 ± 3.3 (vs 74.9); fixed gate 72.3 ± 3.7 |
 
@@ -313,11 +319,13 @@ significant.
 **Caveat.** Our TOST does not establish equivalence with 5 seeds, so the defensible claim is
 *no detectable difference*, not *no difference*.
 
-### D5. A stronger encoder masks the problem without removing its cause
+### D5. A stronger encoder narrows the gap on Waterbirds but not on Watermark
 
-**Finding.** With SigLIP-large all connectors improve, and the gate effect shrinks (Waterbirds 74.5 vs 80.9,
-paired +8.0, p = 0.09, 4 seeds; Watermark 68.8 vs 68.2, 2 seeds), although the gate value is still 0.0006. A shut gate is therefore not sufficient for shortcut reliance: it is a
-risk factor whose effect depends on how separable the features are.
+**Finding.** With SigLIP-large all connectors improve on Waterbirds, and the gate effect shrinks (74.5 vs 80.9,
+paired +8.0, p = 0.09, 4 seeds), although the gate value is still 0.0006. On Watermark, 5 seeds give 53.2 vs 75.6
+(+22.4, d_z = 0.85, p = 0.13, underpowered); the 2-seed reading in earlier drafts (68.8 vs 68.2) did not hold up.
+A shut gate is therefore not sufficient for shortcut reliance: it is a risk factor whose effect depends on the task
+and on how separable the features are.
 
 **Comparison.**
 - This fits the encoder-centric account of MLLM failures [tong2024eyes; tong2024cambrian]: better features
@@ -326,7 +334,7 @@ risk factor whose effect depends on how separable the features are.
 
 **Mechanism.** Larger, more separable features let even a nearly closed pathway carry enough signal, or let
 LoRA compensate. The fragility remains: one of five SigLIP-large learned-gate seeds still drops to 65.8 on Waterbirds.
-Watermark seeds 2–4 (round 7) will show whether the effect is absent or just smaller there.
+Watermark seeds 2–4 (round 7) show the effect is still there.
 
 ### D6. Readout fixes transfer to the connector, task-dependently
 
@@ -373,20 +381,40 @@ Waterbirds.
 - **Cost:** the fixed-gate cross-attention connector matches MLP robustness at about half the step time and
   memory (1.7 vs 4.0 s per step; 6.2 vs 12.1 GB on a T4).
 
+### D10. Open-ended answers on natural images (VQA-CP v2): the gate effect does not appear
+
+**Finding.** On a VQA-CP v2 subset (8k training questions, 3 epochs, 3 seeds) the fixed gate is worse than the
+learned gate: test-ID VQA accuracy 42.6 vs 47.6 (p = 0.010) and shifted-prior accuracy 27.6 vs 29.1 (p = 0.054,
+paired, exploratory). Both arms lose 15–19 points when the priors shift (ID − OOD 18.5 and 15.0), so the benchmark does
+expose the language prior.
+
+**What the pathway test shows.** Removing the image changes nothing for the learned gate (47.6 → 47.6; 29.1 → 29.2),
+so it is effectively a text-only model here, with injection ratio 0.05. It answers with the training prior more
+often (39.9% vs 33.8% in distribution), which is the direction the mechanism predicts. The fixed gate uses the image
+slightly (−2.2 points without it in distribution) but its injected signal is about 70× the text norm, and removing it
+*raises* shifted-prior accuracy by 4.6 points (27.6 → 32.2).
+
+**Interpretation.** Of the three predictions (lower shifted-prior accuracy for the learned gate, more prior answers,
+smaller loss without the image), only the last two hold. At this training scale neither connector learns to use the
+image beyond the language prior, and a strong injection disturbs free-form answer generation. We therefore do not
+claim that the gate effect transfers to open-ended VQA. There is no connector-free text-only baseline, so the
+amount of image information used cannot be bounded from this run.
+
 ### D9. Limitations and future research
 
 **Limitations.**
 - Models are 4-bit and 4B parameters or smaller.
 - The encoder is frozen.
-- SigLIP-large Watermark has 2 seeds, CelebA 3–4, and the 8-epoch run 1 (extension running).
+- SigLIP-large Watermark has 5 seeds, CelebA 5 paired, the 8-epoch runs 4–5, the pathway ablation 1–2 seeds.
 - The three classification tasks are binary questions answered by the first token of the class word. Open-ended
-  generation is tested only on a VQA-CP v2 subset (3 seeds, round 8), not on the full benchmark.
+  generation is tested only on a VQA-CP v2 subset (3 seeds), not on the full benchmark, and there the gate
+  effect did not appear (D10).
 - Runs are not bit-reproducible: same-seed reruns differ by 12.7 (learned) and 5.2 (fixed) WGA points on
   average, so seeds are treated as random replicates.
-- The learning-rate sweep and Group DRO have 2 seeds per setting and are descriptive.
+- The learning-rate sweep has 2 seeds per setting (the third seed did not run) and is descriptive; Group DRO has 4.
 - The open-gate control separates initialisation from learnability only partly: at α = 3 the gate gradient
   is scaled by 1 − tanh² ≈ 0.01, so the open gate barely moves.
-- The fixed gate fell to 44.5 in the single 8-epoch run; long-training behaviour is unresolved.
+- One of five fixed-gate 8-epoch runs collapsed (44.5), so long training can hurt the fixed gate occasionally.
 - CelebA trains on an 8k subsample.
 - Group DRO is the only full-model group-robust baseline; JTT is tested only at the connector.
 - Phi-4-mini Watermark is underpowered (0.40).

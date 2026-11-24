@@ -25,7 +25,7 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
 
 - [Key findings](#key-findings)
 - [Study design](#study-design): [Research question and hypotheses](#research-question-and-hypotheses) · [Tasks and datasets](#tasks-and-datasets) · [Connectors](#connectors) · [Training protocol](#training-protocol) · [Metrics](#metrics) · [Statistics](#statistics)
-- [Results](#results): [1. Connector comparison, Qwen3.5-4B, SigLIP-base](#1-connector-comparison-qwen35-4b-siglip-base) · [2. Gate hypotheses](#2-gate-hypotheses-paired-by-seed) · [3. Second LLM](#3-second-llm-phi-4-mini-5-seeds) · [4. Vision encoder scale](#4-vision-encoder-scale-siglip-base-vs-siglip-large-waterbirds) · [5. Fixes](#5-fixes-connector-dfr-balanced-sampling-linear-dfr) · [6. CelebA](#6-celeba-blond_hair-vs-male-official-partitions-train-subsampled-to-8k) · [7. Ablations](#7-ablations-waterbirds-mlp-unless-noted) · [8. Reference points](#8-reference-points) · [9. Seed ensembles](#9-seed-ensembles-average-the-3-seeds-answer-probabilities) · [10. Linear probes on frozen SigLIP-base features, by pooling](#10-linear-probes-on-frozen-siglip-base-features-by-pooling-3-seeds) · [11. Attention on the watermark](#11-attention-on-the-watermark-watermark-task-3-seeds) · [12. Failure analysis](#12-failure-analysis-hardest-group-per-connector-3-seeds) · [13. Compute cost](#13-compute-cost-one-t4-batch-16-qwen35-4b-nf4) · [14. Gates in released models](#14-gates-in-released-models-with-tanh-gated-cross-attention-idefics-llama-32-vision) · [15. More plots of the 3-seed connector comparison](#15-more-plots-of-the-3-seed-connector-comparison) · [16. Robustness checks for reviewers](#16-robustness-checks-for-reviewers) · [17. Control experiments](#17-control-experiments-rounds-3-4) · [18. VQA-CP v2](#18-open-ended-answers-on-natural-images-vqa-cp-v2-running-round-8)
+- [Results](#results): [1. Connector comparison, Qwen3.5-4B, SigLIP-base](#1-connector-comparison-qwen35-4b-siglip-base) · [2. Gate hypotheses](#2-gate-hypotheses-paired-by-seed) · [3. Second LLM](#3-second-llm-phi-4-mini-5-seeds) · [4. Vision encoder scale](#4-vision-encoder-scale-siglip-base-vs-siglip-large-waterbirds) · [5. Fixes](#5-fixes-connector-dfr-balanced-sampling-linear-dfr) · [6. CelebA](#6-celeba-blond_hair-vs-male-official-partitions-train-subsampled-to-8k) · [7. Ablations](#7-ablations-waterbirds-mlp-unless-noted) · [8. Reference points](#8-reference-points) · [9. Seed ensembles](#9-seed-ensembles-average-the-3-seeds-answer-probabilities) · [10. Linear probes on frozen SigLIP-base features, by pooling](#10-linear-probes-on-frozen-siglip-base-features-by-pooling-3-seeds) · [11. Attention on the watermark](#11-attention-on-the-watermark-watermark-task-3-seeds) · [12. Failure analysis](#12-failure-analysis-hardest-group-per-connector-3-seeds) · [13. Compute cost](#13-compute-cost-one-t4-batch-16-qwen35-4b-nf4) · [14. Gates in released models](#14-gates-in-released-models-with-tanh-gated-cross-attention-idefics-llama-32-vision) · [15. More plots of the 3-seed connector comparison](#15-more-plots-of-the-3-seed-connector-comparison) · [16. Robustness checks for reviewers](#16-robustness-checks-for-reviewers) · [17. Control experiments](#17-control-experiments-rounds-3-7) · [18. VQA-CP v2](#18-open-ended-answers-on-natural-images-vqa-cp-v2)
 - [Observations](#observations)
 - [FAQ](#faq)
 - [Related work and where this study stands](#related-work-and-where-this-study-stands)
@@ -37,7 +37,7 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
 
 ## Key findings
 
-1. **A learnable injection gate induces shortcut reliance.** The Flamingo-type `tanh(α)` gate starts at 0 and
+1. **A zero-initialised learnable injection gate makes shortcut reliance more likely (single input-level block).** The Flamingo-type `tanh(α)` gate starts at 0 and
    never opens during alignment (it peaks below 0.01 and ends at |tanh α| ≈ 0.0005). Fixing the gate open
    raises worst-group accuracy by **+10.6 points on Waterbirds** (15 seeds, p = 4e-4) and **+25.2 on Watermark**
    (15 seeds, p = 7e-5), and removes the collapsed seeds (2/15 and 10/15 → 0). Tests H1 and H2 are
@@ -51,10 +51,11 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
    cross-attention show no significant difference (MLP vs Q-Former, 5 seeds: p = 0.23 and 0.40), but
    equivalence is not established (TOST, ±3 points), and on CelebA MLP leads the fixed gate by 1.2 points (n.s.). Matching image-token counts
    (MLP with 36 instead of 49 tokens) changes nothing (74.7 vs 74.9).
-4. **A stronger encoder masks the problem, so a shut gate is a risk factor, not a sufficient cause.** With
-   SigLIP-large features the learned gate again ends alignment at 0.0006, but the gap shrinks: Waterbirds 74.5 vs
-   80.9 (paired +8.0, p = 0.09, 4 seeds); Watermark 68.8 vs 68.2 (2 seeds). All four connectors gain 6–11
-   points from the bigger encoder.
+4. **A stronger encoder narrows the gap on Waterbirds but not on Watermark, so a shut gate is a risk factor, not a
+   sufficient cause.** With SigLIP-large features the learned gate again ends alignment at 0.0006. Waterbirds: 74.5
+   vs 80.9 (paired +8.0, p = 0.09, 4 seeds). Watermark, now 5 seeds: 53.2 ± 17.2 vs 75.6 ± 12.3 (+22.4, d_z = 0.85,
+   p = 0.13, underpowered); the earlier 2-seed reading of "no gap" (68.8 vs 68.2) was a small-sample artefact. All
+   four connectors gain 6–11 points from the bigger encoder on Waterbirds.
 5. **A cheap fix: retrain only the connector on a small balanced set (connector-DFR).** On Watermark it lifts the
    fixed-gate connector from 72.5 to **89.6 ± 0.5** WGA (5 seeds) and beats MLP + DFR (81.2) and a linear DFR
    probe on the same features (85.1). On Waterbirds it gives no gain (73.9 → 74.1).
@@ -63,12 +64,23 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
    **9 of 20** IDEFICS-80B layers and **every** Llama 3.2 Vision layer (8/8 at 11B, 20/20 at 90B) have
    |tanh α| < 0.05.
 7. **Controls point at the zero initialisation, not at learnability or training budget**
-   ([17](#17-control-experiments-rounds-3-4)). A learnable gate that *starts* open matches the fixed gate.
+   ([17](#17-control-experiments-rounds-3-7)). A learnable gate that *starts* open matches the fixed gate.
    Ten times longer alignment leaves the gate shut, but the learned-gate alignment diverged (caption loss
    2.0 → 7.9), so that run shows fragility rather than a clean effect. A larger connector
    learning rate moves the gate further and closes the gap (dose-response). The learned gate is not fully shut:
    it still injects visual signal, but 15–35× less than the fixed gate. Group DRO shrinks the gap but does not
-   remove it.
+   remove it. New in rounds 4–7: a half-open learnable gate (starts at tanh α = 0.5, 5 seeds) matches the fixed
+   gate (Waterbirds 72.6 vs 73.1, Watermark 62.7 vs 67.2) and beats the zero-start gate by +11.4 and +20.1 points
+   (p = 0.014 and 0.006, exploratory); leaving the gate out of gradient clipping or weight decay does not open it
+   (final |tanh α| ≤ 0.0024); and with the image switched off the learned-gate model drops to the majority-class
+   share (Waterbirds 89.4 → 77.8 average accuracy), so it still uses the image, through a much weaker signal.
+8. **The effect is specific to the single input-level block, and it does not carry over to open-ended VQA.**
+   Per-layer gated cross-attention (4 layers, Flamingo / Llama 3.2 layout) shows no gap (Waterbirds 70.8 vs 70.4,
+   5 seeds; Watermark 68.3 vs 70.6, 4 seeds, both n.s.) even though its learned gates also stay small
+   (mean |tanh α| 0.027). On **VQA-CP v2** the fixed gate is *worse*, not better: 42.6 vs 47.6 test-ID VQA accuracy
+   (p = 0.010) and 27.6 vs 29.1 on shifted priors (p = 0.054), so the binary-task result does not generalise to this
+   setting ([18](#18-open-ended-answers-on-natural-images-vqa-cp-v2)).
+
 
 ![Main result: worst-group accuracy per connector, every seed shown](docs/figures/final/main_connectors.png)
 
@@ -209,6 +221,11 @@ Each line is one seed, learned gate → fixed gate (left: Qwen3.5-4B, right: Phi
 | SigLIP-base (196 × 768) | 74.5 | 71.7 | 63.6 | 74.2 |
 | SigLIP-large (256 × 1024), 4–5 seeds | **84.1 ± 2.7** | 80.4 ± 1.8 | 74.5 ± 7.4 (5) | 80.9 ± 2.6 (4) |
 
+**Watermark with SigLIP-large (5 seeds, rounds 3 and 7):** learned gate 53.2 ± 17.2, fixed gate 75.6 ± 12.3, gain +22.4
+(paired, d_z = 0.85, p = 0.13, exploratory and underpowered). With only the first 2 seeds the gap looked like 0.6
+points; the three added seeds (learned 42.7, fixed 80.5) restore it, so the stronger encoder does not remove the
+Watermark effect. Source: [`rounds_4_8.md`](results_study/rounds_4_8.md) §7.
+
 ![Encoder scale](docs/figures/final/encoder_scale.png)
 
 ### 5. Fixes: connector-DFR, balanced sampling, linear DFR
@@ -237,6 +254,8 @@ Rows 1–4: 5 seeds each. Fixed gate + DFR beats MLP + DFR on Watermark by +8.4 
 | Cross-attn, fixed gate | 4 | 53.1 ± 5.8 | 94.5 ± 0.5 |
 
 Same direction as the other tasks (learned gate worst and least stable); not significant with these seeds.
+Round 7 added one seed per arm (learned seed 4, fixed seed 1), giving 5 paired seeds: learned 43.5 ± 22.8, fixed
+51.1 ± 6.6 (+7.7, p = 0.48), MLP unchanged at 54.3 (4 seeds); the rest of the planned seeds were not reached.
 Training uses a stratified 8,000-image subsample of the official train split (validation 5,000, full test),
 so these numbers are **not comparable** to published full-data CelebA results.
 
@@ -250,7 +269,7 @@ so these numbers are **not comparable** to published full-data CelebA results.
 | 36 image tokens | 2 | 74.7 ± 1.1 |
 | + latent-target-decoding caption loss (LTD) | 3 | 75.9 ± 3.3 |
 | 8 epochs | 1 | 79.1 |
-| Fixed gate, 8 epochs (unresolved: may also degrade with long training; seeds 1–4 running) | 1 | 44.5 |
+| 8 epochs, seeds 0–4: MLP / learned gate (seeds 1–4) / fixed gate | 5 / 4 / 5 | 73.0 ± 5.7 / 67.9 ± 5.3 / 72.1 ± 15.4 |
 | Alignment repeated per seed: MLP / fixed gate | 3 | 76.1 ± 2.1 / 74.2 ± 0.8 |
 | Fixed gate + LTD caption loss | 3 | 72.3 ± 3.7 |
 | Group-balanced sampling: MLP / fixed gate (uses group labels) | 2 / 1 | 83.9 ± 1.9 / 87.3 |
@@ -398,26 +417,26 @@ Phi-4-mini Waterbirds 0.0086, Phi-4-mini Watermark 0.0086 (10 seeds). All four s
 
 | Check | Status |
 | :--- | :--- |
-| Gate trainable vs zero-init location (`bottleneck_open`, 2 tasks × 5 seeds) | done, [17](#17-control-experiments-rounds-3-4) |
-| Learning rate 5e-5 / 1e-3 (MLP, both gates, 2 seeds within the time limit) | done, [17](#17-control-experiments-rounds-3-4) |
-| Longer alignment, 3,000 steps (both gates, 2 tasks, 3 seeds) | done, [17](#17-control-experiments-rounds-3-4) |
-| Injected-signal strength, SigLIP-base and -large | done, [17](#17-control-experiments-rounds-3-4) |
-| 8-epoch training, seeds 1–4 (MLP, both gates) | running (round 4) |
-| Group DRO full-model baseline (MLP, both gates, 2 tasks, 2 seeds) | done, [17](#17-control-experiments-rounds-3-4) |
+| Gate trainable vs zero-init location (`bottleneck_open`, 2 tasks × 5 seeds) | done, [17](#17-control-experiments-rounds-3-7) |
+| Learning rate 5e-5 / 1e-3 (MLP, both gates, 2 seeds within the time limit) | done, [17](#17-control-experiments-rounds-3-7) |
+| Longer alignment, 3,000 steps (both gates, 2 tasks, 3 seeds) | done, [17](#17-control-experiments-rounds-3-7) |
+| Injected-signal strength, SigLIP-base and -large | done, [17](#17-control-experiments-rounds-3-7) |
+| 8-epoch training, seeds 1–4 (MLP, both gates) | done, [17](#17-control-experiments-rounds-3-7) |
+| Group DRO full-model baseline (MLP, both gates, 2 tasks, 2 seeds) | done, [17](#17-control-experiments-rounds-3-7) |
 | Watermark seeds 8 and 14 (both gates → 15 per arm) | done (tables above) |
-| Behavioural pathway test: visual contribution removed at inference (learned, fixed gate) | running (round 5) |
-| Gate left out of gradient clipping; raw pre-clip gradients logged (learned gate, 3 seeds) | running (round 5) |
-| No weight decay on the gate (learned gate, 2 seeds) | running (round 5) |
-| Shortcut strength p = 0.9 / 0.99 on Watermark (MLP, both gates, 3 seeds) | running (round 5) |
-| Per-layer gated cross-attention (layers 0/8/16/24, Flamingo / Llama 3.2 layout), learned vs fixed, 5 seeds | queued (round 6) |
-| Full-precision LLM (fp16 weights), learned vs fixed gate, 3 seeds | running (round 6) |
-| Half-open learnable gate (`bottleneck_half`, tanh = 0.5, gradient not saturated), 2 tasks × 5 seeds | running (round 7) |
-| Group DRO seeds 2–3 (→ 4 per arm); connector LR seed 2 (→ 3 per setting) | running (round 7) |
-| SigLIP-large Watermark seeds 2–4 (→ 5 per arm) | running (round 7) |
-| CelebA learned seed 4, fixed seed 1 (→ 5 paired seeds) | running (round 7) |
-| VQA-CP v2 open-ended benchmark, learned vs fixed gate, 3 seeds | running (round 8) |
+| Behavioural pathway test: visual contribution removed at inference (learned, fixed gate) | done (2 seeds Waterbirds, 1 seed Watermark), [17](#17-control-experiments-rounds-3-7) |
+| Gate left out of gradient clipping; raw pre-clip gradients logged (learned gate, 3 seeds) | done, [17](#17-control-experiments-rounds-3-7) |
+| No weight decay on the gate (learned gate, 2 seeds) | done, [17](#17-control-experiments-rounds-3-7) |
+| Shortcut strength p = 0.9 / 0.99 on Watermark (MLP, both gates, 3 seeds) | done (2–3 seeds per cell), [17](#17-control-experiments-rounds-3-7) |
+| Per-layer gated cross-attention (layers 0/8/16/24, Flamingo / Llama 3.2 layout), learned vs fixed, 5 seeds | done (5 seeds Waterbirds, 4 Watermark), [17](#17-control-experiments-rounds-3-7) |
+| Full-precision LLM (fp16 weights), learned vs fixed gate, 3 seeds | done, [17](#17-control-experiments-rounds-3-7) |
+| Half-open learnable gate (`bottleneck_half`, tanh = 0.5, gradient not saturated), 2 tasks × 5 seeds | done, [17](#17-control-experiments-rounds-3-7) |
+| Group DRO seeds 2–3 (→ 4 per arm) | done. Connector LR seed 2: **not run** (alignment finished, task runs skipped for session time), so the LR sweep stays at 2 seeds |
+| SigLIP-large Watermark seeds 2–4 (→ 5 per arm) | done, [4](#4-vision-encoder-scale-siglip-base-vs-siglip-large-waterbirds) |
+| CelebA learned seed 4, fixed seed 1 (→ 5 paired seeds) | done (one seed added per arm; the other planned seeds were not reached) |
+| VQA-CP v2 open-ended benchmark, learned vs fixed gate, 3 seeds | done, [18](#18-open-ended-answers-on-natural-images-vqa-cp-v2) |
 
-### 17. Control experiments (rounds 3-4)
+### 17. Control experiments (rounds 3-7)
 
 Each control changes one thing about the learned-gate setup and asks whether the gate effect survives.
 Full tables, per-seed values and the code: [`results_study/extra_analyses.md`](results_study/extra_analyses.md)
@@ -430,12 +449,21 @@ Full tables, per-seed values and the code: [`results_study/extra_analyses.md`](r
 | **10× alignment** (3,000 steps) | 3 | 11.4 / 4.1 | 70.8 / 59.5 | +59.3 / +55.4 | The gate stays shut (peak 0.003), but the learned-gate alignment diverged (caption loss 2.0 → 7.9; fixed ends at 2.5). Shows fragility; confounded, not a clean test. |
 | **Group DRO** instead of ERM | 2 | 72.5 / 69.2 | 76.0 / 79.0 | +3.5 / +9.9 | A group-robust loss rescues most of it; the fixed gate still leads. |
 | **Injection ratio** ‖injected‖ / ‖text‖ | 6 / 6 | 3.5 (1.2–7.5) | 112 (95–129) | 15–35× | The learned pathway is open (out_proj grows) but much weaker; its size does not predict WGA (ρ = 0.33, p = 0.27). |
-| **CelebA** (third task) | 3 | 37.4 | 50.7 | +13.3 (p = 0.24) | Same direction, not significant. |
+| **CelebA** (third task) | 5 | 43.5 | 51.1 | +7.7 (p = 0.48) | Same direction, not significant. |
+| **Half-open gate**: learnable, starts at tanh = 0.5 (Waterbirds / Watermark) | 5 | 61.2 / 42.6 (zero start) | 73.1 / 67.2 | half-open: +11.4 / +20.1 over zero start (p = 0.014 / 0.006); −0.5 / −4.6 vs fixed (n.s.) | A learnable gate that starts open behaves like the fixed gate and moves little (final \|tanh α\| 0.44), so learnability is not the cause; the zero start is. |
+| **Gate out of gradient clipping** (3 seeds) / **no weight decay on the gate** (2 seeds) | 2–3 | 67.2 / 52.2 (Waterbirds), 52.9 / 28.0 (Watermark) | – | vs default learned: +2.9 / −8.7, +13.5 / −16.9 (all n.s.) | Neither protects the gate; it still ends at \|tanh α\| ≤ 0.0024. Clipping and weight decay are not what keeps it shut. |
+| **Pathway ablation**: image switched off at test time | 1–2 | avg acc 89.4 → 77.8 (Waterbirds); 77.9 → 50.0 (Watermark) | 87.6 → 22.2; 88.3 → 50.0 | – | The learned-gate model still uses the image (falls to the majority-class share without it), through a signal about 38× weaker (injection ratio 2.6 vs 99). The gate is not shut; it is weak. |
+| **Shortcut strength** p = 0.9 / 0.99 (Watermark) | 2–3 | 75.7 / 6.7 | 77.5 / 20.1 (MLP 68.0 / 16.9) | +1.8 / +13.4 | The gap is small at p = 0.9 (all arms learn), large at 0.95 (+25), and at 0.99 every arm collapses (WGA 7–20). |
+| **Per-layer gates** (4 layers, learned vs fixed) | 5 / 4 | 70.8 / 68.3 | 70.4 / 70.6 | −0.4 / +2.3 (n.s.) | **No gap** with per-layer gates, although their learned gates are also small (mean \|tanh α\| 0.027). The effect is specific to one input-level block. |
+| **fp16 weights** (no 4-bit) | 3 | 63.2 / 44.1 | 73.2 / 65.1 | +10.0 / +21.1 (p = 0.34 / 0.39) | Same direction and size as 4-bit; 3 seeds with high variance, so not significant alone. Quantisation does not explain the gap. |
+| **Group DRO**, now 4 seeds | 4 | 73.5 / 63.5 | 75.8 / 81.0 | +2.3 / +17.5 (p = 0.70 / 0.059) | With group labels the Waterbirds gap vanishes; on Watermark the fixed gate still leads by 17.5. |
+| **8 epochs** (Waterbirds, seeds 1–4) | 4 | 67.9 | 79.0 (seed 0: 44.5) | +11.0 (p = 0.023) | Longer training does not rescue the learned gate. The fixed gate's single 44.5 at seed 0 was one collapse in five (others 78–80). |
 
-Still running: pathway ablation, gate excluded from clipping, no weight decay on the gate, shortcut strength
-p = 0.9 / 0.99 (round 5); per-layer gated cross-attention and fp16 LLM (round 6).
+Connector learning rate 5e-5 / 1e-3 for the third seed was queued in round 7 but only the alignment stage ran
+(`not enough session time left`), so that sweep stays at 2 seeds. All tests in this section are exploratory.
+Full tables: [`results_study/rounds_4_8.md`](results_study/rounds_4_8.md) (`study/rounds_4_8.py`).
 
-### 18. Open-ended answers on natural images: VQA-CP v2 (running, round 8)
+### 18. Open-ended answers on natural images: VQA-CP v2
 
 The binary tasks read one answer token. To test whether the gate effect carries over to free-form generation on
 natural images, the study adds **VQA-CP v2** [agrawal2018vqacp], the standard benchmark for shortcut reliance in
@@ -457,25 +485,49 @@ visual signal through should push the model toward the question prior.
 Predictions: if the gate mechanism holds, the learned gate should score lower on the shifted-prior test split,
 answer with the training prior more often, and lose less when the visual pathway is removed.
 
+**Results (3 seeds, VQA accuracy %, [`results_study/rounds_4_8.md`](results_study/rounds_4_8.md) §10, per-run
+[`vqacp_runs.csv`](results_study/vqacp_runs.csv)):**
+
+| Connector | Test-ID | Test-ID, image off | Test-OOD (shifted priors) | Test-OOD, image off | Prior answer, ID / OOD | Injection ratio |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Learned gate | **47.6 ± 0.2** | 47.6 ± 0.2 | **29.1 ± 0.8** | 29.2 ± 0.7 | 39.9% / 33.2% | 0.05 |
+| Fixed gate | 42.6 ± 0.7 | 40.4 ± 0.9 | 27.6 ± 0.8 | 32.2 ± 0.4 | 33.8% / 31.1% | 70.1 |
+
+- **The benchmark bites:** both arms lose 15–19 points when the answer priors shift (ID − OOD = 18.5 and 15.0).
+- **Only one of the three predictions holds.** The learned gate answers with the training prior more often (39.9% vs
+  33.8% in-distribution; 33.2% vs 31.1% shifted), and removing the image changes nothing for it (47.6 → 47.6; 29.1 →
+  29.2), so it is effectively a text-only model here (injection ratio 0.05). But it does **not** score lower on the
+  shifted split: the fixed gate is worse on both (−5.0 test-ID, p = 0.010; −1.5 test-OOD, p = 0.054; paired,
+  exploratory).
+- **The fixed gate uses the image a little and pays for it.** Removing the image costs it 2.2 points in-distribution
+  but *raises* shifted-prior accuracy by 4.6 (27.6 → 32.2). Its injected signal is about 70× the text norm, which
+  appears to disturb answer generation at this training scale (8k questions, 3 epochs).
+- **Reading:** on open-ended VQA-CP with this small training budget, neither connector learns to use the image
+  beyond the language prior, so the gate effect found on the binary tasks does not transfer. There is no text-only
+  baseline without a connector, so how much image information either model uses cannot be bounded from this run.
+  This is a limitation of the claim, reported as found; it is a subset of VQA-CP and not comparable to published
+  VQA-CP numbers.
+
 ## Observations
 
-- **The gate, not the connector family, decides robustness.** Every failure we see traces to the learnable
-  gate: it is near zero after alignment, its gradient changes sign every step, and with it shut the LLM
-  falls back on whatever cue is easiest. A fixed gate with a zero-initialised output layer starts as the
-  identity, so the optimiser cannot close it.
+- **The gate, not the connector family, decides robustness, in the single-block setting.** Every failure we see
+  traces to the zero-initialised learnable gate: it is near zero after alignment, its gradient changes sign every
+  step, and with it weak the LLM falls back on whatever cue is easiest. A fixed gate with a zero-initialised output
+  layer starts as the identity, so the optimiser cannot close it, and a learnable gate that starts half-open behaves
+  the same way. The result has limits: per-layer gates show no gap, and VQA-CP does not reproduce it.
 - **The failure is a seed lottery.** The learned gate is not uniformly worse: some seeds match the fixed gate,
   others collapse below 50%. Variance, not only the mean, is the effect (H2).
-- **Stronger features mask it.** With SigLIP-large the gate still shuts, but the learned-gate model no longer
-  collapses on Waterbirds. Two seeds only; the safe reading is "a better encoder hides the problem", not
-  "fixes it".
+- **Stronger features narrow it on Waterbirds, not on Watermark.** With SigLIP-large the gate still shuts and the
+  Waterbirds gap shrinks (+8.0, p = 0.09); on Watermark 5 seeds give +22.4 (p = 0.13). A better encoder does not
+  remove the problem.
 - **The information is in the features; the VLM does not use it.** A linear DFR probe on the same frozen
   features beats every ERM-trained VLM by about 10 points. Retraining only the connector on a few hundred
   balanced examples closes that gap on Watermark but not on Waterbirds.
 - **Attention on the shortcut does not mean reliance on it.** Both cross-attention variants attend to the
   watermark corner about 2.5x more when it is present, yet only the learned-gate model fails.
 - **Waterbirds on land is the hardest group** for every connector.
-- **Longer training is not a free win.** At 8 epochs the MLP gains and the fixed gate collapses on one seed;
-  with one seed each this is a warning, not a result.
+- **Longer training is not a free win.** At 8 epochs MLP 73.0, learned gate 67.9 and fixed gate 72.1 (one collapse
+  to 44.5 in five seeds); the fixed gate still leads the learned gate by +11.0 on seeds 1–4.
 
 ## FAQ
 
@@ -649,14 +701,15 @@ paper/                         paper kit: outline, introduction, methodology, re
 
 ## Limitations
 
-- 15 seeds for the gate comparison, 3–5 for most other cells. The LR sweep and Group DRO have 2 seeds, SigLIP-large
-  Watermark 2, CelebA 3 paired (all being extended to 5 in round 7); the 8-epoch runs 1 (seeds 1–4 running).
+- 15 seeds for the gate comparison, 3–5 for most other cells. The LR sweep has 2 seeds (the extra seed did not run),
+  the pathway ablation 1–2, Group DRO 4, SigLIP-large Watermark 5, CelebA 5 paired, the 8-epoch runs 4–5.
 - Learned and fixed gates differ in trainability *and* in where the zero initialisation sits (gate vs output
   layer). The second difference is forced (both at zero cannot train); the open and half-open controls
   separate the two as far as possible.
 - The learned pathway is not shut: `out_proj` grows, and the injected signal is 15–35× weaker than with the
   fixed gate but not zero. Its size does not predict WGA across learned-gate runs, so the mechanism is
-  supported but not proven causal; the inference-time pathway ablation (round 5) is the behavioural test.
+  supported but not proven causal. The inference-time pathway ablation (1–2 seeds) shows the learned-gate model
+  still uses the image: without it average accuracy drops to the majority-class share.
 - The fixed gate removes one cause of failure, not all: on Phi-4-mini Watermark 6 of 10 fixed-gate seeds still
   fall below 50% WGA.
 - Group DRO with group labels closes most of the gap. Fixing the gate needs no group labels and no extra cost,
@@ -664,7 +717,12 @@ paper/                         paper kit: outline, introduction, methodology, re
 - Tasks: two natural-image classification tasks (Waterbirds, CelebA), one synthetic (Watermark), and one
   natural-image open-ended benchmark (VQA-CP v2 subset, 3 seeds, round 8); VQA-CP uses a subset, not the full
   splits, so its numbers are not comparable to published VQA-CP results.
-- The fixed gate fell to 44.5 WGA in the single 8-epoch run; whether long training also hurts it is open.
+- One of five fixed-gate 8-epoch runs collapsed (44.5), so long training can hurt it occasionally.
+- **The gate effect did not appear with per-layer gates and was reversed on VQA-CP** (fixed gate −5.0 test-ID). The
+  claim is limited to a single input-level gated block on binary tasks; VQA-CP had no connector-free text-only
+  baseline and only 3 seeds on a small subset.
+- Seeds in `results_study/h1` are run indices: seeds 0–4 appear twice (same-seed reruns, and seed 14 stored as 4), and
+  comparisons to those baselines in `rounds_4_8.md` average duplicates per seed id.
 - CelebA trains on an 8k subsample, so its numbers are not comparable to full-data benchmarks.
 - Group DRO is a full-model baseline with 2 seeds; JTT only at the connector.
 - The three classification tasks read out the first answer token; only VQA-CP tests open-ended generation.

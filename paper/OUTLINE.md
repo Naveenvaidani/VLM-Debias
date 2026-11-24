@@ -45,8 +45,8 @@ Title/abstract, introduction, methodology, results and discussion drafts, verifi
 matrix are in this folder; the literature review is `docs/LITERATURE.md`.
 
 ## Still needed before submission
-- Controls done (README §17): open gate, LR sweep (2 seeds), 3k alignment, Group DRO, injection ratio. 8-epoch seeds 1–4, pathway ablation, p-sweep, per-layer and fp16 running.
-- SigLIP-large Watermark has 2 seeds; CelebA 3 paired seeds.
+- Controls done (README §17): open gate, LR sweep (2 seeds), 3k alignment, Group DRO, injection ratio. 8-epoch, pathway ablation, p-sweep, per-layer and fp16 done (README §17): per-layer shows no gap; VQA-CP reverses it (README §18).
+- SigLIP-large Watermark 5 seeds; CelebA 5 paired seeds.
 - Calibrated zero-shot native baseline: done (35.5 WGA).
 - Figures as vector PDF; final statistics table.
 - Code release: license, citation file, pinned requirements from `environment.txt`.
