@@ -11,8 +11,7 @@ encoder–LLM pipelines and cross-modal alignment; IV: robustness, bias and repr
 Multimodal large language models (MLLMs) are now built by joining a pretrained vision encoder to a large language
 model (LLM) through a small trainable connector [yin2024mllmsurvey; huang2025vitsurvey; awais2025foundation].
 The connector decides what visual information reaches the LLM, and in the most widely shipped design it does so
-through a learnable injection gate. As these systems move into screening, moderation and medical triage, a failure
-mode inherited from earlier deep networks becomes critical: **shortcut learning**, the use of a cue that predicts
+through a learnable injection gate. They inherit a failure mode of earlier deep networks: **shortcut learning**, the use of a cue that predicts
 the label in training but not in deployment [geirhos2020shortcut]. Shortcuts have produced accurate models that
 read hospital markers instead of lung pathology [degrave2021covid] and watermarks instead of objects
 [lapuschkin2019clever], and they fail silently on exactly the under-represented groups where errors cost most

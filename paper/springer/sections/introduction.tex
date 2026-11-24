@@ -1,21 +1,20 @@
 Multimodal large language models (MLLMs) are now built by joining a pretrained vision encoder to a large language
-model (LLM) through a small trainable connector \cite{yin2024mllmsurvey,huang2025vitsurvey,awais2025foundation}.
+model (LLM) through a small trainable connector \citep{yin2024mllmsurvey,huang2025vitsurvey,awais2025foundation}.
 The connector decides what visual information reaches the LLM, and in the most widely shipped design it does so
-through a learnable injection gate. As these systems move into screening, moderation and medical triage, a failure
-mode inherited from earlier deep networks becomes critical: \textbf{shortcut learning}, the use of a cue that predicts
-the label in training but not in deployment \cite{geirhos2020shortcut}. Shortcuts have produced accurate models that
-read hospital markers instead of lung pathology \cite{degrave2021covid} and watermarks instead of objects
-\cite{lapuschkin2019clever}, and they fail silently on exactly the under-represented groups where errors cost most
-\cite{brown2023shortcut,ongly2024shortcut}.
+through a learnable injection gate. They inherit a failure mode of earlier deep networks: \textbf{shortcut learning}, the use of a cue that predicts
+the label in training but not in deployment \citep{geirhos2020shortcut}. Shortcuts have produced accurate models that
+read hospital markers instead of lung pathology \citep{degrave2021covid} and watermarks instead of objects
+\citep{lapuschkin2019clever}, and they fail silently on exactly the under-represented groups where errors cost most
+\citep{brown2023shortcut,ongly2024shortcut}.
 
 Work on spurious correlations shows how to measure and reduce such failures in classifiers: worst-group accuracy
-over groups defined by label and spurious attribute \cite{sagawa2020groupdro}, group-aware and label-free reweighting
-\cite{liu2021jtt,idrissi2022balancing}, invariance-seeking training \cite{huang2024losingtickets,mitchell2026wule}, and the
+over groups defined by label and spurious attribute \citep{sagawa2020groupdro}, group-aware and label-free reweighting
+\citep{liu2021jtt,idrissi2022balancing}, invariance-seeking training \citep{huang2024losingtickets,mitchell2026wule}, and the
 finding that features usually keep the core signal, so retraining only the readout recovers most robustness
-\cite{izmailov2022feature,kirichenko2023dfr}. For vision-language models, recent studies show that MLLMs inherit spurious
-cues and language priors and fail under shift \cite{hosseini2025spurlens,yang2025spuriverse,ye2026mmspubench,zhu2024vlalignood}. They attribute this to the vision encoder \cite{tong2024eyes}, to data rather than scale
-\cite{sarridis2026scaling}, or remove it after training \cite{sarker2026purge}. A separate line of work compares the
-connectors themselves (MLP projectors, Q-Formers and gated cross-attention \cite{liu2024llava15,li2023blip2,alayrac2022flamingo}) by benchmark accuracy and efficiency \cite{mckinzie2024mm1,cha2024honeybee,karamcheti2024prismatic}.
+\citep{izmailov2022feature,kirichenko2023dfr}. For vision-language models, recent studies show that MLLMs inherit spurious
+cues and language priors and fail under shift \citep{hosseini2025spurlens,yang2025spuriverse,ye2026mmspubench,zhu2024vlalignood}. They attribute this to the vision encoder \citep{tong2024eyes}, to data rather than scale
+\citep{sarridis2026scaling}, or remove it after training \citep{sarker2026purge}. A separate line of work compares the
+connectors themselves (MLP projectors, Q-Formers and gated cross-attention \citep{liu2024llava15,li2023blip2,alayrac2022flamingo}) by benchmark accuracy and efficiency \citep{mckinzie2024mm1,cha2024honeybee,karamcheti2024prismatic}.
 
 These lines of work have not met, which leaves three gaps.
 
@@ -23,21 +22,21 @@ These lines of work have not met, which leaves three gaps.
 \def\labelenumi{\arabic{enumi}.}
 \item
   \textbf{No controlled test of the connector.} Robustness studies keep the connector fixed. Connector studies measure
-  average accuracy, or compare released models that also differ in encoder, LLM and scale \cite{balaji2026forget}.
+  average accuracy, or compare released models that also differ in encoder, LLM and scale \citep{balaji2026forget}.
   Whether the component that decides \emph{what visual information reaches the LLM} also decides \emph{whether the model
   relies on a shortcut} is untested.
 \item
   \textbf{The injection gate is common but poorly understood.} Zero-initialised learnable tanh gates are the standard
   way to inject a modality into a pretrained LLM: Flamingo, IDEFICS, LLaMA-Adapter and Llama 3.2 Vision all use
-  them \cite{alayrac2022flamingo,zhang2024llamaadapter,grattafiori2024llama3}. Farazi et al.~show that such gates can
+  them \citep{alayrac2022flamingo,zhang2024llamaadapter,grattafiori2024llama3}. Farazi et al.~show that such gates can
   end up near zero and their pathways behaviourally closed, through a vanishing first-order gradient when the
-  injected signal does not depend on the text \cite{farazi2026gate}; Li et al.~show that visual tokens far larger than
-  text tokens lose information \cite{li2025unseen}. Neither measures what a near-shut gate does to \emph{what the model
+  injected signal does not depend on the text \citep{farazi2026gate}; Li et al.~show that visual tokens far larger than
+  text tokens lose information \citep{li2025unseen}. Neither measures what a near-shut gate does to \emph{what the model
   relies on}, and Farazi et al.~leave text-coupled injection, where the gradient need not vanish, as an open case.
   Every attention gate in the released Llama 3.2 Vision weights is at most 0.012.
 \item
   \textbf{Results from too few seeds.} Comparisons rest on one or a few training runs, although seed variance alone
-  can reverse conclusions \cite{henderson2018matters,bouthillier2021variance}.
+  can reverse conclusions \citep{henderson2018matters,bouthillier2021variance}.
 \end{enumerate}
 
 We test whether the vision-language connector, and specifically its injection gate, determines shortcut reliance
@@ -53,7 +52,7 @@ in LLM-based VLMs.
   parameters.
 \item
   \textbf{Measured:} worst-group accuracy on Waterbirds, a controlled watermark task and CelebA, and free-form answers
-  under shifted answer priors on VQA-CP v2 \cite{agrawal2018vqacp}.
+  under shifted answer priors on VQA-CP v2 \citep{agrawal2018vqacp}.
 \item
   \textbf{Tested:} hypotheses formed on a 3-seed pilot and confirmed on new paired seeds (15 in total), with effect
   sizes, robust and non-parametric tests, Holm correction and an equivalence test; mechanism controls on gate start,
@@ -62,7 +61,7 @@ in LLM-based VLMs.
 \end{itemize}
 
 We do not propose a robustness method that competes with label-using approaches, which reach higher absolute
-worst-group accuracy \cite{park2026scer}. We isolate a cause.
+worst-group accuracy \citep{park2026scer}. We isolate a cause.
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}

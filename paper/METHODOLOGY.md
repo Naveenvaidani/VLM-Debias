@@ -265,7 +265,7 @@ without correction and are not used as evidence for the hypotheses.
 
 **Ethics.**
 - All data are public research datasets used under their terms:
-  - Waterbirds [sagawa2020groupdro]: CUB-200-2011 birds [wah2011cub] on Places backgrounds [zhou2017places];
+  - Waterbirds [sagawa2020groupdro]: CUB-200-2011 birds [wah2011cub] on Places backgrounds [zhou2018places];
     both are for non-commercial research.
   - MS-COCO 2017 [lin2014coco]: annotations CC BY 4.0; images under Flickr terms of use.
   - CelebA [liu2015celeba]: non-commercial research purposes only.

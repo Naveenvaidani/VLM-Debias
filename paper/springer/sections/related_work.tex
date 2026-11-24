@@ -1,56 +1,56 @@
 \subsection{Shortcut learning and group robustness}
 
 Shortcut learning, the reliance on a cue that predicts the label in training but not at deployment, is documented
-from medical imaging to watermark detection \cite{geirhos2020shortcut,degrave2021covid,lapuschkin2019clever}. Its
+from medical imaging to watermark detection \citep{geirhos2020shortcut,degrave2021covid,lapuschkin2019clever}. Its
 standard measure is worst-group accuracy over groups defined by label and spurious attribute, with Waterbirds and
-CelebA as benchmarks \cite{sagawa2020groupdro,liu2015celeba}. Mitigations act on data or training: group-robust
-optimisation and balanced sampling \cite{sagawa2020groupdro,idrissi2022balancing}, label-free reweighting
-\cite{nam2020lff,liu2021jtt,qiu2023afr}, invariance-seeking objectives \cite{huang2024losingtickets,mitchell2026wule}, and
-embedding regularisers that reach high worst-group accuracy with attribute labels \cite{park2026scer}. A key finding is
+CelebA as benchmarks \citep{sagawa2020groupdro,liu2015celeba}. Mitigations act on data or training: group-robust
+optimisation and balanced sampling \citep{sagawa2020groupdro,idrissi2022balancing}, label-free reweighting
+\citep{nam2020lff,liu2021jtt,qiu2023afr}, invariance-seeking objectives \citep{huang2024losingtickets,mitchell2026wule}, and
+embedding regularisers that reach high worst-group accuracy with attribute labels \citep{park2026scer}. A key finding is
 that features usually retain the core signal, so retraining only the readout recovers most robustness
-\cite{izmailov2022feature,kirichenko2023dfr}. This literature studies classifiers: the architecture between features and
+\citep{izmailov2022feature,kirichenko2023dfr}. This literature studies classifiers: the architecture between features and
 readout is not a variable. Our study makes that architecture the variable, and tests a readout-style fix at the
 connector.
 
 \subsection{Shortcuts and language priors in vision-language models}
 
 Before LLM-based models, VQA systems answered from question priors, which VQA-CP was built to expose
-\cite{agrawal2018vqacp,goyal2019vqav2}. Contrastive models such as CLIP carry spurious correlations and read rendered
-text \cite{radford2021clip,materzynska2022disentangling}, and fixes act on adapters, prompts or calibration
-\cite{zhang2022adapters,chuang2023biasedprompts,you2024calibrating}. For MLLMs, benchmarks show reliance on spurious cues
-and poor generalisation beyond them \cite{hosseini2025spurlens,yang2025spuriverse,ye2026mmspubench,zhang2024oodmllm},
-and robustness under shift remains open for vision-language alignment \cite{zhu2024vlalignood}. The proposed causes are the
-vision encoder \cite{tong2024eyes}, data rather than scale \cite{sarridis2026scaling}, or are removed after training
-\cite{sarker2026purge}. A gating unit that keeps language from fusing directly into visual features reduces language
-shortcuts in a CLIP-based video QA model \cite{zou2024videodistill}, and an entity-grounded gate improves cross-domain
-robustness of an MLLM adapter \cite{ahn2026evident}. None of these varies the connector of an LLM-based VLM as a
+\citep{agrawal2018vqacp,goyal2019vqav2}. Contrastive models such as CLIP carry spurious correlations and read rendered
+text \citep{radford2021clip,materzynska2022disentangling}, and fixes act on adapters, prompts or calibration
+\citep{zhang2022adapters,chuang2023biasedprompts,you2024calibrating}. For MLLMs, benchmarks show reliance on spurious cues
+and poor generalisation beyond them \citep{hosseini2025spurlens,yang2025spuriverse,ye2026mmspubench,zhang2024oodmllm},
+and robustness under shift remains open for vision-language alignment \citep{zhu2024vlalignood}. The proposed causes are the
+vision encoder \citep{tong2024eyes}, data rather than scale \citep{sarridis2026scaling}, or are removed after training
+\citep{sarker2026purge}. A gating unit that keeps language from fusing directly into visual features reduces language
+shortcuts in a CLIP-based video QA model \citep{zou2024videodistill}, and an entity-grounded gate improves cross-domain
+robustness of an MLLM adapter \citep{ahn2026evident}. None of these varies the connector of an LLM-based VLM as a
 controlled factor.
 
 \subsection{Connector design}
 
-Three connector families dominate \cite{yin2024mllmsurvey,huang2025vitsurvey}: projection (MLP projectors
-\cite{liu2024llava15}), query-based (the Q-Former \cite{li2023blip2}) and gated cross-attention (Flamingo, IDEFICS and the
-Llama 3.2 vision adapters \cite{alayrac2022flamingo,laurencon2023obelics,grattafiori2024llama3}). Design studies rank
-connectors by benchmark accuracy and efficiency \cite{mckinzie2024mm1,cha2024honeybee,karamcheti2024prismatic,tong2024cambrian} and find that connector type matters less than token count and resolution \cite{mckinzie2024mm1}. The only
+Three connector families dominate \citep{yin2024mllmsurvey,huang2025vitsurvey}: projection (MLP projectors
+\citep{liu2024llava15}), query-based (the Q-Former \citep{li2023blip2}) and gated cross-attention (Flamingo, IDEFICS and the
+Llama 3.2 vision adapters \citep{alayrac2022flamingo,laurencon2023obelics,grattafiori2024llama3}). Design studies rank
+connectors by benchmark accuracy and efficiency \citep{mckinzie2024mm1,cha2024honeybee,karamcheti2024prismatic,tong2024cambrian} and find that connector type matters less than token count and resolution \citep{mckinzie2024mm1}. The only
 three-way comparison we found on another outcome, cross-modal unlearning, compares released models that also differ
-in encoder, LLM and size \cite{balaji2026forget}. Surveys list robustness and bias as open challenges for MLLMs
-\cite{awais2025foundation,zhang2024vlmsurvey}, but no design study measures them.
+in encoder, LLM and size \citep{balaji2026forget}. Surveys list robustness and bias as open challenges for MLLMs
+\citep{awais2025foundation,zhang2024vlmsurvey}, but no design study measures them.
 
 \subsection{Gated injection and initialisation}
 
 Zero-initialised learnable scales let a new branch start as the identity: ReZero and SkipInit for residual blocks
-\cite{bachlechner2021rezero,de2020skipinit}, LayerScale with a small non-zero start that trains better than zero
-\cite{touvron2021cait}, and LLaMA-Adapter and Flamingo for adding a modality to a frozen LLM \cite{zhang2024llamaadapter,alayrac2022flamingo}. Farazi et al.~show that learnable gates on image-derived pathways in frozen VLMs settle near
+\citep{bachlechner2021rezero,de2020skipinit}, LayerScale with a small non-zero start that trains better than zero
+\citep{touvron2021cait}, and LLaMA-Adapter and Flamingo for adding a modality to a frozen LLM \citep{zhang2024llamaadapter,alayrac2022flamingo}. Farazi et al.~show that learnable gates on image-derived pathways in frozen VLMs settle near
 zero and become behaviourally closed; they explain this by a vanishing first-order gradient when the injected signal
 does not depend on the caption, recommend injecting at matched norm without a gate, and leave text-coupled injection
-and gate initialisation untested \cite{farazi2026gate}. Li et al.~show that visual tokens with much larger norms than
-text tokens lose information in pre-norm MLLMs \cite{li2025unseen}. Modality-imbalance work finds that multimodal
+and gate initialisation untested \citep{farazi2026gate}. Li et al.~show that visual tokens with much larger norms than
+text tokens lose information in pre-norm MLLMs \citep{li2025unseen}. Modality-imbalance work finds that multimodal
 networks greedily under-use one modality, with the winner depending on initialisation, and corrects it by gradient
-modulation \cite{wu2022greedy,huang2022modality,peng2022balanced}. We bring these lines together: we vary the gate's
+modulation \citep{wu2022greedy,huang2022modality,peng2022balanced}. We bring these lines together: we vary the gate's
 start value in a text-coupled connector and measure the consequence for shortcut reliance.
 
 \subsection{Evaluation practice}
 
-Seed variance alone can reverse deep-learning conclusions \cite{henderson2018matters,bouthillier2021variance,picard2021seed}, and model selection changes robustness results \cite{gulrajani2021domainbed}. We therefore state
-hypotheses on a pilot, confirm them on new paired seeds, correct for multiple tests \cite{holm1979simple}, report effect
-sizes and equivalence tests \cite{schuirmann1987tost}, and treat seed-level collapse as an outcome.
+Seed variance alone can reverse deep-learning conclusions \citep{henderson2018matters,bouthillier2021variance,picard2021seed}, and model selection changes robustness results \citep{gulrajani2021domainbed}. We therefore state
+hypotheses on a pilot, confirm them on new paired seeds, correct for multiple tests \citep{holm1979simple}, report effect
+sizes and equivalence tests \citep{schuirmann1987tost}, and treat seed-level collapse as an outcome.
