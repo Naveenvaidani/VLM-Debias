@@ -73,7 +73,10 @@ they list as a limitation or never test), **Agrees**, **Pending** (round 9 will 
 - **Round 9, start 0.1 (`r9-eps1`, 5 seeds).** Waterbirds 73.1 and Watermark 65.3, against 61.2 / 42.6 for the
   zero start (+11.9, p = 0.041; +22.7, p = 0.072) and 73.1 / 67.2 for the fixed gate. The gate shrinks to about
   0.06 but stays about 100× above the zero-start gate. So a start of 0.1 is already enough.
-- **Pending.** Start 0.01 (`r9-eps01`) sets the lower end of the threshold.
+- **Round 9, start 0.01 (`r9-eps01`, 5 seeds).** The gate falls back to 0.001–0.008 and behaves like the zero
+  start or worse: Waterbirds 69.1, Watermark 22.5 with 5/5 seeds collapsed (−20.1 vs zero start, p = 0.041).
+  Threshold lies between 0.01 and 0.1. Signed gradient: large (up to 159), but 30–58% of steps push the gate up,
+  which is the self-cancelling gradient measured directly (sign no longer inferred).
 
 ### 1e. Their recommendation: matched-norm injection without a gate — **Partly agrees; robustness side Pending**
 

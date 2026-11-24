@@ -42,7 +42,7 @@ the gate \(g\):
   optimiser cannot close it;
 \item
   \emph{learnable gate with a non-zero start} (controls): \(g = \tanh\alpha\) with \(W_o = 0\) and \(\tanh\alpha_0 \in
-  \{0.1, 0.5, 0.995\}\);
+  \{0.01, 0.1, 0.5, 0.995\}\);
 \item
   \emph{capped injection} (control): the fixed gate with the injected signal limited per token to the norm of the text
   embedding, \(\Delta_t \leftarrow \Delta_t \min\big(1, \lVert e_t \rVert / \lVert \Delta_t \rVert\big)\), motivated by

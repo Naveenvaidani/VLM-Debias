@@ -167,7 +167,9 @@ Results so far (24 Nov 2026, 17:30 IST):
   start (+11.9, p = 0.041; +22.7, p = 0.072). Gate ends at about 0.06.
 - **VQA-CP capped + text-only — done.** Capped is best on both splits (49.6 / 30.6) and the only model that uses the
   test image; uncapped fixed gate is below text-only (−5.7, p = 0.001); learnable gate ≈ text-only in distribution.
-- **Pending:** start 0.01 (`r9-eps01`), capped on binary tasks (`r9-capped`), 5-seed pathway tests (`r9-ablate`).
+- **Start 0.01 — done.** Gate falls back to ≈0.001–0.008; Watermark collapses in 5/5 seeds (22.5). Threshold
+  between 0.01 and 0.1. Signed gradient large but mixed in sign (30–58% positive).
+- **Pending:** capped on binary tasks (`r9-capped`), 5-seed pathway tests (`r9-ablate`).
 
 Remaining, not queued:
 - Gradient modulation (OGM-GE [peng2022balanced]) as a baseline next to the fixed gate.

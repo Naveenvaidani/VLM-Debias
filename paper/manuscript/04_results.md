@@ -65,6 +65,7 @@ Controls change one property of the learnable gate at a time (Table 3; all explo
 | Control | Seeds | Learnable variant | Reference | What it shows |
 | :--- | :---: | :---: | :---: | :--- |
 | Learnable gate started open ($\tanh\alpha_0 = 0.995$) | 5 | 71.8 / 66.8 | fixed 72.9 / 72.1 | starting open removes most of the gap |
+| Learnable gate started at $\tanh\alpha_0 = 0.01$ | 5 | 69.1 / 22.5 | zero start 61.2 / 42.6; fixed 73.1 / 67.2 | gate falls back to 0.001 to 0.008; Watermark collapses in 5 of 5 seeds, $-20.1$ below the zero start ($p$ = 0.041) |
 | Learnable gate started at $\tanh\alpha_0 = 0.1$ | 5 | 73.1 / 65.3 | zero start 61.2 / 42.6; fixed 73.1 / 67.2 | +11.9 and +22.7 over the zero start ($p$ = 0.041, 0.072); no difference from the fixed gate |
 | Learnable gate started half open ($\tanh\alpha_0 = 0.5$) | 5 | 72.6 / 62.7 | zero start 61.2 / 42.6; fixed 73.1 / 67.2 | +11.4 and +20.1 over the zero start ($p$ = 0.014, 0.006); no difference from the fixed gate |
 | Gate excluded from gradient clipping | 3 | 67.2 / 52.9 | zero start, same seeds 64.4 / 39.3 | no significant change; gate stays below 0.003 |
@@ -79,7 +80,11 @@ A learnable gate that starts half open behaves like the fixed gate and moves lit
 so the outcome depends on where the gate starts rather than on whether it can learn. A start of 0.1 is already
 enough. That gate shrinks during training, to 0.058 to 0.064, but stays about a hundred times above the zero-start
 gate, and its worst-group accuracy equals the fixed gate's on Waterbirds (73.1 against 73.1). Its gradient also
-changes sign often: 27% to 51% of steps per epoch push the gate up, with a slight net push down. Ten times longer alignment
+changes sign often: 27% to 51% of steps per epoch push the gate up, with a slight net push down. A start of 0.01
+is not enough. That gate falls back to the zero-start range (final $|\tanh\alpha|$ 0.001 to 0.008), and Watermark
+collapses below 50% in all five seeds (22.5, against 42.6 for the zero start). Because this control also starts
+$W_o$ at zero, the gradient of $W_o$ is scaled by the small gate, which may explain why it ends below the zero
+start. The threshold therefore lies between 0.01 and 0.1. Ten times longer alignment
 leaves the zero-start gate below 0.003 but also destabilises the learnable-gate alignment (caption loss rises from
 2.0 to 7.9), so that run shows fragility rather than a clean effect and is reported only in the supplement.
 
@@ -90,7 +95,9 @@ not small: the mean absolute pre-clipping gradient per epoch ranges from 3 to 1,
 and in some runs it is almost all of the global gradient norm. With Adam, each step moves $\alpha$ by at most about
 the learning rate $\eta = 2 \times 10^{-4}$, so over the roughly 900 to 1,200 task steps a gradient of constant sign
 would move $\alpha$ by up to about 0.2. The observed change is below 0.003. The gradient must therefore change sign
-from step to step and cancel. This differs from the dead-gradient account of [farazi2026gate], which requires an
+from step to step and cancel. The signed gradient, logged for the gate started at 0.01, confirms this: it stays
+large (mean signed value up to 159 per epoch), yet only 30% to 58% of steps push the gate up, and the gate settles
+at 0.001 to 0.008. This differs from the dead-gradient account of [farazi2026gate], which requires an
 injected signal that does not depend on the text; ours does.
 
 ## The pathway is weak, not closed

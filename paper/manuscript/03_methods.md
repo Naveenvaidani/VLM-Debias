@@ -45,7 +45,7 @@ the gate $g$:
 - *fixed gate:* $g = 1$ with $W_o$ initialised to zero, so the connector still starts as the identity but the
   optimiser cannot close it;
 - *learnable gate with a non-zero start* (controls): $g = \tanh\alpha$ with $W_o = 0$ and $\tanh\alpha_0 \in
-  \{0.1, 0.5, 0.995\}$;
+  \{0.01, 0.1, 0.5, 0.995\}$;
 - *capped injection* (control): the fixed gate with the injected signal limited per token to the norm of the text
   embedding, $\Delta_t \leftarrow \Delta_t \min\big(1, \lVert e_t \rVert / \lVert \Delta_t \rVert\big)$, motivated by
   the matched-norm advice of [farazi2026gate].

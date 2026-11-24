@@ -4,9 +4,10 @@
 
 ## For model builders
 
-When a modality is injected into a pretrained LLM through a learnable gate, the gate should not start at exactly zero.
-A fixed gate with a zero-initialised output layer, or a learnable gate that starts half open, keeps the identity at
-initialisation and removed the robustness cost in our experiments. This costs nothing: no group labels, no extra
+When a modality is injected into a pretrained LLM through a learnable gate, the gate should not start at or near zero:
+in our experiments a start of 0.01 was too small and 0.1 was enough. A fixed gate with a zero-initialised output
+layer, or a learnable gate that starts at 0.1 or higher with a zero-initialised output layer, keeps the identity at
+initialisation and removed the robustness cost. This costs nothing: no group labels, no extra
 training and no extra compute. A learnable gate that is kept should be logged during training, and the injected
 signal should be checked against the text-embedding norm, because a very strong injection can harm free-form
 generation. When a small group-balanced set exists, retraining only the connector is a cheap fix for localised
