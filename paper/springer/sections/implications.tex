@@ -5,8 +5,9 @@ in our experiments a start of 0.01 was too small and 0.1 was enough. A fixed gat
 layer, or a learnable gate that starts at 0.1 or higher with a zero-initialised output layer, keeps the identity at
 initialisation and removed the robustness cost. This costs nothing: no group labels, no extra
 training and no extra compute. A learnable gate that is kept should be logged during training, and the injected
-signal should be checked against the text-embedding norm, because a very strong injection can harm free-form
-generation. When a small group-balanced set exists, retraining only the connector is a cheap fix for localised
+signal should be checked against the text-embedding norm: a very strong injection harmed free-form generation, but
+capping it at the text norm cost most of the robustness gain on the watermark task, so the norm must be tuned for
+the intended output and robustness re-measured when it changes. When a small group-balanced set exists, retraining only the connector is a cheap fix for localised
 shortcuts such as watermarks.
 
 \subsection{For evaluation}

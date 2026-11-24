@@ -65,6 +65,7 @@ Controls change one property of the learnable gate at a time (Table 3; all explo
 | Control | Seeds | Learnable variant | Reference | What it shows |
 | :--- | :---: | :---: | :---: | :--- |
 | Learnable gate started open ($\tanh\alpha_0 = 0.995$) | 5 | 71.8 / 66.8 | fixed 72.9 / 72.1 | starting open removes most of the gap |
+| Fixed gate with injection capped at the text norm | 5 | 69.9 / 50.6 | zero start 61.2 / 42.6; fixed 73.1 / 67.2 | keeps part of the gain on Waterbirds ($-3.2$ against fixed, $p$ = 0.13) but loses most on Watermark ($-16.6$, $p$ = 0.002); 2 of 5 Watermark seeds collapse |
 | Learnable gate started at $\tanh\alpha_0 = 0.01$ | 5 | 69.1 / 22.5 | zero start 61.2 / 42.6; fixed 73.1 / 67.2 | gate falls back to 0.001 to 0.008; Watermark collapses in 5 of 5 seeds, $-20.1$ below the zero start ($p$ = 0.041) |
 | Learnable gate started at $\tanh\alpha_0 = 0.1$ | 5 | 73.1 / 65.3 | zero start 61.2 / 42.6; fixed 73.1 / 67.2 | +11.9 and +22.7 over the zero start ($p$ = 0.041, 0.072); no difference from the fixed gate |
 | Learnable gate started half open ($\tanh\alpha_0 = 0.5$) | 5 | 72.6 / 62.7 | zero start 61.2 / 42.6; fixed 73.1 / 67.2 | +11.4 and +20.1 over the zero start ($p$ = 0.014, 0.006); no difference from the fixed gate |
@@ -160,7 +161,11 @@ above the text-only model under shifted priors ($p$ = 0.028). It is also the onl
 the test image: removing the pathway, zeroing the image features or giving it another question's image costs 2.6
 to 3.5 points in distribution and 1.0 to 2.0 under shifted priors ($p$ = 0.041 to 0.063, 3 seeds). Strong injection
 therefore disturbs free-form generation, and an injection held at the text norm avoids that while still using the
-image. Whether the cap keeps the fixed gate's gain on the binary shortcut tasks is tested separately.
+image. On the binary shortcut tasks, however, the cap gives back much of the fixed gate's gain (Table 3): Waterbirds
+69.9 against 73.1 for the uncapped fixed gate ($p$ = 0.13) and Watermark 50.6 against 67.2 ($p$ = 0.002, $d_z$ =
+$-3.1$), with two of five Watermark seeds collapsed. The capped model still uses the image on these tasks: removing
+the pathway drops it to the majority-class share. Injection strength therefore trades shortcut robustness on a
+class readout against the quality of free-form answers.
 
 | Model | Test, same priors | Image removed | Test, shifted priors | Image removed | Prior answer rate | Injection ratio |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |

@@ -30,8 +30,12 @@ the binary readout but disturbs free-form answers on VQA-CP, where it scores bel
 reports that visual tokens with much larger norms than text tokens lose information in pre-norm MLLMs
 [li2025unseen] and the advice to inject at a matched norm [farazi2026gate]. Capping the injection at the text norm
 repairs generation in our connector: the capped model is the best on both VQA-CP test splits and the only one whose
-answers depend on the test image. Neither earlier study measures shortcut reliance, so whether the capped injection
-also keeps the robustness gain on the binary tasks is the remaining question.
+answers depend on the test image. The same cap, however, gives back most of the robustness gain on the watermark
+task (50.6 against 67.2). Neither earlier study measures shortcut reliance, so this cost of norm matching was not
+visible to them. In our data a strong visual signal is what lets the class readout override a textual or
+background shortcut, and the same strength disturbs free-form decoding. No single injection strength was best on
+both kinds of task, so the strength should be chosen for the output the model must produce, and robustness should
+be measured whenever it is changed.
 
 ## Why per-layer gates behave differently
 

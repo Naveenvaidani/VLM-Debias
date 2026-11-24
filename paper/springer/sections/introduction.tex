@@ -89,8 +89,9 @@ worst-group accuracy \citep{park2026scer}. We isolate a cause.
   established).
 \item
   \textbf{Boundaries, reported as found.} Per-layer gated injection shows no gap; a stronger encoder narrows the gap on
-  one task but not the other; and on open-ended VQA-CP the strong fixed injection harms free-form generation. Gate
-  start value and injection strength must therefore be chosen together.
+  one task but not the other; and on open-ended VQA-CP the strong fixed injection harms free-form generation. Capping
+  the injection at the text norm repairs generation but gives back most of the robustness gain, a trade-off that
+  prior norm-matching advice could not see because it did not measure shortcuts.
 \item
   \textbf{A cheap fix and reproducible evidence.} Retraining only the connector on a small group-balanced set reaches
   89.6\% worst-group accuracy on the watermark task. Code, job scripts, pinned versions and per-seed results are public.

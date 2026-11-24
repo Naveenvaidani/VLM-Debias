@@ -91,9 +91,11 @@ they list as a limitation or never test), **Agrees**, **Pending** (round 9 will 
   (p = 0.020) and +3.5 over a text-only model under shifted priors (p = 0.028). It is the only model whose accuracy
   falls when the image is removed, zeroed or shuffled (−2.6 to −3.5 in distribution). The uncapped fixed gate is
   *below* the text-only model (−5.7, p = 0.001); the learnable gate equals it in distribution (−0.6, p = 0.23).
-- **The open question their paper cannot answer.** Does matching the norm cost the robustness gain? Their
-  benchmarks have no shortcut or worst-group measure. `r9-capped` (binary tasks, 5 seeds) answers it; result
-  pending. If the cap keeps the binary gain and repairs
+- **Round 9, robustness side (`r9-capped`, 5 seeds) — Contradicts.** Matching the norm costs robustness:
+  Waterbirds 69.9 vs 73.1 for the uncapped fixed gate (p = 0.13); Watermark 50.6 vs 67.2 (−16.6, p = 0.002,
+  d_z = −3.1), 2/5 seeds collapsed. Still above the zero-start gate (+8.7, p = 0.055; +8.0, p = 0.30).
+- **Reading.** Their recommendation trades shortcut robustness for generation quality. Their benchmarks have no
+  shortcut measure, so the cost was invisible to them. This is the one finding where we contradict their advice. If the cap keeps the binary gain and repairs
   VQA-CP, their recommendation and ours combine into one rule. If it loses the gain, their recommendation trades
   robustness for generation safety, which would be a real contradiction.
 
@@ -193,7 +195,7 @@ connectors; we do not compete with label-using robustness methods. The paper mus
 | There the gate is stuck by a large, self-cancelling gradient, not a dead one | Logged \|∂L/∂α\| 3–1,528 with Δα ≤ 0.003 | Moderate (sign inferred) | Signed-gradient logging, now in the code; round 9 |
 | A near-zero gate can still carry a used pathway | Pathway ablation, 1–2 seeds | Weak | `r9-ablate` (5 seeds) |
 | The gate's start value, not its learnability, decides robustness | Starts 0.1, 0.5, 0.995, 5 seeds each | Moderate (exploratory p) | `r9-eps01` |
-| High injection norm helps a class readout but hurts generation; a norm cap repairs generation | Binary tasks vs VQA-CP; capped and text-only VQA-CP runs, 3 seeds | Moderate | `r9-capped` (binary side) |
+| High injection norm helps a class readout but hurts generation; a norm cap repairs generation but costs robustness | Capped connector: 5 seeds binary, 3 seeds VQA-CP; text-only VQA-CP | Moderate to strong (Watermark p = 0.002) | none |
 | Connector type has no robustness effect when it is the only change | MLP vs Q-Former vs fixed gate, 5 seeds | Moderate (no equivalence) | More seeds, TOST |
 | Released gated models ship near-zero gates | Llama 3.2 Vision, IDEFICS weights | Strong (direct read) | – |
 

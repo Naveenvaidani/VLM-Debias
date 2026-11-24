@@ -169,7 +169,10 @@ Results so far (24 Nov 2026, 17:30 IST):
   test image; uncapped fixed gate is below text-only (−5.7, p = 0.001); learnable gate ≈ text-only in distribution.
 - **Start 0.01 — done.** Gate falls back to ≈0.001–0.008; Watermark collapses in 5/5 seeds (22.5). Threshold
   between 0.01 and 0.1. Signed gradient large but mixed in sign (30–58% positive).
-- **Pending:** capped on binary tasks (`r9-capped`), 5-seed pathway tests (`r9-ablate`).
+- **Capped on binary tasks — done.** Waterbirds 69.9 (fixed 73.1, p = 0.13); Watermark 50.6 (fixed 67.2,
+  p = 0.002). Norm matching repairs generation but costs shortcut robustness: a trade-off, and a direct
+  contradiction of Farazi et al.'s matched-norm advice on a measure they did not have.
+- **Pending:** (`r9-capped`), 5-seed pathway tests (`r9-ablate`).
 
 Remaining, not queued:
 - Gradient modulation (OGM-GE [peng2022balanced]) as a baseline next to the fixed gate.
