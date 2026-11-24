@@ -65,6 +65,7 @@ Controls change one property of the learnable gate at a time (Table 3; all explo
 | Control | Seeds | Learnable variant | Reference | What it shows |
 | :--- | :---: | :---: | :---: | :--- |
 | Learnable gate started open ($\tanh\alpha_0 = 0.995$) | 5 | 71.8 / 66.8 | fixed 72.9 / 72.1 | starting open removes most of the gap |
+| Learnable gate started at $\tanh\alpha_0 = 0.1$ | 5 | 73.1 / 65.3 | zero start 61.2 / 42.6; fixed 73.1 / 67.2 | +11.9 and +22.7 over the zero start ($p$ = 0.041, 0.072); no difference from the fixed gate |
 | Learnable gate started half open ($\tanh\alpha_0 = 0.5$) | 5 | 72.6 / 62.7 | zero start 61.2 / 42.6; fixed 73.1 / 67.2 | +11.4 and +20.1 over the zero start ($p$ = 0.014, 0.006); no difference from the fixed gate |
 | Gate excluded from gradient clipping | 3 | 67.2 / 52.9 | zero start, same seeds 64.4 / 39.3 | no significant change; gate stays below 0.003 |
 | No weight decay on the gate | 2 | 52.2 / 28.0 | zero start, same seeds 60.9 / 44.9 | no rescue |
@@ -75,7 +76,10 @@ Controls change one property of the learnable gate at a time (Table 3; all explo
 : Controls on Qwen3.5-4B, test worst-group accuracy (%), Waterbirds / Watermark unless stated. \label{tab:controls}
 
 A learnable gate that starts half open behaves like the fixed gate and moves little (final $\tanh\alpha$ 0.44),
-so the outcome depends on where the gate starts rather than on whether it can learn. Ten times longer alignment
+so the outcome depends on where the gate starts rather than on whether it can learn. A start of 0.1 is already
+enough. That gate shrinks during training, to 0.058 to 0.064, but stays about a hundred times above the zero-start
+gate, and its worst-group accuracy equals the fixed gate's on Waterbirds (73.1 against 73.1). Its gradient also
+changes sign often: 27% to 51% of steps per epoch push the gate up, with a slight net push down. Ten times longer alignment
 leaves the zero-start gate below 0.003 but also destabilises the learnable-gate alignment (caption loss rises from
 2.0 to 7.9), so that run shows fragility rather than a clean effect and is reported only in the supplement.
 
@@ -134,22 +138,33 @@ arms fail (6.7 and 20.1). The gap is largest at the 95% used in the main experim
 
 ## Free-form answers under shifted priors
 
-On VQA-CP v2 both arms lose 15 to 19 points when the answer priors shift, so the subset exposes the language prior
-(Table 4). The learnable gate answers with the training prior more often (39.9% against 33.8%), and removing its
-visual pathway changes nothing: it behaves as a text-only model here (injection ratio 0.05). The fixed gate, however,
-scores lower, not higher: $-5.0$ points in distribution ($p$ = 0.010) and $-1.5$ under shifted priors
-($p$ = 0.054). Its injected signal is about 70 times the text norm, and removing it raises shifted-prior accuracy by
-4.6 points. With this training budget neither connector uses the image beyond the language prior, and strong
-injection disturbs free-form generation.
+On VQA-CP v2 every model loses 15 to 21 points when the answer priors shift, so the subset exposes the language
+prior (Table 4). A text-only model with the same LLM, LoRA and budget sets the reference. The learnable gate does no
+better than this model in distribution (47.6 against 48.2, $p$ = 0.23), and removing its visual pathway changes
+nothing, so it does not use the image at test time (injection ratio 0.05). Its 2.1-point lead under shifted priors
+($p$ = 0.041) remains with the image removed (29.2), so it comes from training with the pathway present rather
+than from the test image. The fixed gate is worse than having no image at all: $-5.7$ points in distribution
+against the text-only model ($p$ = 0.001). Its injected signal is about 70 times the text norm, and removing it
+raises shifted-prior accuracy by 4.6 points.
 
-| Connector | Test, same priors | Image removed | Test, shifted priors | Image removed | Prior answer rate | Injection ratio |
+Capping the injected signal at the text norm removes this cost. The capped connector scores 49.6 in distribution and
+30.6 under shifted priors, 7.0 points above the uncapped fixed gate in distribution ($p$ = 0.020) and 3.5 points
+above the text-only model under shifted priors ($p$ = 0.028). It is also the only model whose accuracy depends on
+the test image: removing the pathway, zeroing the image features or giving it another question's image costs 2.6
+to 3.5 points in distribution and 1.0 to 2.0 under shifted priors ($p$ = 0.041 to 0.063, 3 seeds). Strong injection
+therefore disturbs free-form generation, and an injection held at the text norm avoids that while still using the
+image. Whether the cap keeps the fixed gate's gain on the binary shortcut tasks is tested separately.
+
+| Model | Test, same priors | Image removed | Test, shifted priors | Image removed | Prior answer rate | Injection ratio |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Text only | 48.2 ± 0.4 | n/a | 27.1 ± 0.1 | n/a | 39.9% / 35.0% | 0 |
 | Learnable gate | 47.6 ± 0.2 | 47.6 ± 0.2 | 29.1 ± 0.8 | 29.2 ± 0.7 | 39.9% / 33.2% | 0.05 |
 | Fixed gate | 42.6 ± 0.7 | 40.4 ± 0.9 | 27.6 ± 0.8 | 32.2 ± 0.4 | 33.8% / 31.1% | 70.1 |
+| Capped injection | 49.6 ± 1.7 | 46.7 ± 0.4 | 30.6 ± 0.9 | 29.7 ± 1.2 | 39.0% / 32.7% | 1.00 |
 
-: VQA-CP v2 subset, VQA accuracy (%), 3 seeds. Prior answer rate: share of answers equal to the most frequent
-training answer for the question type (same priors / shifted priors). Not comparable with published VQA-CP
-results. \label{tab:vqacp}
+: VQA-CP v2 subset, VQA accuracy (%), mean ± standard deviation over 3 seeds. Prior answer rate: share of answers
+equal to the most frequent training answer for the question type (same priors / shifted priors). Not comparable with
+published VQA-CP results. \label{tab:vqacp}
 
 ## A connector-only fix
 

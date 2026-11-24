@@ -70,7 +70,10 @@ they list as a limitation or never test), **Agrees**, **Pending** (round 9 will 
 - **Our data.** A learnable gate started at tanh α = 0.5 matches the fixed gate and beats the zero start by
   +11.4 and +20.1 worst-group points (p = 0.014 and 0.006, 5 seeds, exploratory). It moves little (final 0.44).
   The start at 0.995 behaves the same. So the outcome is set by where the gate starts, not by whether it can learn.
-- **Pending.** Starts at 0.01 and 0.1 (`r9-eps01`, `r9-eps1`) give the dose-response and a practical threshold.
+- **Round 9, start 0.1 (`r9-eps1`, 5 seeds).** Waterbirds 73.1 and Watermark 65.3, against 61.2 / 42.6 for the
+  zero start (+11.9, p = 0.041; +22.7, p = 0.072) and 73.1 / 67.2 for the fixed gate. The gate shrinks to about
+  0.06 but stays about 100× above the zero-start gate. So a start of 0.1 is already enough.
+- **Pending.** Start 0.01 (`r9-eps01`) sets the lower end of the threshold.
 
 ### 1e. Their recommendation: matched-norm injection without a gate — **Partly agrees; robustness side Pending**
 
@@ -80,9 +83,14 @@ they list as a limitation or never test), **Agrees**, **Pending** (round 9 will 
   on binary tasks but **hurts free-form generation** on VQA-CP (−5.0 in distribution, p = 0.010). Removing its
   image pathway even *raises* shifted-prior accuracy by 4.6 points. This is their norm warning, seen in a
   generative robustness benchmark.
+- **Round 9, generation side (`r9-vqacp`, 3 seeds) — Agrees.** The capped connector (per-token cap at the text
+  norm) scores 49.6 in distribution and 30.6 under shifted priors: +7.0 over the uncapped fixed gate in distribution
+  (p = 0.020) and +3.5 over a text-only model under shifted priors (p = 0.028). It is the only model whose accuracy
+  falls when the image is removed, zeroed or shuffled (−2.6 to −3.5 in distribution). The uncapped fixed gate is
+  *below* the text-only model (−5.7, p = 0.001); the learnable gate equals it in distribution (−0.6, p = 0.23).
 - **The open question their paper cannot answer.** Does matching the norm cost the robustness gain? Their
-  benchmarks have no shortcut or worst-group measure. `r9-capped` (per-token cap at the text norm, binary tasks,
-  5 seeds) and `r9-vqacp` (same connector on VQA-CP) answer it. If the cap keeps the binary gain and repairs
+  benchmarks have no shortcut or worst-group measure. `r9-capped` (binary tasks, 5 seeds) answers it; result
+  pending. If the cap keeps the binary gain and repairs
   VQA-CP, their recommendation and ours combine into one rule. If it loses the gain, their recommendation trades
   robustness for generation safety, which would be a real contradiction.
 
@@ -181,8 +189,8 @@ connectors; we do not compete with label-using robustness methods. The paper mus
 | Near-zero gates also arise in text-coupled injection (Farazi expected not) | Every learned-gate run | Strong in our setting | – |
 | There the gate is stuck by a large, self-cancelling gradient, not a dead one | Logged \|∂L/∂α\| 3–1,528 with Δα ≤ 0.003 | Moderate (sign inferred) | Signed-gradient logging, now in the code; round 9 |
 | A near-zero gate can still carry a used pathway | Pathway ablation, 1–2 seeds | Weak | `r9-ablate` (5 seeds) |
-| The gate's start value, not its learnability, decides robustness | Half-open and open starts, 5 seeds | Moderate (exploratory p) | `r9-eps01`, `r9-eps1` |
-| High injection norm helps a class readout but hurts generation | Binary tasks vs VQA-CP | Moderate | `r9-capped`, `r9-vqacp` |
+| The gate's start value, not its learnability, decides robustness | Starts 0.1, 0.5, 0.995, 5 seeds each | Moderate (exploratory p) | `r9-eps01` |
+| High injection norm helps a class readout but hurts generation; a norm cap repairs generation | Binary tasks vs VQA-CP; capped and text-only VQA-CP runs, 3 seeds | Moderate | `r9-capped` (binary side) |
 | Connector type has no robustness effect when it is the only change | MLP vs Q-Former vs fixed gate, 5 seeds | Moderate (no equivalence) | More seeds, TOST |
 | Released gated models ship near-zero gates | Llama 3.2 Vision, IDEFICS weights | Strong (direct read) | – |
 

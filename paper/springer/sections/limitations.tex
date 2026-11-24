@@ -4,8 +4,8 @@ risk in this regime, not a property of every gated model. The effect is limited 
 per-layer gates showed no gap.
 
 Three of the four tasks use a binary readout from the first answer token. On the one open-ended benchmark, a VQA-CP v2
-subset with three seeds, the gate effect did not appear and strong injection hurt generation; we have no text-only
-baseline there, so we cannot say how much image information either model used.
+subset with three seeds, the gate effect did not appear, strong injection hurt generation, and only the capped
+connector used the test image beyond a text-only baseline; with three seeds these results are exploratory.
 
 Several controls have few seeds: the pathway ablation one or two, the learning-rate sweep two per setting, fp16 and the
 shortcut-strength sweep two or three. They are reported as exploratory. Phi-4-mini Watermark was extended from five to

@@ -162,6 +162,13 @@ Chosen for how much each adds against reviewer objections and the closest prior 
 | **Pathway tests on 5 seeds**: pathway absent, zero image features, another example's image (shuffled) | Our main point of difference from Farazi (weak, not closed) currently rests on 1–2 seeds. Shuffled images separate "uses this image" from "uses image statistics". | Farazi et al.'s on / zeroed / absent protocol; the shuffled-image control is one they lack |
 | **Text-only baseline on VQA-CP** (`--text_only`, same LLM, LoRA and budget) | Bounds how much image information either VQA-CP model uses. | Language-prior baselines in VQA-CP [agrawal2018vqacp] |
 
+Results so far (24 Nov 2026, 17:30 IST):
+- **Start 0.1 — done.** Matches the fixed gate (Waterbirds 73.1 vs 73.1; Watermark 65.3 vs 67.2) and beats the zero
+  start (+11.9, p = 0.041; +22.7, p = 0.072). Gate ends at about 0.06.
+- **VQA-CP capped + text-only — done.** Capped is best on both splits (49.6 / 30.6) and the only model that uses the
+  test image; uncapped fixed gate is below text-only (−5.7, p = 0.001); learnable gate ≈ text-only in distribution.
+- **Pending:** start 0.01 (`r9-eps01`), capped on binary tasks (`r9-capped`), 5-seed pathway tests (`r9-ablate`).
+
 Remaining, not queued:
 - Gradient modulation (OGM-GE [peng2022balanced]) as a baseline next to the fixed gate.
 - MM-SpuBench, SpuriVerse and SpurLens: open-ended MLLM benchmarks that need a different training protocol.

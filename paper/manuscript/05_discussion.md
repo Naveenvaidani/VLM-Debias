@@ -26,10 +26,12 @@ what the small gate does: in our setting it does not remove the image, it weaken
 
 A non-zero start, as LayerScale recommends for optimisation [touvron2021cait], removes the robustness cost of the gate.
 Strong injection has its own cost: the fixed gate injects about 70 to 130 times the text-embedding norm, which helps
-the binary readout but disturbs free-form answers on VQA-CP. This matches reports that visual tokens with much larger
-norms than text tokens lose information in pre-norm MLLMs [li2025unseen] and the advice to inject at a matched norm
-[farazi2026gate]. Neither of those studies measures shortcut reliance, so whether a norm-matched injection keeps the
-robustness gain is an open question that our data does not yet answer.
+the binary readout but disturbs free-form answers on VQA-CP, where it scores below a text-only model. This matches
+reports that visual tokens with much larger norms than text tokens lose information in pre-norm MLLMs
+[li2025unseen] and the advice to inject at a matched norm [farazi2026gate]. Capping the injection at the text norm
+repairs generation in our connector: the capped model is the best on both VQA-CP test splits and the only one whose
+answers depend on the test image. Neither earlier study measures shortcut reliance, so whether the capped injection
+also keeps the robustness gain on the binary tasks is the remaining question.
 
 ## Why per-layer gates behave differently
 

@@ -45,7 +45,10 @@ the gate $g$:
 - *fixed gate:* $g = 1$ with $W_o$ initialised to zero, so the connector still starts as the identity but the
   optimiser cannot close it;
 - *learnable gate with a non-zero start* (controls): $g = \tanh\alpha$ with $W_o = 0$ and $\tanh\alpha_0 \in
-  \{0.5, 0.995\}$.
+  \{0.1, 0.5, 0.995\}$;
+- *capped injection* (control): the fixed gate with the injected signal limited per token to the norm of the text
+  embedding, $\Delta_t \leftarrow \Delta_t \min\big(1, \lVert e_t \rVert / \lVert \Delta_t \rVert\big)$, motivated by
+  the matched-norm advice of [farazi2026gate].
 
 Both the gate and $W_o$ cannot start at zero together: $\partial e_t'/\partial \alpha \propto W_o$ and
 $\partial e_t'/\partial W_o \propto \tanh\alpha$, so neither would receive a gradient. The learnable arm therefore
@@ -65,7 +68,8 @@ gender presentation, not a record of sex or gender identity; we use it only to d
 group-robustness work [sagawa2020groupdro], and the study draws no conclusion about sex or gender. VQA-CP v2 [agrawal2018vqacp] tests
 free-form answers when the answer prior of each question type differs between training and test; we use an
 image-disjoint subset of 8,000 training, 1,000 validation and 2,000 in-distribution test questions from its training
-split and 3,000 questions from its test split. Images used for alignment are excluded from every evaluation split.
+split and 3,000 questions from its test split. A text-only baseline trains the same LLM and LoRA with the same
+budget but never sees the image. Images used for alignment are excluded from every evaluation split.
 
 ## Training
 
