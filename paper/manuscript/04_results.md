@@ -8,7 +8,7 @@ the README. Full tables are in `paper/RESULTS_DISCUSSION.md` and the supplementa
 ## A learnable zero-start gate lowers worst-group accuracy
 
 With Qwen3.5-4B and SigLIP-base features, three connectors reach similar worst-group accuracy, and the gated
-cross-attention connector with a learnable gate falls well below them (Table 1, Figure \ref{fig:main}).
+cross-attention connector with a learnable gate falls well below them (Table \ref{tab:main}, Figure \ref{fig:main}).
 
 | Task | MLP projector | Q-Former | Learnable gate | Fixed gate |
 | :--- | :---: | :---: | :---: | :---: |
@@ -23,7 +23,7 @@ cross-attention connector with a learnable gate falls well below them (Table 1, 
 \caption{Test worst-group accuracy of the four connectors (Qwen3.5-4B, SigLIP-base) on (a) Waterbirds and (b) Watermark. Bars are means with one standard deviation; dots are single seeds; hatching distinguishes connectors. Only the learnable, zero-start gate fails, and it is also the least stable}\label{fig:main}
 \end{figure*}
 
-Fixing the gate raises worst-group accuracy in all four LLM and task cells (Table 2, Figure \ref{fig:forest}). The
+Fixing the gate raises worst-group accuracy in all four LLM and task cells (Table \ref{tab:h1}, Figure \ref{fig:forest}). The
 effects are large ($d_z$ = 1.10 and 1.34 on Qwen3.5-4B) and every cell survives Holm correction (largest adjusted
 $p$ = 0.009). The result holds when the checkpoint is chosen without group labels (+17.7 and +25.5 points), with
 unpaired Welch and Mann–Whitney tests (all $p \le 0.002$), and on the confirmation seeds alone (Waterbirds +10.5,
@@ -60,7 +60,7 @@ the fixed gate (Figure \ref{fig:seeds}). On Phi-4-mini the variance difference i
 
 ## The zero start, not learnability, is the cause
 
-Controls change one property of the learnable gate at a time (Table 3; all exploratory).
+Controls change one property of the learnable gate at a time (Table \ref{tab:controls}; all exploratory).
 
 | Control | Seeds | Learnable variant | Reference | What it shows |
 | :--- | :---: | :---: | :---: | :--- |
@@ -151,7 +151,7 @@ arms fail (6.7 and 20.1). The gap is largest at the 95% used in the main experim
 ## Free-form answers under shifted priors
 
 On VQA-CP v2 every model loses 15 to 21 points when the answer priors shift, so the subset exposes the language
-prior (Table 4). A text-only model with the same LLM, LoRA and budget sets the reference. The learnable gate does no
+prior (Table \ref{tab:vqacp}). A text-only model with the same LLM, LoRA and budget sets the reference. The learnable gate does no
 better than this model in distribution (47.6 against 48.2, $p$ = 0.23), and removing its visual pathway changes
 nothing, so it does not use the image at test time (injection ratio 0.05). Its 2.1-point lead under shifted priors
 ($p$ = 0.041) remains with the image removed (29.2), so it comes from training with the pathway present rather
@@ -165,7 +165,7 @@ above the text-only model under shifted priors ($p$ = 0.028). It is also the onl
 the test image: removing the pathway or zeroing the image features costs 2.8
 to 3.5 points in distribution and 1.0 to 2.0 under shifted priors ($p$ = 0.041 to 0.063, 3 seeds). Strong injection
 therefore disturbs free-form generation, and an injection held at the text norm avoids that while still using the
-image. On the binary shortcut tasks, however, the cap gives back much of the fixed gate's gain (Table 3): Waterbirds
+image. On the binary shortcut tasks, however, the cap gives back much of the fixed gate's gain (Table \ref{tab:controls}): Waterbirds
 69.9 against 73.1 for the uncapped fixed gate ($p$ = 0.13) and Watermark 50.6 against 67.2 ($p$ = 0.002, $d_z$ =
 $-3.1$), with two of five Watermark seeds collapsed. The capped model still uses the image on these tasks: removing
 the pathway makes it give one answer to every image. Injection strength therefore trades shortcut robustness on a

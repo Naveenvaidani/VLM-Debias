@@ -24,4 +24,10 @@ by $1 - \tanh^2\alpha \approx 0.01$.
 Equivalence between connector types is not established. CelebA uses an 8,000-image training subsample and a binary,
 annotator-assigned "Male" attribute, so its results say nothing about sex or gender beyond that label; the watermark
 shortcut is partly textual [materzynska2022disentangling], and SigLIP's web pre-training may include images from the
-source datasets, a factor shared by every arm. Group DRO is the only full-model group-robust baseline we ran.
+source datasets, a factor shared by every arm. Group DRO is the only full-model group-robust baseline we ran; we did
+not run gradient-modulation methods for modality imbalance [peng2022balanced] or label-free reweighting at full
+scale, because the study isolates a cause rather than competing with fixes. Two of the tasks are standard but small
+group-robustness benchmarks and one is synthetic; open-ended spurious-cue benchmarks for MLLMs
+[ye2026mmspubench; yang2025spuriverse] need a different training protocol and are left to future work. A control
+that gave each test example another example's image turned out to swap images only within a group, because the test
+files are stored group by group; we report no result from it.

@@ -8,6 +8,7 @@ the markdown and re-run this script.
 """
 import os
 import re
+import shutil
 
 import pypandoc
 
@@ -77,6 +78,8 @@ def main():
         tex = re.sub(r"\\(cite[pt]?)\\\{([^}]*)\\\}", r"\\\1{\2}", tex)
         open(os.path.join(HERE, "sections", name + ".tex"), "w", encoding="utf-8").write(tex)
         print(name, len(tex), "chars,", tex.count("\\cite{"), "citations")
+    # keep the template's bibliography identical to the verified source list built by paper/build_refs.py
+    shutil.copyfile(os.path.join(PAPER, "references.bib"), os.path.join(HERE, "references.bib"))
 
 
 if __name__ == "__main__":

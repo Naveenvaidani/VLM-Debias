@@ -208,6 +208,13 @@
   "Fung, Pascale",
   "Hoi, Steven"
  ],
+ "hosseini2025spurlens": [
+  "Hosseini, Parsa",
+  "Nawathe, Sumit",
+  "Moayeri, Mazda",
+  "Balasubramanian, Sriram",
+  "Feizi, Soheil"
+ ],
  "sarker2026purge": [
   "Sarker, Aditi",
   "Shah, Nazreen",
@@ -215,13 +222,6 @@
   "Jang, Rhongho",
   "Zhu, Dongxiao",
   "Khanduri, Prashant"
- ],
- "hosseini2025spurlens": [
-  "Hosseini, Parsa",
-  "Nawathe, Sumit",
-  "Moayeri, Mazda",
-  "Balasubramanian, Sriram",
-  "Feizi, Soheil"
  ],
  "alayrac2022flamingo": [
   "Alayrac, Jean-Baptiste",
@@ -363,18 +363,6 @@
   "Yates, Andrew",
   "Rijke, Maarten de"
  ],
- "zhang2024llamaadapter": [
-  "Zhang, Renrui",
-  "Han, Jiaming",
-  "Liu, Chris",
-  "Gao, Peng",
-  "Zhou, Aojun",
-  "Hu, Xiangfei",
-  "Yan, Shilin",
-  "Lu, Pan",
-  "Li, Hongsheng",
-  "Qiao, Yu"
- ],
  "karamcheti2024prismatic": [
   "Karamcheti, Siddharth",
   "Nair, Suraj",
@@ -382,6 +370,17 @@
   "Liang, Percy",
   "Kollar, Thomas",
   "Sadigh, Dorsa"
+ ],
+ "ye2026mmspubench": [
+  "Ye, Wenqian",
+  "Liu, Bohan",
+  "Zheng, Guangtao",
+  "Wang, Di",
+  "Ma, Yunsheng",
+  "Cao, Xu",
+  "Lai, Bolin",
+  "Rehg, James M.",
+  "Zhang, Aidong"
  ],
  "grattafiori2024llama3": [
   "Grattafiori, Aaron",
@@ -946,6 +945,24 @@
   "Zhao, Zhiwei",
   "Ma, Zhiyu"
  ],
+ "rm2026zerogated": [
+  "M, Basavaraj R",
+  "Verma, Manav"
+ ],
+ "ahn2026evident": [
+  "Ahn, Geo",
+  "Han, Jiwook",
+  "Kim, Youngrae",
+  "Lee, Joonseok",
+  "Choi, Jinwoo"
+ ],
+ "zou2024videodistill": [
+  "Zou, Bo",
+  "Yang, Chao",
+  "Qiao, Yu",
+  "Quan, Chengbin",
+  "Zhao, Youjian"
+ ],
  "tong2024cambrian": [
   "Tong, Shengbang",
   "Brown, Ellis",
@@ -962,15 +979,15 @@
   "LeCun, Yann",
   "Xie, Saining"
  ],
- "diep2025zeroinit": [
-  "Diep, Nghiem T.",
-  "Nguyen, Huy",
-  "Nguyen, Chau",
-  "Le, Minh",
-  "Nguyen, Duy M. H.",
-  "Sonntag, Daniel",
-  "Niepert, Mathias",
-  "Ho, Nhat"
+ "li2025unseen": [
+  "Li, Bozhou",
+  "Xue, Xinda",
+  "Yang, Sihan",
+  "Shi, Yang",
+  "Chen, Xinlong",
+  "Guan, Yushuo",
+  "Zhang, Yuanxing",
+  "Zhang, Wentao"
  ],
  "bachlechner2021rezero": [
   "Bachlechner, Thomas",
@@ -978,20 +995,6 @@
   "Mao, Huanru Henry",
   "Cottrell, Garrison W.",
   "McAuley, Julian"
- ],
- "gao2023llamaadapterv2": [
-  "Gao, Peng",
-  "Han, Jiaming",
-  "Zhang, Renrui",
-  "Lin, Ziyi",
-  "Geng, Shijie",
-  "Zhou, Aojun",
-  "Zhang, Wei",
-  "Lu, Pan",
-  "He, Conghui",
-  "Yue, Xiangyu",
-  "Li, Hongsheng",
-  "Qiao, Yu"
  ],
  "mckinzie2024mm1": [
   "McKinzie, Brandon",
@@ -1027,15 +1030,6 @@
   "Toshev, Alexander",
   "Yang, Yinfei"
  ],
- "yin2024mllmsurvey": [
-  "Yin, Shukang",
-  "Fu, Chaoyou",
-  "Zhao, Sirui",
-  "Li, Ke",
-  "Sun, Xing",
-  "Xu, Tong",
-  "Chen, Enhong"
- ],
  "cha2024honeybee": [
   "Cha, Junbum",
   "Kang, Wooyoung",
@@ -1060,32 +1054,19 @@
   "Chaudhari, Akshay",
   "Langlotz, Curtis"
  ],
+ "park2026scer": [
+  "Park, Subeen",
+  "Kim, Joowang",
+  "Lee, Hakyung",
+  "Yoo, Sunjae",
+  "Song, Kyungwoo"
+ ],
  "farazi2026gate": [
   "Farazi, Moshiur",
   "Ramasinghe, Sameera",
   "Ciftler, Bekir Sait",
   "Turza, Mahbub Ahmed",
   "Rahman, Shafin"
- ],
- "huang2022modality": [
-  "Huang, Yu",
-  "Lin, Junyang",
-  "Zhou, Chang",
-  "Yang, Hongxia",
-  "Huang, Longbo"
- ],
- "touvron2021cait": [
-  "Touvron, Hugo",
-  "Cord, Matthieu",
-  "Sablayrolles, Alexandre",
-  "Synnaeve, Gabriel",
-  "Jégou, Hervé"
- ],
- "wu2022greedy": [
-  "Wu, Nan",
-  "Jastrzębski, Stanisław",
-  "Cho, Kyunghyun",
-  "Geras, Krzysztof J."
  ],
  "arevalo2017gmu": [
   "Arevalo, John",
@@ -1103,6 +1084,13 @@
   "Zhu, Jianke",
   "Zhang, Lei"
  ],
+ "balaji2026forget": [
+  "Balaji, Sudharshan",
+  "Ren, Yili",
+  "Wang, Guangjing",
+  "Chen, Yimin",
+  "Wang, Ning"
+ ],
  "de2020skipinit": [
   "De, Soham",
   "Smith, Samuel L."
@@ -1116,6 +1104,18 @@
  "picard2021seed": [
   "Picard, David"
  ],
+ "zhang2024llamaadapter": [
+  "Zhang, Renrui",
+  "Han, Jiaming",
+  "Liu, Chris",
+  "Gao, Peng",
+  "Zhou, Aojun",
+  "Hu, Xiangfei",
+  "Yan, Shilin",
+  "Lu, Pan",
+  "Li, Hongsheng",
+  "Qiao, Yu"
+ ],
  "zhai2023siglip": [
   "Zhai, Xiaohua",
   "Mustafa, Basil",
@@ -1128,9 +1128,62 @@
   "Holtzman, Ari",
   "Zettlemoyer, Luke"
  ],
+ "diep2025zeroinit": [
+  "Diep, Nghiem T.",
+  "Nguyen, Huy",
+  "Nguyen, Chau",
+  "Le, Minh",
+  "Nguyen, Duy M. H.",
+  "Sonntag, Daniel",
+  "Niepert, Mathias",
+  "Ho, Nhat"
+ ],
+ "gao2023llamaadapterv2": [
+  "Gao, Peng",
+  "Han, Jiaming",
+  "Zhang, Renrui",
+  "Lin, Ziyi",
+  "Geng, Shijie",
+  "Zhou, Aojun",
+  "Zhang, Wei",
+  "Lu, Pan",
+  "He, Conghui",
+  "Yue, Xiangyu",
+  "Li, Hongsheng",
+  "Qiao, Yu"
+ ],
+ "yin2024mllmsurvey": [
+  "Yin, Shukang",
+  "Fu, Chaoyou",
+  "Zhao, Sirui",
+  "Li, Ke",
+  "Sun, Xing",
+  "Xu, Tong",
+  "Chen, Enhong"
+ ],
+ "huang2022modality": [
+  "Huang, Yu",
+  "Lin, Junyang",
+  "Zhou, Chang",
+  "Yang, Hongxia",
+  "Huang, Longbo"
+ ],
  "jain2019attention": [
   "Jain, Sarthak",
   "Wallace, Byron C."
+ ],
+ "touvron2021cait": [
+  "Touvron, Hugo",
+  "Cord, Matthieu",
+  "Sablayrolles, Alexandre",
+  "Synnaeve, Gabriel",
+  "Jégou, Hervé"
+ ],
+ "wu2022greedy": [
+  "Wu, Nan",
+  "Jastrzębski, Stanisław",
+  "Cho, Kyunghyun",
+  "Geras, Krzysztof J."
  ],
  "henderson2018matters": [
   "Henderson, Peter",
@@ -1343,13 +1396,6 @@
   "Zeng, Wenjun",
   "Yu, Philip"
  ],
- "zhou2017places": [
-  "Zhou, Bolei",
-  "Lapedriza, Agata",
-  "Khosla, Aditya",
-  "Oliva, Aude",
-  "Torralba, Antonio"
- ],
  "zhou2018places": [
   "Zhou, Bolei",
   "Lapedriza, Agata",
@@ -1408,6 +1454,47 @@
   "Huang, Siyuan",
   "Qiao, Yu",
   "Luo, Ping"
+ ],
+ "mitchell2026wule": [
+  "Mitchell, Jeff",
+  "Martinez-del-Rincon, Jesus",
+  "McLaughlin, Niall"
+ ],
+ "huang2025vitsurvey": [
+  "Huang, Jiaxing",
+  "Zhang, Jingyi",
+  "Jiang, Kai",
+  "Qiu, Han",
+  "Zhang, Xiaoqin",
+  "Shao, Ling",
+  "Lu, Shijian",
+  "Tao, Dacheng"
+ ],
+ "huang2024losingtickets": [
+  "Huang, Zhuo",
+  "Li, Muyang",
+  "Shen, Li",
+  "Yu, Jun",
+  "Gong, Chen",
+  "Han, Bo",
+  "Liu, Tongliang"
+ ],
+ "zhu2024vlalignood": [
+  "Zhu, Lin",
+  "Yin, Weihan",
+  "Yang, Yiyao",
+  "Wu, Fan",
+  "Zeng, Zhaoyu",
+  "Gu, Qinying",
+  "Wang, Xinbing",
+  "Zhou, Chenghu",
+  "Ye, Nanyang"
+ ],
+ "yuan2025entangle": [
+  "Yuan, Jiajun",
+  "Zheng, Haiting",
+  "Yu, Hang",
+  "Luo, Xiangfeng"
  ],
  "zhang2024vlmsurvey": [
   "Zhang, Jingyi",

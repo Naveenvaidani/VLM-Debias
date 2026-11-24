@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_refs import R  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-UA = {"User-Agent": "VLM-Debias reference builder (mailto:jeyadev2006@gmail.com)"}
+UA = {"User-Agent": "VLM-Debias-reference-builder/1.0"}
 ATOM = "{http://www.w3.org/2005/Atom}"
 
 

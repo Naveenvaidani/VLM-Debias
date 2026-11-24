@@ -34,7 +34,10 @@ image tokens (11.4M parameters).
 added to its own embedding:
 
 $$
-e_t' = e_t + g \, \Delta_t, \qquad \Delta_t = W_o\,\mathrm{Attn}\big(W_q\,\mathrm{LN}(e_t),\ \mathrm{LN}(P),\ \mathrm{LN}(P)\big).
+e_t' = e_t + g \, \Delta_t,
+$$
+$$
+\Delta_t = W_o\,\mathrm{Attn}\big(W_q\,\mathrm{LN}(e_t),\ \mathrm{LN}(P),\ \mathrm{LN}(P)\big).
 $$
 
 The injected signal depends on the text, which matters for the mechanism in Section 4. The variants differ only in
@@ -54,7 +57,13 @@ Both the gate and $W_o$ cannot start at zero together: $\partial e_t'/\partial \
 $\partial e_t'/\partial W_o \propto \tanh\alpha$, so neither would receive a gradient. The learnable arm therefore
 starts from $\alpha = 0$ and the fixed arm from $W_o = 0$, and the non-zero-start controls separate the two.
 
-A per-layer variant places four such blocks before decoder layers 0, 8, 16 and 24 with their own gates, the layout
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/method.pdf}
+\caption{The gated cross-attention connector between the frozen vision encoder and the LLM, and the gate variants compared. Only the connector changes between arms; the MLP projector and Q-Former arms replace the dashed box with visual prefix tokens. The answer is read from the first answer token}\label{fig:method}
+\end{figure*}
+
+Figure \ref{fig:method} shows the data flow and the variants. A per-layer variant places four such blocks before decoder layers 0, 8, 16 and 24 with their own gates, the layout
 of Flamingo and Llama 3.2 Vision, at about the same parameter count (9.3M).
 
 ## Tasks and data

@@ -48,14 +48,26 @@ in encoder, LLM and size [balaji2026forget]. Surveys list robustness and bias as
 Zero-initialised learnable scales let a new branch start as the identity: ReZero and SkipInit for residual blocks
 [bachlechner2021rezero; de2020skipinit], LayerScale with a small non-zero start that trains better than zero
 [touvron2021cait], and LLaMA-Adapter and Flamingo for adding a modality to a frozen LLM [zhang2024llamaadapter;
-alayrac2022flamingo]. Farazi et al. show that learnable gates on image-derived pathways in frozen VLMs settle near
+alayrac2022flamingo]. Zero-initialised tanh gates remain the default in new adapters that attach audio or video to
+frozen LLMs [rm2026zerogated]. Farazi et al. show that learnable gates on image-derived pathways in frozen VLMs settle near
 zero and become behaviourally closed; they explain this by a vanishing first-order gradient when the injected signal
 does not depend on the caption, recommend injecting at matched norm without a gate, and leave text-coupled injection
 and gate initialisation untested [farazi2026gate]. Li et al. show that visual tokens with much larger norms than
 text tokens lose information in pre-norm MLLMs [li2025unseen]. Modality-imbalance work finds that multimodal
 networks greedily under-use one modality, with the winner depending on initialisation, and corrects it by gradient
 modulation [wu2022greedy; huang2022modality; peng2022balanced]. We bring these lines together: we vary the gate's
-start value in a text-coupled connector and measure the consequence for shortcut reliance.
+start value in a text-coupled connector and measure the consequence for shortcut reliance. Table \ref{tab:closest} sets out how our
+design differs from the closest studies.
+
+| Study | Injected signal | Gate start varied | Shortcut or worst-group measure | Seeds per comparison |
+| :--- | :--- | :---: | :---: | :---: |
+| Flamingo [alayrac2022flamingo] | Image, text-coupled (cross-attention) | No | No | 1 |
+| Farazi et al. [farazi2026gate] | Auxiliary, independent of the caption | No | No | mostly 1 |
+| Li et al. [li2025unseen] | Image prefix tokens | No gate | No | 1 |
+| Zero-gated cross-attention [rm2026zerogated] | Audio and video, text-coupled | No | No | 1 |
+| Ours | Image, text-coupled (cross-attention) | Yes (0 to 0.995) | Yes (worst-group accuracy, collapse rate) | 3 to 15 |
+
+: The closest studies of gated injection. \label{tab:closest}
 
 ## Evaluation practice
 
