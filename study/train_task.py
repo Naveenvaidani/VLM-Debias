@@ -230,14 +230,15 @@ def main():
         if rule == "wga" and not args.no_ablation_eval:
             # behavioural test of the visual pathway (as in Farazi et al., 2026): remove what the connector
             # contributes from the image at inference and re-test; no change = the pathway is behaviourally closed
-            model.ablate_visual = True
-            abl = []
-            for t in range(len(spec.questions)):
-                loader = DataLoader(cap(TaskDataset(spec, "test", template=t)), batch_size=args.batch_size * 2, num_workers=2)
-                abl.append(evaluate(model, builder, loader, device, spec.group_names)["metrics"])
-            model.ablate_visual = False
-            results["test"][rule]["ablated_mean_over_templates"] = {
-                k: float(np.mean([m[k] for m in abl])) for k in abl[0] if k != "inject_ratio"}
+            for mode, key in (("absent", "ablated_mean_over_templates"), ("zero", "zeroed_mean_over_templates"),
+                              ("shuffle", "shuffled_mean_over_templates")):
+                model.ablate_visual = mode
+                abl = []
+                for t in range(len(spec.questions)):
+                    loader = DataLoader(cap(TaskDataset(spec, "test", template=t)), batch_size=args.batch_size * 2, num_workers=2)
+                    abl.append(evaluate(model, builder, loader, device, spec.group_names)["metrics"])
+                model.ablate_visual = False
+                results["test"][rule][key] = {k: float(np.mean([m[k] for m in abl])) for k in abl[0] if k != "inject_ratio"}
         print(f"test [{rule}] epoch {epoch}: avg {mean['avg_acc']:.4f} wga {mean['worst_group_acc']:.4f} "
               f"held-out template wga {per_template[len(spec.questions) - 1]['worst_group_acc']:.4f}", flush=True)
     with open(os.path.join(args.run_dir, "results.json"), "w") as f:

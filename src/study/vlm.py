@@ -112,7 +112,7 @@ class StudyVLM(nn.Module):
 
         def make_hook(k):
             def hook(module, args, kwargs):
-                if self._deep_patches is None or getattr(self, "ablate_visual", False):
+                if self._deep_patches is None or getattr(self, "ablate_visual", False) in (True, "absent"):
                     return None
                 h = args[0] if args else kwargs["hidden_states"]
                 new, _ = self.connector.blocks[k](self._deep_patches, h.float())
@@ -147,7 +147,16 @@ class StudyVLM(nn.Module):
         after = self.embed(after_ids)
         n_before = before.shape[1]
         ones = torch.ones((b, n_before), dtype=after_mask.dtype, device=after_mask.device)
-        ablate = getattr(self, "ablate_visual", False)  # inference-time pathway ablation (no image information)
+        # inference-time pathway tests, following the protocol of Farazi et al. (2026):
+        #   "absent" (or True): remove what the connector contributes; "zero": feed all-zero patch features;
+        #   "shuffle": feed another example's image (batch rolled by one), which keeps the input statistics but
+        #   removes image-specific information. A batch of one cannot be shuffled and is left unchanged.
+        mode = getattr(self, "ablate_visual", False)
+        if mode == "zero":
+            patches = torch.zeros_like(patches)
+        elif mode == "shuffle":
+            patches = patches.roll(1, dims=0)
+        ablate = mode in (True, "absent")
         if self.connector.kind == "prefix":
             img, attn = self.connector(patches.float())
             if ablate:

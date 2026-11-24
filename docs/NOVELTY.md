@@ -1,7 +1,7 @@
 # Novelty: what is new here, and what is not
 
 A reviewer's first question is "what does this add over prior work?". This page sets out our answer.
-- **Prior work searched** (1 Nov 2026): arXiv full-text queries, OpenAlex, Semantic Scholar, and Google Scholar
+- **Prior work searched** (1 Nov 2026; re-checked 24 Nov 2026, see §6): arXiv full-text queries, OpenAlex, Semantic Scholar, and Google Scholar
   via web search.
 - **Search terms:** gated cross-attention with spurious / shortcut; zero-initialised gate with robustness;
   connector or projector with worst-group accuracy / spurious; gate collapse; modality gate.
@@ -28,7 +28,12 @@ closest prior work it must be distinguished from.
 
 ## 2. Our claims, worded to survive review
 
-**C1. The connector's gate is a controlled cause of shortcut reliance in LLM-based VLMs.**
+**C1. A zero-initialised learnable gate in a single input-level connector block is a controlled cause of shortcut
+reliance in LLM-based VLMs.** (Scope narrowed on 24 Nov 2026: per-layer gates show no gap, and VQA-CP does not
+reproduce it.)
+- *Mechanism evidence:* a learnable gate that starts half open matches the fixed gate (+11.4 and +20.1 over the
+  zero start, p = 0.014 and 0.006), so the zero start, not learnability, drives it. Leaving the gate out of
+  clipping or weight decay does not open it.
 - *Evidence:* one variable is changed with everything else fixed (LLM, features, data, budget, seeds). Fixing
   the gate raises WGA by +10.6 and +25.2 points (15 seeds each).
 - *Robustness:* the gain holds on confirmation seeds alone, with unpaired tests and with label-free selection.
@@ -61,10 +66,14 @@ closest prior work it must be distinguished from.
   residual scales; Flamingo and LLaMA-Adapter carried them into vision-language and adapter models.
 - We do not claim that the initial value of a learnable scale matters for *optimisation*; LayerScale showed
   that. We claim it matters for *robustness* when the scaled branch is a modality's only path.
-- We do not claim that the gate is *sufficient* for shortcut reliance. With SigLIP-large it is not.
-- We do not claim results for per-layer injection or fp16 weights until the round-6 runs are in.
-- We do not claim the gate pathway is closed: the learned gate still injects visual signal, 15–35× less
-  than the fixed gate (README §17).
+- We do not claim that the gate is *sufficient* for shortcut reliance. With SigLIP-large on Waterbirds the gap
+  shrinks to +8.0 (p = 0.09).
+- We do not claim the effect for per-layer injection: per-layer gated cross-attention (Flamingo / Llama 3.2
+  layout) shows no gap (README §17). The claim covers one input-level gated block.
+- We do not claim the effect for open-ended VQA: on a VQA-CP v2 subset the fixed gate is worse (README §18).
+- We do not claim the gate pathway is closed. The pathway ablation shows the learned-gate model still uses the
+  image (without it, accuracy falls to the majority-class share); its injected signal is 15–35× weaker than the
+  fixed gate's. This differs from Farazi et al., whose gated pathways were behaviourally closed.
 
 ## 3. Questions a reviewer is likely to ask, and the answers
 
@@ -78,10 +87,10 @@ directly:
 - **Injection ratio** (`inject_ratio`): how large the injected signal is relative to the text embedding.
 - **Pathway ablation** (`ablated_mean_over_templates`): how much accuracy depends on it.
 
-Measured so far: the injection ratio is 3.5 for the learned gate vs 112 for the fixed gate, so the pathway
-is open but 15–35× weaker, and under Group DRO the same narrow pathway reaches ~70 WGA. If ablation sends the learned-gate model to chance, the pathway is open but narrow. If nothing changes, it is
-behaviourally closed and the shortcut is learned from elsewhere. Either way, the answer is reported, not
-assumed.
+Measured: the injection ratio is 3.5 for the learned gate vs 112 for the fixed gate, and with the image removed
+the learned-gate model falls to the majority-class share (Waterbirds average accuracy 89.4 → 77.8; Watermark
+77.9 → 50.0, 1–2 seeds). The pathway is open but narrow, not behaviourally closed. Round 9 repeats this on
+5 seeds with Farazi et al.'s full protocol (pathway absent, zeroed features, another example's image).
 
 **"Gating and shortcut learning are both well studied. What is new?"**
 - *Both halves are old, and we say so.* Gated fusion goes back to the GMU [arevalo2017gmu], zero-initialised
@@ -109,8 +118,11 @@ assumed.
 
 **"Your connector is not Flamingo."**
 - *What we say:* we call it input-level gated cross-attention with a Flamingo-type gate.
-- *The test:* a per-layer version (`xattn_deep`, gated blocks before layers 0, 8, 16 and 24, parameter-matched)
-  tests whether the result carries over to the Flamingo / Llama 3.2 layout (round 6).
+- *The test:* a per-layer version (`xattn_deep`, gated blocks before layers 0, 8, 16 and 24, parameter-matched).
+- *The result:* **no gap** (Waterbirds 70.8 vs 70.4, 5 seeds; Watermark 68.3 vs 70.6, 4 seeds), although its learned
+  gates also stay small (mean |tanh α| 0.027). The claim is therefore limited to one input-level block. A likely
+  reason: four gates at different depths give the image several routes, and each is ~7× larger than the single
+  input-level gate (0.027 vs 0.0037).
 
 **"Flamingo trains 500k steps and its gates open."**
 - *What we say:* our regime is short, adapter-style alignment, and the paper says so.
@@ -121,7 +133,8 @@ assumed.
   9 of 20 layers.
 
 **"4-bit models only."**
-- *The test:* a full-precision (fp16 weights) replication of the gate comparison is in round 6.
+- *The test:* a full-precision (fp16 weights) replication, 3 seeds: +10.0 and +21.1, same direction as 4-bit
+  (not significant with 3 seeds). Quantisation does not explain the gap.
 
 ## 4. Why we did not pursue the other two suggestions
 
@@ -138,9 +151,37 @@ assumed.
   two-answer readout, so they cannot be scored on it without a different training protocol.
 - It is listed as future work.
 
-## 5. Remaining optional strengthening
+## 5. Strengthening in progress (round 9) and remaining
 
+Chosen for how much each adds against reviewer objections and the closest prior work (§6):
+
+| Experiment (round 9) | Why it matters | Prior work it answers |
+| :--- | :--- | :--- |
+| **Norm-matched injection** (`bottleneck_capped`: fixed gate, injected norm ≤ text norm per token), binary tasks 5 seeds + VQA-CP 3 seeds | Turns the VQA-CP failure into a testable design rule. If capping keeps the binary-task gain and repairs generation, the recommendation becomes "no learnable zero gate, and matched norm". | Farazi et al. recommend matched-norm injection; "The Unseen Bias" (ICLR 2026) ties norm discrepancy to visual information loss. Neither measures shortcut reliance |
+| **Gate start-value sweep**: tanh α = 0.01 and 0.1 (`bottleneck_eps01`, `bottleneck_eps1`), 5 seeds | With 0, 0.5 and 0.995 already run, this gives a dose-response in the start value and a practical threshold. | LayerScale shows a small non-zero start beats zero for optimisation; untested for robustness |
+| **Full pathway protocol on 5 seeds**: image absent, zeroed features, another example's image | Our main point of difference from Farazi (weak, not closed) currently rests on 1–2 seeds. Shuffled images separate "uses this image" from "uses image statistics". | Farazi et al.'s protocol (real input vs zeroed and absent controls) |
+| **Text-only baseline on VQA-CP** (`--text_only`, same LLM, LoRA and budget) | Bounds how much image information either VQA-CP model uses. | Language-prior baselines in VQA-CP [agrawal2018vqacp] |
+
+Remaining, not queued:
 - Gradient modulation (OGM-GE [peng2022balanced]) as a baseline next to the fixed gate.
-- A natural-image MLLM benchmark with a generative protocol: VQA-CP v2 added and run (round 8); the gate effect did
-  not appear there (README §18). SpuriVerse and SpurLens remain future work.
+- MM-SpuBench, SpuriVerse and SpurLens: open-ended MLLM benchmarks that need a different training protocol.
 - Larger LLMs (7–8B) at 4-bit, if a larger GPU becomes available.
+
+## 6. Novelty re-check (24 Nov 2026)
+
+Searched again for work published since 1 Nov 2026 that combines gating, connectors or injection norm with
+spurious correlations or worst-group accuracy. **No paper found that studies the connector or its gate as a cause of
+shortcut reliance**, so the core claim is still unclaimed. The closest work, and how we now differ:
+
+| Work | What it shows | Relation to this study |
+| :--- | :--- | :--- |
+| **The Gate Always Closes** (Farazi et al., arXiv 2607.23335, Jul 2026) | A learnable scalar gate on an image-derived pathway in frozen 7–8B VLMs settles near zero, through a dead-gradient regime and a negative-utility regime. Gate value is not evidence of use; ablation with zeroed and absent controls is. Recommends matched-norm injection without a gate. | Same gate behaviour, different outcome. They measure relational accuracy; we measure shortcut reliance and seed-level collapse. Our learned pathway is weak, not closed. Their dead-gradient account matches our zero start, and the half-open gate result supports it. Their norm advice motivates `bottleneck_capped` |
+| **The Unseen Bias** (ICLR 2026, arXiv 2512.08374) | In pre-norm MLLMs, visual tokens have much larger norms than text tokens, which loses visual information; one LayerNorm after the projector fixes it on LLaVA-1.5. | Explains why our unconstrained fixed gate (70–130× the text norm) hurts free-form VQA-CP generation |
+| **MM-SpuBench** (arXiv 2406.17126) | Benchmark of spurious biases in MLLMs. | Evaluation-only; no architectural manipulation. Candidate external benchmark |
+| **SCER** (ICLR 2026, arXiv 2511.04401) | Embedding regulariser for worst-group accuracy (91.2 on Waterbirds). | A training-objective fix on classifiers, not a VLM connector study; a reference point for absolute WGA |
+
+These four are cited by arXiv ID here; their bibliography entries still need verified author lists before they go
+into `paper/references.bib`.
+
+Sources: [arXiv 2607.23335](https://arxiv.org/abs/2607.23335), [arXiv 2512.08374](https://arxiv.org/abs/2512.08374),
+[arXiv 2406.17126](https://arxiv.org/pdf/2406.17126), [arXiv 2511.04401](https://arxiv.org/pdf/2511.04401).

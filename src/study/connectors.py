@@ -75,13 +75,23 @@ class CrossAttnBottleneck(nn.Module):
     it separates "the gate is trainable" from "the gate starts closed". At alpha = 3 the gate gradient is scaled by
     1 - tanh^2 = 0.01, so it barely moves; gate="half" starts at tanh(alpha) = 0.5 (gradient scale 0.75), learnable
     and free to move either way.
+    gate="eps01" / "eps1" start the learnable gate at tanh(alpha) = 0.01 / 0.1 with out_proj zero-initialised: a
+    small non-zero start, as LayerScale (Touvron et al., 2021) recommends over an exact zero. Together with 0 (learned),
+    0.5 (half) and 0.995 (open) they form a sweep of the start value.
+    gate="capped" is the fixed gate with norm-matched injection: each token's injected vector is rescaled so its norm
+    never exceeds `cap` times that token's text-embedding norm (cap = 1: matched norm). It follows the norm-matching
+    advice of Farazi et al. (2026) and the norm-discrepancy account of pre-norm MLLMs (ICLR 2026): the unconstrained
+    fixed gate injects 70-130x the text norm, which disturbs free-form generation. At initialisation out_proj = 0, so
+    the connector is the identity and the cap is inactive.
     Why the zero-gate arm keeps the default out_proj init: with both the gate and out_proj at zero, neither receives
     a gradient (d/d gate is proportional to out_proj, d/d out_proj to tanh(gate)) and the pathway never trains."""
+    START = {"open": 3.0, "half": math.atanh(0.5), "eps01": math.atanh(0.01), "eps1": math.atanh(0.1)}
     kind = "fuse"
 
     def __init__(self, vision_dim: int, llm_dim: int, attn_dim: int = 1024, num_heads: int = 8,
-                 gate: str = "learned"):
+                 gate: str = "learned", cap: float = 1.0):
         super().__init__()
+        self.cap = cap if gate == "capped" else None
         self.norm_text = nn.LayerNorm(llm_dim)
         self.norm_kv = nn.LayerNorm(vision_dim)
         self.q_proj = nn.Linear(llm_dim, attn_dim)
@@ -89,8 +99,8 @@ class CrossAttnBottleneck(nn.Module):
         self.out_proj = nn.Linear(attn_dim, llm_dim)
         if gate == "learned":
             self.gate = nn.Parameter(torch.zeros(1))
-        elif gate in ("open", "half"):
-            self.gate = nn.Parameter(torch.full((1,), 3.0 if gate == "open" else math.atanh(0.5)))
+        elif gate in self.START:
+            self.gate = nn.Parameter(torch.full((1,), self.START[gate]))
             nn.init.zeros_(self.out_proj.weight)
             nn.init.zeros_(self.out_proj.bias)
         else:
@@ -102,7 +112,11 @@ class CrossAttnBottleneck(nn.Module):
         kv = self.norm_kv(patches)
         q = self.q_proj(self.norm_text(text))
         attended, attn = self.attn(q, kv, kv, need_weights=True)
-        return text + torch.tanh(self.gate) * self.out_proj(attended), attn  # attn: [B, T, P]
+        delta = torch.tanh(self.gate) * self.out_proj(attended)
+        if self.cap is not None:  # norm-matched injection: |delta_t| <= cap * |text_t| for every token t
+            limit = self.cap * text.norm(dim=-1, keepdim=True)
+            delta = delta * torch.clamp(limit / delta.norm(dim=-1, keepdim=True).clamp_min(1e-6), max=1.0)
+        return text + delta, attn  # attn: [B, T, P]
 
 
 class DeepGatedCrossAttn(nn.Module):
@@ -130,6 +144,9 @@ CONNECTORS = {"mlp": MLPProjector, "qformer": QFormerConnector, "bottleneck": Cr
               "bottleneck_fixed": lambda v, l: CrossAttnBottleneck(v, l, gate="fixed"),
               "bottleneck_open": lambda v, l: CrossAttnBottleneck(v, l, gate="open"),
               "bottleneck_half": lambda v, l: CrossAttnBottleneck(v, l, gate="half"),
+              "bottleneck_eps01": lambda v, l: CrossAttnBottleneck(v, l, gate="eps01"),
+              "bottleneck_eps1": lambda v, l: CrossAttnBottleneck(v, l, gate="eps1"),
+              "bottleneck_capped": lambda v, l: CrossAttnBottleneck(v, l, gate="capped"),
               "xattn_deep": DeepGatedCrossAttn,
               "xattn_deep_fixed": lambda v, l: DeepGatedCrossAttn(v, l, gate="fixed")}
 CONNECTOR_NAMES = list(CONNECTORS)

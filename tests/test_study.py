@@ -66,6 +66,63 @@ class TestStudy(unittest.TestCase):
         fused.sum().backward()
         self.assertGreater(conn.out_proj.weight.grad.abs().sum().item(), 0)  # out_proj trains from step 0
 
+    def test_small_start_gates(self):
+        for name, start in (("bottleneck_eps01", 0.01), ("bottleneck_eps1", 0.1)):
+            conn = build_connector(name, 64, 32)
+            text = torch.randn(1, 5, 32)
+            fused, _ = conn(torch.randn(1, 196, 64), text)
+            self.assertTrue(torch.allclose(fused, text))  # identity at init (out_proj = 0)
+            self.assertAlmostEqual(torch.tanh(conn.gate).item(), start, places=5)
+            fused.sum().backward()
+            self.assertGreater(conn.out_proj.weight.grad.abs().sum().item(), 0)
+
+    def test_capped_injection_identity_and_norm_bound(self):
+        torch.manual_seed(0)
+        conn = build_connector("bottleneck_capped", 64, 32)
+        text = torch.randn(2, 5, 32)
+        patches = torch.randn(2, 196, 64)
+        fused, _ = conn(patches, text)
+        self.assertTrue(torch.allclose(fused, text))  # identity at init, cap inactive
+        fused.sum().backward()
+        self.assertGreater(conn.out_proj.weight.grad.abs().sum().item(), 0)  # trains from step 0
+        with torch.no_grad():  # a huge output layer is capped at the text norm, token by token
+            conn.out_proj.weight.normal_(0, 50.0)
+            fused, _ = conn(patches, text)
+            ratio = (fused - text).norm(dim=-1) / text.norm(dim=-1)
+        self.assertLessEqual(ratio.max().item(), 1.0 + 1e-4)
+        self.assertGreater(ratio.min().item(), 0.99)
+
+    def test_pathway_ablation_modes(self):
+        import src.study.vlm as vlm
+
+        class Echo(torch.nn.Module):  # decoder stand-in: returns its input embeddings
+            def forward(self, inputs_embeds, attention_mask, use_cache):
+                from types import SimpleNamespace
+                return SimpleNamespace(last_hidden_state=inputs_embeds)
+
+        torch.manual_seed(0)
+        m = vlm.StudyVLM.__new__(vlm.StudyVLM)
+        torch.nn.Module.__init__(m)
+        m.embed = torch.nn.Embedding(10, 32)
+        m.register_buffer("before_ids", torch.tensor([1, 2]))
+        m.connector = build_connector("bottleneck_fixed", 64, 32)
+        with torch.no_grad():
+            m.connector.out_proj.weight.normal_(0, 1.0)
+        m.decoder, m.compute_dtype = Echo(), torch.float32
+        m.eval()
+        patches, ids, mask = torch.randn(3, 196, 64), torch.tensor([[3, 4]] * 3), torch.ones(3, 2, dtype=torch.long)
+        out = {}
+        for mode in (False, "absent", "zero", "shuffle"):
+            m.ablate_visual = mode
+            out[mode] = m(patches, ids, mask)[0]
+        text = m.embed(ids)
+        self.assertTrue(torch.allclose(out["absent"], text))              # nothing injected
+        self.assertFalse(torch.allclose(out[False], text))                # real image injects
+        self.assertFalse(torch.allclose(out["zero"], out[False]))         # zeroed features differ
+        self.assertTrue(torch.allclose(out["shuffle"][0], out[False][2], atol=1e-5))  # row 0 gets row 2's image
+        m.ablate_visual = True                                            # backward-compatible alias
+        self.assertTrue(torch.allclose(m(patches, ids, mask)[0], text))
+
     def test_fixed_gate_bottleneck_identity_and_open(self):
         conn = build_connector("bottleneck_fixed", 64, 32)
         text = torch.randn(1, 5, 32)

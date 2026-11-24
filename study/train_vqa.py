@@ -30,7 +30,7 @@ from src.study.vqa import VQABuilder, VQADataset, VQASpec, generate, vqa_metrics
 
 def run_eval(model, builder, spec, split, device, batch_size, max_n=0, ablate=False):
     model.eval()
-    model.ablate_visual = ablate
+    model.ablate_visual = ablate or getattr(model, "text_only", False)
     model.inject_log = []
     ds = VQADataset(spec, split)
     if max_n and len(ds) > max_n:
@@ -41,7 +41,7 @@ def run_eval(model, builder, spec, split, device, batch_size, max_n=0, ablate=Fa
         with autocast(device, model.compute_dtype):
             preds += generate(model, builder, feats.to(device), qs, device)
         rows.append(r.numpy())
-    model.ablate_visual = False
+    model.ablate_visual = "absent" if getattr(model, "text_only", False) else False
     rows = np.concatenate(rows)
     m = vqa_metrics(spec, rows, preds)
     if getattr(model, "inject_log", None) and not ablate:
@@ -71,6 +71,8 @@ def main():
     p.add_argument("--time_budget_min", type=float, default=0)
     p.add_argument("--max_train_samples", type=int, default=0, help="debug only")
     p.add_argument("--max_eval_samples", type=int, default=0, help="cap val/test sets (smoke tests only)")
+    p.add_argument("--text_only", action="store_true",
+                   help="baseline: the visual pathway is removed in training and evaluation (same LLM, LoRA and budget)")
     args = p.parse_args()
 
     torch.manual_seed(args.seed)
@@ -88,6 +90,9 @@ def main():
                      device=device, mlp_pool=args.mlp_pool, quantize_4bit=not args.no_4bit)
     if args.align_ckpt:
         model.connector.load_state_dict(torch.load(args.align_ckpt, map_location="cpu"))
+    model.text_only = args.text_only
+    if args.text_only:
+        model.ablate_visual = "absent"
     lora = [q for q in model.decoder.parameters() if q.requires_grad]
     groups = ([{"params": lora, "lr": args.lr}] if lora else []) + \
              [{"params": list(model.connector.parameters()), "lr": args.connector_lr}]
@@ -149,17 +154,19 @@ def main():
                "test": {}}
     preds_out = {}
     for split in ("test_id", "test_ood"):
-        for ablate in (False, True):
+        for ablate, suffix in ((False, ""), ("absent", "_ablated"), ("zero", "_zeroed"), ("shuffle", "_shuffled")):
+            if args.text_only and ablate:
+                continue
             m, rows, preds = run_eval(model, builder, spec, split, device, args.batch_size * 2,
                                       args.max_eval_samples, ablate=ablate)
-            results["test"][f"{split}{'_ablated' if ablate else ''}"] = m
+            results["test"][f"{split}{suffix}"] = m
             if not ablate:
                 preds_out[split] = {"question_id": spec.questions.loc[rows, "question_id"].tolist(), "pred": preds}
     json.dump(results, open(os.path.join(args.run_dir, "results.json"), "w"), indent=1)
     json.dump(preds_out, open(os.path.join(args.run_dir, "predictions.json"), "w"))
     t = results["test"]
     print(f"[{os.path.basename(args.run_dir)}] test_id {t['test_id']['vqa_acc']:.4f} test_ood "
-          f"{t['test_ood']['vqa_acc']:.4f} (ablated {t['test_ood_ablated']['vqa_acc']:.4f})", flush=True)
+          f"{t['test_ood']['vqa_acc']:.4f}", flush=True)
 
 
 if __name__ == "__main__":
