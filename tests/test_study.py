@@ -112,13 +112,13 @@ class TestStudy(unittest.TestCase):
         m.eval()
         patches, ids, mask = torch.randn(3, 196, 64), torch.tensor([[3, 4]] * 3), torch.ones(3, 2, dtype=torch.long)
         out = {}
-        for mode in (False, "absent", "zero", "shuffle"):
+        for mode in (False, "absent", "zero_features", "shuffle"):
             m.ablate_visual = mode
             out[mode] = m(patches, ids, mask)[0]
         text = m.embed(ids)
         self.assertTrue(torch.allclose(out["absent"], text))              # nothing injected
         self.assertFalse(torch.allclose(out[False], text))                # real image injects
-        self.assertFalse(torch.allclose(out["zero"], out[False]))         # zeroed features differ
+        self.assertFalse(torch.allclose(out["zero_features"], out[False]))  # zero features differ
         self.assertTrue(torch.allclose(out["shuffle"][0], out[False][2], atol=1e-5))  # row 0 gets row 2's image
         m.ablate_visual = True                                            # backward-compatible alias
         self.assertTrue(torch.allclose(m(patches, ids, mask)[0], text))

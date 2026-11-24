@@ -154,7 +154,7 @@ def main():
                "test": {}}
     preds_out = {}
     for split in ("test_id", "test_ood"):
-        for ablate, suffix in ((False, ""), ("absent", "_ablated"), ("zero", "_zeroed"), ("shuffle", "_shuffled")):
+        for ablate, suffix in ((False, ""), ("absent", "_ablated"), ("zero_features", "_zero_features"), ("shuffle", "_shuffled")):
             if args.text_only and ablate:
                 continue
             m, rows, preds = run_eval(model, builder, spec, split, device, args.batch_size * 2,

@@ -147,12 +147,16 @@ class StudyVLM(nn.Module):
         after = self.embed(after_ids)
         n_before = before.shape[1]
         ones = torch.ones((b, n_before), dtype=after_mask.dtype, device=after_mask.device)
-        # inference-time pathway tests, following the protocol of Farazi et al. (2026):
-        #   "absent" (or True): remove what the connector contributes; "zero": feed all-zero patch features;
-        #   "shuffle": feed another example's image (batch rolled by one), which keeps the input statistics but
-        #   removes image-specific information. A batch of one cannot be shuffled and is left unchanged.
+        # inference-time pathway tests (cf. Farazi et al., 2026, Sec. 3.1):
+        #   "absent" (or True): remove what the connector contributes. For prefix connectors the image slots are
+        #     kept and zeroed (Farazi's "zeroed" mode); for the fused cross-attention connector there are no slots,
+        #     so this equals their "absent" mode.
+        #   "zero_features": feed all-zero patch features through the trained connector (input statistics gone).
+        #   "shuffle": feed another example's image (batch rolled by one): the pathway stays active and in
+        #     distribution, but image-specific information is removed. Farazi et al. have no such control.
+        #   A batch of one cannot be shuffled and is left unchanged.
         mode = getattr(self, "ablate_visual", False)
-        if mode == "zero":
+        if mode == "zero_features":
             patches = torch.zeros_like(patches)
         elif mode == "shuffle":
             patches = patches.roll(1, dims=0)

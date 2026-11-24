@@ -78,11 +78,12 @@ class CrossAttnBottleneck(nn.Module):
     gate="eps01" / "eps1" start the learnable gate at tanh(alpha) = 0.01 / 0.1 with out_proj zero-initialised: a
     small non-zero start, as LayerScale (Touvron et al., 2021) recommends over an exact zero. Together with 0 (learned),
     0.5 (half) and 0.995 (open) they form a sweep of the start value.
-    gate="capped" is the fixed gate with norm-matched injection: each token's injected vector is rescaled so its norm
-    never exceeds `cap` times that token's text-embedding norm (cap = 1: matched norm). It follows the norm-matching
-    advice of Farazi et al. (2026) and the norm-discrepancy account of pre-norm MLLMs (ICLR 2026): the unconstrained
-    fixed gate injects 70-130x the text norm, which disturbs free-form generation. At initialisation out_proj = 0, so
-    the connector is the identity and the cap is inactive.
+    gate="capped" is the fixed gate with a per-token norm cap: each token's injected vector is shrunk, never grown, so
+    its norm is at most `cap` times that token's own text-embedding norm (cap = 1). It is motivated by, but not the
+    same as, Farazi et al. (2026, Eq. 11), who rescale every prefix token to the norm of the batch-mean text
+    embedding, and by Li et al. (2025, "The Unseen Bias"), who add a LayerNorm after a prefix projector. The
+    unconstrained fixed gate injects 70-130x the text norm, which disturbs free-form generation. At initialisation
+    out_proj = 0, so the connector is the identity and the cap is inactive.
     Why the zero-gate arm keeps the default out_proj init: with both the gate and out_proj at zero, neither receives
     a gradient (d/d gate is proportional to out_proj, d/d out_proj to tanh(gate)) and the pathway never trains."""
     START = {"open": 3.0, "half": math.atanh(0.5), "eps01": math.atanh(0.01), "eps1": math.atanh(0.1)}

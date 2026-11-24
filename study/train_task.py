@@ -230,7 +230,7 @@ def main():
         if rule == "wga" and not args.no_ablation_eval:
             # behavioural test of the visual pathway (as in Farazi et al., 2026): remove what the connector
             # contributes from the image at inference and re-test; no change = the pathway is behaviourally closed
-            for mode, key in (("absent", "ablated_mean_over_templates"), ("zero", "zeroed_mean_over_templates"),
+            for mode, key in (("absent", "ablated_mean_over_templates"), ("zero_features", "zero_features_mean_over_templates"),
                               ("shuffle", "shuffled_mean_over_templates")):
                 model.ablate_visual = mode
                 abl = []

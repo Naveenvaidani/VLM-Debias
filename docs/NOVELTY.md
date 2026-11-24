@@ -73,7 +73,7 @@ reproduce it.)
 - We do not claim the effect for open-ended VQA: on a VQA-CP v2 subset the fixed gate is worse (README §18).
 - We do not claim the gate pathway is closed. The pathway ablation shows the learned-gate model still uses the
   image (without it, accuracy falls to the majority-class share); its injected signal is 15–35× weaker than the
-  fixed gate's. This differs from Farazi et al., whose gated pathways were behaviourally closed.
+  fixed gate's. This differs from Farazi et al., whose learned-gate pathways (designs S1–S4) were behaviourally closed.
 
 ## 3. Questions a reviewer is likely to ask, and the answers
 
@@ -157,9 +157,9 @@ Chosen for how much each adds against reviewer objections and the closest prior 
 
 | Experiment (round 9) | Why it matters | Prior work it answers |
 | :--- | :--- | :--- |
-| **Norm-matched injection** (`bottleneck_capped`: fixed gate, injected norm ≤ text norm per token), binary tasks 5 seeds + VQA-CP 3 seeds | Turns the VQA-CP failure into a testable design rule. If capping keeps the binary-task gain and repairs generation, the recommendation becomes "no learnable zero gate, and matched norm". | Farazi et al. recommend matched-norm injection; "The Unseen Bias" (ICLR 2026) ties norm discrepancy to visual information loss. Neither measures shortcut reliance |
-| **Gate start-value sweep**: tanh α = 0.01 and 0.1 (`bottleneck_eps01`, `bottleneck_eps1`), 5 seeds | With 0, 0.5 and 0.995 already run, this gives a dose-response in the start value and a practical threshold. | LayerScale shows a small non-zero start beats zero for optimisation; untested for robustness |
-| **Full pathway protocol on 5 seeds**: image absent, zeroed features, another example's image | Our main point of difference from Farazi (weak, not closed) currently rests on 1–2 seeds. Shuffled images separate "uses this image" from "uses image statistics". | Farazi et al.'s protocol (real input vs zeroed and absent controls) |
+| **Norm-matched injection** (`bottleneck_capped`: fixed gate, injected norm ≤ text norm per token), binary tasks 5 seeds + VQA-CP 3 seeds | Turns the VQA-CP failure into a testable design rule. If capping keeps the binary-task gain and repairs generation, the recommendation becomes "no learnable zero gate, and matched norm". | Farazi et al. recommend matched-norm injection without a gate (batch-mean rescale); Li et al. (2026) tie norm discrepancy to visual information loss. Neither measures shortcut reliance |
+| **Gate start-value sweep**: tanh α = 0.01 and 0.1 (`bottleneck_eps01`, `bottleneck_eps1`), 5 seeds | With 0, 0.5 and 0.995 already run, this gives a dose-response in the start value and a practical threshold. | LayerScale shows a small non-zero start beats zero for optimisation; Farazi et al. never vary the gate's start value |
+| **Pathway tests on 5 seeds**: pathway absent, zero image features, another example's image (shuffled) | Our main point of difference from Farazi (weak, not closed) currently rests on 1–2 seeds. Shuffled images separate "uses this image" from "uses image statistics". | Farazi et al.'s on / zeroed / absent protocol; the shuffled-image control is one they lack |
 | **Text-only baseline on VQA-CP** (`--text_only`, same LLM, LoRA and budget) | Bounds how much image information either VQA-CP model uses. | Language-prior baselines in VQA-CP [agrawal2018vqacp] |
 
 Remaining, not queued:
@@ -167,21 +167,34 @@ Remaining, not queued:
 - MM-SpuBench, SpuriVerse and SpurLens: open-ended MLLM benchmarks that need a different training protocol.
 - Larger LLMs (7–8B) at 4-bit, if a larger GPU becomes available.
 
-## 6. Novelty re-check (24 Nov 2026)
+## 6. Novelty re-check (24 Nov 2026): papers read in full
 
-Searched again for work published since 1 Nov 2026 that combines gating, connectors or injection norm with
-spurious correlations or worst-group accuracy. **No paper found that studies the connector or its gate as a cause of
-shortcut reliance**, so the core claim is still unclaimed. The closest work, and how we now differ:
+Every paper below was read from its arXiv HTML text (not search snippets); numbers are from their tables. Searches:
+arXiv full-text (connector/projector, gated cross-attention, Flamingo gate, modality imbalance, worst-group MLLM,
+language prior) and OpenAlex. Semantic Scholar refused automated access, so citation-graph coverage is missing.
 
-| Work | What it shows | Relation to this study |
+**Verdict.** No paper studies a learnable zero-initialised injection gate, or the connector type, as a cause of
+shortcut reliance or worst-group failure in LLM-based VLMs. The claim "no work compares connector types" is **false
+as a general statement**: Balaji et al. (2026) compare the same three connector families, on unlearning. Our claim
+is therefore worded as *no controlled comparison on worst-group accuracy or spurious-correlation reliance*.
+
+| Work (read in full) | What it does | Where we differ, and what we take from it |
 | :--- | :--- | :--- |
-| **The Gate Always Closes** (Farazi et al., arXiv 2607.23335, Jul 2026) | A learnable scalar gate on an image-derived pathway in frozen 7–8B VLMs settles near zero, through a dead-gradient regime and a negative-utility regime. Gate value is not evidence of use; ablation with zeroed and absent controls is. Recommends matched-norm injection without a gate. | Same gate behaviour, different outcome. They measure relational accuracy; we measure shortcut reliance and seed-level collapse. Our learned pathway is weak, not closed. Their dead-gradient account matches our zero start, and the half-open gate result supports it. Their norm advice motivates `bottleneck_capped` |
-| **The Unseen Bias** (ICLR 2026, arXiv 2512.08374) | In pre-norm MLLMs, visual tokens have much larger norms than text tokens, which loses visual information; one LayerNorm after the projector fixes it on LLaVA-1.5. | Explains why our unconstrained fixed gate (70–130× the text norm) hurts free-form VQA-CP generation |
-| **MM-SpuBench** (arXiv 2406.17126) | Benchmark of spurious biases in MLLMs. | Evaluation-only; no architectural manipulation. Candidate external benchmark |
-| **SCER** (ICLR 2026, arXiv 2511.04401) | Embedding regulariser for worst-group accuracy (91.2 on Waterbirds). | A training-objective fix on classifiers, not a VLM connector study; a reference point for absolute WGA |
+| **Farazi et al., The Gate Always Closes** (arXiv 2607.23335 v2, Nov 2026; preprint) [farazi2026gate] | Five gated injection designs on frozen LLaVA-1.5-7B with LoRA (3 epochs on GQA), plus Qwen2-VL-7B and InternVL3-8B. Gates start at 0 and settle near zero; at the learned gate, ablation moves GQA-rel by ≤ 0.5 points (S1–S4), so the pathway is behaviourally closed. A dead-gradient regime (Lemma 1, Prop. 1) explains it for *caption-invariant* signals. Inference modes: on, zeroed (slots kept, content × 0), absent. Recommends injecting "at matched norm without an optional gate"; their matched norm rescales each prefix token to the norm of the batch-mean text embedding (Eq. 11). | (1) They measure relational accuracy, SugarCrepe, VSR and POPE; **no spurious-correlation, shortcut or worst-group test**. (2) **No gate-initialisation ablation**: our start sweep (0, 0.01, 0.1, 0.5, 0.995) is new relative to them. (3) Their signals are caption-invariant; they expect text-coupled injection *not* to close and list it as future work. **Our connector is text-coupled** (text tokens query the patches) and its gate still stays near zero: new evidence on their open question. (4) Their gated pathways are closed; ours is weak but used (pathway ablation). (5) Their norm fix is a batch-mean rescale; our `bottleneck_capped` is a per-token cap. |
+| **Li et al., The Unseen Bias** (arXiv 2512.08374; ICLR 2026 proceedings listing) [li2025unseen] | In pre-norm MLLMs, visual tokens carry 5–66× the text-embedding norm after the projector (Table 2: LLaVA-1.5 ≈ 37×, Qwen2.5-VL ≈ 66×) and update more slowly; one LayerNorm after the projector, initialised to the text norm, gives small benchmark gains (one seed). | Prefix projectors only, no robustness tests. Our fixed gate injects 70–130× the text norm, the same regime, which explains its VQA-CP generation harm. |
+| **Balaji et al., One Modality to Forget Them All** (arXiv 2607.16442, Jul 2026) [balaji2026forget] | Compares LLaVA-1.5 (MLP), InstructBLIP (Q-Former) and IDEFICS (gated cross-attention) on cross-modal unlearning; fusion design mediates transfer. | Connector is confounded with encoder, LLM and scale; no shortcut or worst-group measures. Ours changes only the connector. Must be cited for the connector comparison. |
+| **Sarridis et al., Scaling VLMs Is Not Enough** (arXiv 2607.28211, ACM MM 2026) [sarridis2026scaling] | 194 CLIP-style models, zero-shot worst-group accuracy on CelebA and UrbanCars; scale helps ImageNet but not worst-group accuracy under multi-attribute bias; data curation matters more. | Contrastive models, no connector. Consistent with our encoder result: SigLIP-large narrows the gap on Waterbirds but not on Watermark. |
+| **Zou et al., VideoDistill** (CVPR 2024) [zou2024videodistill] | A language-aware gating unit replaces cross-attention in a CLIP-based VideoQA model and reduces language-shortcut reliance. | Closest precedent that fusion/gating design affects shortcuts; not an LLM-based VLM, no zero-initialised tanh gate, indirect evidence. |
+| **Ahn et al., EVIDENT** (NeurIPS 2026) [ahn2026evident] | Entity-grounded adapter with a parameter-free gate on Qwen2.5-VL improves cross-domain temporal grounding against dataset shortcuts. | No worst-group metric; the gate is a fixed similarity function, not a learned zero-start gate. |
+| **Ye et al., MM-SpuBench** (KDD 2026 D&B) [ye2026mmspubench] | 2,400 multiple-choice items over nine spurious-attribute types; MLLMs keep relying on spurious cues. | Evaluation only, no architecture analysis. Candidate external benchmark (needs an open-ended protocol). |
+| **Park et al., SCER** (ICLR 2026) [park2026scer] | Embedding regulariser on ResNet-50/BERT with attribute labels: Waterbirds worst-group 91.2 vs ERM 69.1 (Table 1). | A label-using fix on classifiers. Our best VLM numbers (74–84) are far below it; we isolate a cause, we do not compete on absolute WGA, and the paper must say so. |
 
-These four are cited by arXiv ID here; their bibliography entries still need verified author lists before they go
-into `paper/references.bib`.
+Also seen, cited as context only: ProjLens (2604.19083, projector-level backdoors), "The Expense of Seeing" (2604.20665,
+language-prior exploitation in the encoder-projector-LLM design, conceptual), and modality-bias work in MLLMs
+(2505.18657, 2508.10552, 2510.22836). These were classified from abstracts, not read in full.
 
-Sources: [arXiv 2607.23335](https://arxiv.org/abs/2607.23335), [arXiv 2512.08374](https://arxiv.org/abs/2512.08374),
-[arXiv 2406.17126](https://arxiv.org/pdf/2406.17126), [arXiv 2511.04401](https://arxiv.org/pdf/2511.04401).
+**Consequences for round 9 (applied):**
+- The pathway tests are named to match Farazi et al.: `absent` equals their "absent" for our fused connector (and
+  their "zeroed" for prefix connectors); `zero_features` and `shuffle` are additional controls. The shuffled-image
+  control is one they list as missing.
+- `bottleneck_capped` is described as a per-token cap motivated by, not identical to, their matched-norm rescale.
