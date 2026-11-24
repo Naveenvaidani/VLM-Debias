@@ -62,8 +62,8 @@ the fixed gate (Figure \ref{fig:seeds}). On Phi-4-mini the variance difference i
 
 Controls change one property of the learnable gate at a time (Table \ref{tab:controls}; all exploratory).
 
-| Control | Seeds | Learnable variant | Reference | What it shows |
-| :--- | :---: | :---: | :---: | :--- |
+| Control | Seeds | Variant | Reference | What it shows |
+| :------------------------- | :---: | :---------- | :---------------------- | :---------------------------------------- |
 | Learnable gate started open ($\tanh\alpha_0 = 0.995$) | 5 | 71.8 / 66.8 | fixed 72.9 / 72.1 | starting open removes most of the gap |
 | Fixed gate with injection capped at the text norm | 5 | 69.9 / 50.6 | zero start 61.2 / 42.6; fixed 73.1 / 67.2 | keeps part of the gain on Waterbirds ($-3.2$ against fixed, $p$ = 0.13) but loses most on Watermark ($-16.6$, $p$ = 0.002); 2 of 5 Watermark seeds collapse |
 | Learnable gate started at $\tanh\alpha_0 = 0.01$ | 5 | 69.1 / 22.5 | zero start 61.2 / 42.6; fixed 73.1 / 67.2 | gate falls back to 0.001 to 0.008; Watermark collapses in 5 of 5 seeds, $-20.1$ below the zero start ($p$ = 0.041) |
