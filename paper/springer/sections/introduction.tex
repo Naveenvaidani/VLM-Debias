@@ -1,5 +1,3 @@
-**¶1 --- Hook and global context.
-
 Multimodal large language models (MLLMs), also called vision-language models (VLMs), are now built by joining a
 pretrained vision encoder to a large language model (LLM) through a small trainable connector \citep{yin2024mllmsurvey,huang2025vitsurvey,awais2025foundation}.
 The connector decides what visual information reaches the LLM, and in the most widely shipped design it does so
@@ -8,8 +6,6 @@ the label in training but not in deployment \citep{geirhos2020shortcut}. Shortcu
 read hospital markers instead of lung pathology \citep{degrave2021covid} and watermarks instead of objects
 \citep{lapuschkin2019clever}, and they fail silently on exactly the under-represented groups where errors cost most
 \citep{brown2023shortcut,ongly2024shortcut}.
-
-¶2 --- What is known.
 
 Work on spurious correlations shows how to measure and reduce such failures in classifiers: worst-group accuracy
 over groups defined by label and spurious attribute \citep{sagawa2020groupdro}, group-aware and label-free reweighting
@@ -20,14 +16,12 @@ cues and language priors and fail under shift \citep{hosseini2025spurlens,yang20
 \citep{sarridis2026scaling}, or remove it after training \citep{sarker2026purge}. A separate line of work compares the
 connectors themselves (MLP projectors, Q-Formers and gated cross-attention \citep{liu2024llava15,li2023blip2,alayrac2022flamingo}) by benchmark accuracy and efficiency \citep{mckinzie2024mm1,cha2024honeybee,karamcheti2024prismatic}.
 
-¶3 --- The problem pivot.
-
 These lines of work have not met, which leaves three gaps.
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \item
-  No controlled test of the connector.** Robustness studies keep the connector fixed. Connector studies measure
+  No controlled test of the connector. Robustness studies keep the connector fixed. Connector studies measure
   average accuracy, or compare released models that also differ in encoder, LLM and scale \citep{balaji2026forget}.
   Whether the component that decides \emph{what visual information reaches the LLM} also decides \emph{whether the model
   relies on a shortcut} is untested.
@@ -45,8 +39,6 @@ These lines of work have not met, which leaves three gaps.
   can reverse conclusions \citep{henderson2018matters,bouthillier2021variance}.
 \end{enumerate}
 
-**¶4 --- The intervention.
-
 We test whether the vision-language connector, and specifically its injection gate, determines shortcut reliance
 in LLM-based VLMs.
 
@@ -56,13 +48,12 @@ in LLM-based VLMs.
   training budget.
 \item
   Varied: only the connector: an MLP projector, a Q-Former, and text-coupled gated cross-attention whose tanh
-  gate is learnable from zero, learnable from a non-zero start, or fixed. The gate variants have identical
-  parameters.
+  gate is learnable from zero, learnable from a non-zero start, or fixed. The gate variants have the same parameter count.
 \item
   Measured: worst-group accuracy on Waterbirds, a controlled watermark task and CelebA, and free-form answers
   under shifted answer priors on VQA-CP v2 \citep{agrawal2018vqacp}.
 \item
-  Tested:** hypotheses formed on a 3-seed pilot and confirmed on new paired seeds (15 in total), with effect
+  Tested: hypotheses formed on a 3-seed pilot and confirmed on new paired seeds (15 in total), with effect
   sizes, robust and non-parametric tests, Holm correction and an equivalence test; mechanism controls on gate start,
   learning rate, clipping, weight decay, alignment length, injection depth and weight precision; and a behavioural
   test that removes the visual pathway at inference.
@@ -76,11 +67,13 @@ worst-group accuracy \citep{park2026scer}. We isolate a cause.
 \item
   \textbf{A controlled architectural cause.} In a single input-level connector, a learnable gate that starts at zero
   makes shortcut reliance more likely. Fixing the gate raises worst-group accuracy by 10.6 and 25.2 points
-  (\(d_z\) = 1.10 and 1.34, 15 paired seeds; all four LLM × task cells survive Holm correction). A learnable gate that
-  starts half open behaves like the fixed one, so the zero start, not learnability, is the cause.
+  (\(d_z\) = 1.10 and 1.34, 15 paired seeds; all four LLM × task cells survive Holm correction). Gates started at
+  0.1 or higher behave like the fixed one while a start of 0.01 falls back near zero, so a start at or near
+  zero, not learnability, is the cause.
 \item
   \textbf{A different mechanism from the one known.} Our connector is text-coupled, so the dead-gradient account does
-  not apply: the gate's gradient is large, yet the gate barely moves, which implies a self-cancelling gradient. The
+  not apply: the gate's gradient is large, yet the gate barely moves, because the gradient changes sign on almost half of the
+  steps, which we measure directly. The
   pathway is weak, not closed: removing it makes the model give one answer to every image. Gate value is therefore not
   evidence of use in either direction.
 \item

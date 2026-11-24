@@ -1,0 +1,28 @@
+\subsection{For model builders}
+
+When a modality is injected into a pretrained LLM through a learnable gate, the gate should not start at or near zero:
+in our experiments a start of 0.01 was too small and 0.1 was enough. A fixed gate with a zero-initialised output
+layer, or a learnable gate that starts at 0.1 or higher with a zero-initialised output layer, keeps the identity at
+initialisation and removed the robustness cost. This costs nothing: no group labels, no extra
+training and no extra compute. A learnable gate that is kept should be logged during training, and the injected
+signal should be checked against the text-embedding norm: a very strong injection harmed free-form generation, but
+capping it at the text norm cost most of the robustness gain on the watermark task, so the norm must be tuned for
+the intended output and robustness re-measured when it changes. When a small group-balanced set exists, retraining only the connector is a cheap fix for localised
+shortcuts such as watermarks.
+
+\subsection{For evaluation}
+
+A connector comparison on one or three seeds can point the wrong way: on Watermark the learnable gate's worst-group
+accuracy ranged from 0.7\% to 66.9\% across 15 seeds. Architectural robustness claims should report worst-group accuracy over at
+least five to ten seeds, the number of collapsed runs, and the gate values of any learnable gates.
+
+\subsection{For society}
+
+In medical imaging, shortcut reliance in deep models has already caused failures that stayed hidden until the models
+were tested outside their training conditions \citep{degrave2021covid,brown2023shortcut}. Vision-language models inherit
+the same risk. Those failures fall on the groups that are rare in training, which makes them a fairness problem
+as well as an accuracy problem \citep{ongly2024shortcut}. Our results show that one routine architectural default can make
+such failures more likely, and that a cost-free change to the same component reduces the risk without collecting
+group labels. The experiments ran on single commodity GPUs with a 4B-parameter model, so the checks we recommend are
+within reach of groups without large compute budgets. The work uses only public datasets and releases code and
+results, and we see no new misuse risk from a finding about initialisation.
