@@ -39,7 +39,7 @@ Status: **Done** · **To do** (can be done in the repo) · **Authors** (only the
 
 | # | Item | Status |
 | :--- | :--- | :--- |
-| C1 | Cite 3–5 recent papers from the target journal on robustness, multimodal models or vision-language connectors | To do |
+| C1 | Cite 3–5 recent papers from the target journal on robustness, multimodal models or vision-language connectors | Done (`paper/JOURNAL_FIT.md`; 5 added to `references.bib`; still to be placed in the text) |
 | C2 | Cover letter: contribution in three sentences, why this journal, what is new over Farazi et al., no conflicts, not under review elsewhere | To do (draft needs author details) |
 | C3 | Pre-submission inquiry to the IJCV editor-in-chief (abstract + two lines on fit) | Authors (draft ready on request; we do not send it) |
 | C4 | Suggested and excluded reviewers (with reasons), if the system asks | Authors |
