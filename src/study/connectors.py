@@ -86,7 +86,10 @@ class CrossAttnBottleneck(nn.Module):
     out_proj = 0, so the connector is the identity and the cap is inactive.
     Why the zero-gate arm keeps the default out_proj init: with both the gate and out_proj at zero, neither receives
     a gradient (d/d gate is proportional to out_proj, d/d out_proj to tanh(gate)) and the pathway never trains."""
-    START = {"open": 3.0, "half": math.atanh(0.5), "eps01": math.atanh(0.01), "eps1": math.atanh(0.1)}
+    # gate="eps01d" / "eps1d" start the gate at 0.01 / 0.1 but keep the default out_proj init, exactly like the
+    # zero-start arm. Against "learned" they change only the gate's start value (removes the out_proj-init confound).
+    START ={"open": 3.0, "half": math.atanh(0.5), "eps01": math.atanh(0.01), "eps1": math.atanh(0.1)}
+    START_DEFAULT_WO = {"eps01d": math.atanh(0.01), "eps1d": math.atanh(0.1)}
     kind = "fuse"
 
     def __init__(self, vision_dim: int, llm_dim: int, attn_dim: int = 1024, num_heads: int = 8,
@@ -100,6 +103,8 @@ class CrossAttnBottleneck(nn.Module):
         self.out_proj = nn.Linear(attn_dim, llm_dim)
         if gate == "learned":
             self.gate = nn.Parameter(torch.zeros(1))
+        elif gate in self.START_DEFAULT_WO:  # same out_proj init as "learned"; only the gate start differs
+            self.gate = nn.Parameter(torch.full((1,), self.START_DEFAULT_WO[gate]))
         elif gate in self.START:
             self.gate = nn.Parameter(torch.full((1,), self.START[gate]))
             nn.init.zeros_(self.out_proj.weight)
@@ -148,6 +153,8 @@ CONNECTORS = {"mlp": MLPProjector, "qformer": QFormerConnector, "bottleneck": Cr
               "bottleneck_eps01": lambda v, l: CrossAttnBottleneck(v, l, gate="eps01"),
               "bottleneck_eps1": lambda v, l: CrossAttnBottleneck(v, l, gate="eps1"),
               "bottleneck_capped": lambda v, l: CrossAttnBottleneck(v, l, gate="capped"),
+              "bottleneck_eps01d": lambda v, l: CrossAttnBottleneck(v, l, gate="eps01d"),
+              "bottleneck_eps1d": lambda v, l: CrossAttnBottleneck(v, l, gate="eps1d"),
               "xattn_deep": DeepGatedCrossAttn,
               "xattn_deep_fixed": lambda v, l: DeepGatedCrossAttn(v, l, gate="fixed")}
 CONNECTOR_NAMES = list(CONNECTORS)

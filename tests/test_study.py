@@ -76,6 +76,20 @@ class TestStudy(unittest.TestCase):
             fused.sum().backward()
             self.assertGreater(conn.out_proj.weight.grad.abs().sum().item(), 0)
 
+    def test_small_start_gates_default_out_proj(self):
+        # same out_proj init as the zero-start arm: only the gate start differs, so the output is not the identity
+        for name, start in (("bottleneck_eps01d", 0.01), ("bottleneck_eps1d", 0.1)):
+            torch.manual_seed(0)
+            conn, ref = build_connector(name, 64, 32), None
+            torch.manual_seed(0)
+            ref = build_connector("bottleneck", 64, 32)
+            self.assertTrue(torch.equal(conn.out_proj.weight, ref.out_proj.weight))
+            self.assertAlmostEqual(torch.tanh(conn.gate).item(), start, places=5)
+            self.assertEqual(torch.tanh(ref.gate).item(), 0.0)
+            fused, _ = conn(torch.randn(1, 196, 64), torch.randn(1, 5, 32))
+            fused.sum().backward()
+            self.assertGreater(conn.gate.grad.abs().item(), 0)
+
     def test_capped_injection_identity_and_norm_bound(self):
         torch.manual_seed(0)
         conn = build_connector("bottleneck_capped", 64, 32)

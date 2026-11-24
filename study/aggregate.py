@@ -17,13 +17,13 @@ import pandas as pd
 
 METRICS = [("avg_acc", "Avg"), ("worst_group_acc", "WGA"), ("acc_id", "ID"), ("acc_ood", "OOD"),
            ("rsr", "RSR"), ("balanced_acc", "Bal."), ("generative_acc", "Gen.")]
-SERIES = {"mlp": "#2a78d6", "qformer": "#eb6834", "bottleneck": "#1baf7a", "bottleneck_fixed": "#7a5bd6", "bottleneck_open": "#c0398f", "bottleneck_half": "#d9a21b", "bottleneck_eps01": "#8c6d31", "bottleneck_eps1": "#b5651d", "bottleneck_capped": "#2f8f9d",
+SERIES = {"mlp": "#2a78d6", "qformer": "#eb6834", "bottleneck": "#1baf7a", "bottleneck_fixed": "#7a5bd6", "bottleneck_open": "#c0398f", "bottleneck_half": "#d9a21b", "bottleneck_eps01": "#8c6d31", "bottleneck_eps1": "#b5651d", "bottleneck_capped": "#2f8f9d", "bottleneck_eps01d": "#6b4f1d", "bottleneck_eps1d": "#8e4a12",
           "xattn_deep": "#c99a06", "xattn_deep_fixed": "#5c6b7a"}
 LABELS = {"mlp": "MLP projector", "qformer": "Q-Former", "bottleneck": "Cross-attn bottleneck",
           "bottleneck_fixed": "Cross-attn, fixed gate",
           "bottleneck_open": "Cross-attn, learned gate (open init)",
           "bottleneck_half": "Cross-attn, learned gate (half-open init)",
-          "bottleneck_eps01": "Cross-attn, learned gate (start 0.01)", "bottleneck_eps1": "Cross-attn, learned gate (start 0.1)",
+          "bottleneck_eps01": "Cross-attn, learned gate (start 0.01)", "bottleneck_eps1": "Cross-attn, learned gate (start 0.1)", "bottleneck_eps01d": "Cross-attn, learned gate (start 0.01, default W_o)", "bottleneck_eps1d": "Cross-attn, learned gate (start 0.1, default W_o)",
           "bottleneck_capped": "Cross-attn, fixed gate, norm-capped injection",
           "xattn_deep": "Per-layer cross-attn, learned gates", "xattn_deep_fixed": "Per-layer cross-attn, fixed gates"}
 
