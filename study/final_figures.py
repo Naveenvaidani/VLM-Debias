@@ -4,6 +4,10 @@ study/aggregate.py writes into results_study/<experiment>/. Each bar is the mean
 over seeds (checkpoint chosen by validation WGA), each dot one seed.
 
     python study/final_figures.py --results results_study --out docs/figures/final
+    python study/final_figures.py --journal --out paper/springer/figures     # IJCV artwork rules
+
+--journal follows the IJCV artwork guidelines: no titles inside the figure (the caption carries them), sans-serif
+lettering at 8 pt, full text width (174 mm), and hatch patterns in addition to colour for colour-blind readers.
 """
 import argparse
 import os
@@ -17,6 +21,8 @@ import pandas as pd
 COLORS = {"mlp": "#2a78d6", "qformer": "#eb6834", "bottleneck": "#1baf7a", "bottleneck_fixed": "#7a5bd6"}
 LABELS = {"mlp": "MLP", "qformer": "Q-Former", "bottleneck": "Cross-attn\nlearned gate",
           "bottleneck_fixed": "Cross-attn\nfixed gate"}
+HATCH = {"#2a78d6": "", "#eb6834": "//", "#1baf7a": "xx", "#7a5bd6": "..", "#555": "\\\\", "#999": "--"}
+JOURNAL = False
 TASKS = {"waterbirds": "Waterbirds (background)", "watermark_p0.95": "Watermark (synthetic)", "celeba": "CelebA (gender)"}
 
 
@@ -32,21 +38,30 @@ def bars(ax, groups, title):
     """groups: list of (label, color, per-seed values)."""
     for i, (lab, col, vals) in enumerate(groups):
         vals = np.asarray(vals, dtype=float)
-        ax.bar(i, vals.mean(), color=col, alpha=0.35, width=0.7, edgecolor=col)
+        ax.bar(i, vals.mean(), color=col, alpha=0.35, width=0.7, edgecolor=col,
+               hatch=HATCH.get(col, "") if JOURNAL else None)
         ax.errorbar(i, vals.mean(), yerr=vals.std(ddof=1) if len(vals) > 1 else 0, color=col, capsize=4, lw=1.4)
         ax.scatter(np.full(len(vals), i) + np.linspace(-0.15, 0.15, len(vals)), vals, color=col, s=14, zorder=3)
         ax.text(i, 2, f"{vals.mean():.1f}\nn={len(vals)}", ha="center", va="bottom", fontsize=7.5, color="#222")
     ax.set_xticks(range(len(groups)), [g[0] for g in groups], fontsize=8)
     ax.set_ylim(0, 100)
-    ax.set_title(title, fontsize=10)
+    if JOURNAL:
+        ax.text(0.01, 0.98, title, transform=ax.transAxes, ha="left", va="top", fontsize=8, fontweight="bold")
+    else:
+        ax.set_title(title, fontsize=10)
     ax.grid(axis="y", alpha=0.3)
     ax.set_axisbelow(True)
 
 
 def save(fig, out, name):
+    if JOURNAL:
+        if fig._suptitle is not None:  # no titles inside journal artwork
+            fig._suptitle.remove()
+            fig._suptitle = None
+        fig.set_size_inches(6.85, fig.get_size_inches()[1] * 6.85 / fig.get_size_inches()[0] * 1.15)
     fig.tight_layout()
-    for ext in ("png", "pdf"):
-        fig.savefig(os.path.join(out, f"{name}.{ext}"), dpi=170)
+    for ext in (("pdf",) if JOURNAL else ("png", "pdf")):
+        fig.savefig(os.path.join(out, f"{name}.{ext}"), dpi=600 if JOURNAL else 170)
     plt.close(fig)
 
 
@@ -58,7 +73,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--results", default="results_study")
     parser.add_argument("--out", default="docs/figures/final")
+    parser.add_argument("--journal", action="store_true", help="IJCV artwork rules (see module docstring)")
     args = parser.parse_args()
+    global JOURNAL
+    JOURNAL = args.journal
+    if JOURNAL:
+        plt.rcParams.update({"font.family": "sans-serif", "font.sans-serif": ["Helvetica", "Arial", "Liberation Sans", "DejaVu Sans"],
+                             "font.size": 8, "axes.labelsize": 8, "xtick.labelsize": 7, "ytick.labelsize": 8,
+                             "pdf.fonttype": 42})
     os.makedirs(args.out, exist_ok=True)
     main_df, h1 = load(args.results, None), load(args.results, "h1")
     conns = ["mlp", "qformer", "bottleneck", "bottleneck_fixed"]
@@ -67,7 +89,7 @@ def main():
     fig, axes = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
     for ax, task in zip(axes, ["waterbirds", "watermark_p0.95"]):
         groups = [(LABELS[c], COLORS[c], vals(h1 if c.startswith("bottleneck") else main_df, task, c)) for c in conns]
-        bars(ax, groups, TASKS[task])
+        bars(ax, groups, ("(%s) " % "ab"[list(axes).index(ax)] if JOURNAL else "") + TASKS[task])
     axes[0].set_ylabel("Test worst-group accuracy (%)")
     fig.suptitle("Qwen3.5-4B, SigLIP-base: only the learned gate fails", fontsize=11)
     save(fig, args.out, "main_connectors")

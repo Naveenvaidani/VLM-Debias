@@ -13,8 +13,7 @@ standard measure is worst-group accuracy over groups defined by label and spurio
 CelebA as benchmarks [sagawa2020groupdro; liu2015celeba]. Mitigations act on data or training: group-robust
 optimisation and balanced sampling [sagawa2020groupdro; idrissi2022balancing], label-free reweighting
 [nam2020lff; liu2021jtt; qiu2023afr], invariance-seeking objectives [huang2024losingtickets; mitchell2026wule], and
-embedding regularisers that reach high worst-group accuracy with attribute labels [park2026scer]. A key finding is
-that features usually retain the core signal, so retraining only the readout recovers most robustness
+embedding regularisers that reach high worst-group accuracy with attribute labels [park2026scer]. Features usually retain the core signal, so retraining only the readout recovers most robustness
 [izmailov2022feature; kirichenko2023dfr]. This literature studies classifiers: the architecture between features and
 readout is not a variable. Our study makes that architecture the variable, and tests a readout-style fix at the
 connector.

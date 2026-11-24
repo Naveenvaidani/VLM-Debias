@@ -6,18 +6,18 @@ encoder–LLM pipelines and cross-modal alignment; IV: robustness, bias and repr
 
 ---
 
-**¶1 — Hook and global context.**
+**¶1 — Hook and global context.
 
-Multimodal large language models (MLLMs) are now built by joining a pretrained vision encoder to a large language
-model (LLM) through a small trainable connector [yin2024mllmsurvey; huang2025vitsurvey; awais2025foundation].
+Multimodal large language models (MLLMs), also called vision-language models (VLMs), are now built by joining a
+pretrained vision encoder to a large language model (LLM) through a small trainable connector [yin2024mllmsurvey; huang2025vitsurvey; awais2025foundation].
 The connector decides what visual information reaches the LLM, and in the most widely shipped design it does so
-through a learnable injection gate. They inherit a failure mode of earlier deep networks: **shortcut learning**, the use of a cue that predicts
+through a learnable injection gate. They inherit a failure mode of earlier deep networks: shortcut learning, the use of a cue that predicts
 the label in training but not in deployment [geirhos2020shortcut]. Shortcuts have produced accurate models that
 read hospital markers instead of lung pathology [degrave2021covid] and watermarks instead of objects
 [lapuschkin2019clever], and they fail silently on exactly the under-represented groups where errors cost most
 [brown2023shortcut; ongly2024shortcut].
 
-**¶2 — What is known.**
+¶2 — What is known.
 
 Work on spurious correlations shows how to measure and reduce such failures in classifiers: worst-group accuracy
 over groups defined by label and spurious attribute [sagawa2020groupdro], group-aware and label-free reweighting
@@ -30,14 +30,14 @@ zhu2024vlalignood]. They attribute this to the vision encoder [tong2024eyes], to
 connectors themselves (MLP projectors, Q-Formers and gated cross-attention [liu2024llava15; li2023blip2;
 alayrac2022flamingo]) by benchmark accuracy and efficiency [mckinzie2024mm1; cha2024honeybee; karamcheti2024prismatic].
 
-**¶3 — The problem pivot.**
+¶3 — The problem pivot.
 
 These lines of work have not met, which leaves three gaps.
-1. **No controlled test of the connector.** Robustness studies keep the connector fixed. Connector studies measure
+1. No controlled test of the connector.** Robustness studies keep the connector fixed. Connector studies measure
    average accuracy, or compare released models that also differ in encoder, LLM and scale [balaji2026forget].
    Whether the component that decides *what visual information reaches the LLM* also decides *whether the model
    relies on a shortcut* is untested.
-2. **The injection gate is common but poorly understood.** Zero-initialised learnable tanh gates are the standard
+2. The injection gate is common but poorly understood. Zero-initialised learnable tanh gates are the standard
    way to inject a modality into a pretrained LLM: Flamingo, IDEFICS, LLaMA-Adapter and Llama 3.2 Vision all use
    them [alayrac2022flamingo; zhang2024llamaadapter; grattafiori2024llama3]. Farazi et al. show that such gates can
    end up near zero and their pathways behaviourally closed, through a vanishing first-order gradient when the
@@ -45,21 +45,21 @@ These lines of work have not met, which leaves three gaps.
    text tokens lose information [li2025unseen]. Neither measures what a near-shut gate does to *what the model
    relies on*, and Farazi et al. leave text-coupled injection, where the gradient need not vanish, as an open case.
    Every attention gate in the released Llama 3.2 Vision weights is at most 0.012.
-3. **Results from too few seeds.** Comparisons rest on one or a few training runs, although seed variance alone
+3. Results from too few seeds. Comparisons rest on one or a few training runs, although seed variance alone
    can reverse conclusions [henderson2018matters; bouthillier2021variance].
 
-**¶4 — The intervention.**
+**¶4 — The intervention.
 
 We test whether the vision-language connector, and specifically its injection gate, determines shortcut reliance
 in LLM-based VLMs.
-- **Held fixed:** the LLM (Qwen3.5-4B, replicated with Phi-4-mini), frozen SigLIP features, data, prompts and
+- Held fixed: the LLM (Qwen3.5-4B, replicated with Phi-4-mini), frozen SigLIP features, data, prompts and
   training budget.
-- **Varied:** only the connector: an MLP projector, a Q-Former, and text-coupled gated cross-attention whose tanh
+- Varied: only the connector: an MLP projector, a Q-Former, and text-coupled gated cross-attention whose tanh
   gate is learnable from zero, learnable from a non-zero start, or fixed. The gate variants have identical
   parameters.
-- **Measured:** worst-group accuracy on Waterbirds, a controlled watermark task and CelebA, and free-form answers
+- Measured: worst-group accuracy on Waterbirds, a controlled watermark task and CelebA, and free-form answers
   under shifted answer priors on VQA-CP v2 [agrawal2018vqacp].
-- **Tested:** hypotheses formed on a 3-seed pilot and confirmed on new paired seeds (15 in total), with effect
+- Tested:** hypotheses formed on a 3-seed pilot and confirmed on new paired seeds (15 in total), with effect
   sizes, robust and non-parametric tests, Holm correction and an equivalence test; mechanism controls on gate start,
   learning rate, clipping, weight decay, alignment length, injection depth and weight precision; and a behavioural
   test that removes the visual pathway at inference.

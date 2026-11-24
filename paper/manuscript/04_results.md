@@ -12,16 +12,16 @@ cross-attention connector with a learnable gate falls well below them (Table 1, 
 
 | Task | MLP projector | Q-Former | Learnable gate | Fixed gate |
 | :--- | :---: | :---: | :---: | :---: |
-| Waterbirds | 74.4 (5) | 72.8 (5) | 63.6 ± 10.4 (15) | 74.2 ± 3.4 (15) |
-| Watermark | 66.2 (5) | 69.2 (5) | 40.5 ± 18.0 (15) | 65.7 ± 10.3 (15) |
+| Waterbirds | 74.5 ± 1.5 (3) | 71.7 ± 2.5 (3) | 63.6 ± 10.4 (15) | 74.2 ± 3.4 (15) |
+| Watermark | 63.6 ± 4.4 (3) | 68.6 ± 4.1 (3) | 40.5 ± 18.0 (15) | 65.7 ± 10.3 (15) |
 
-: Test worst-group accuracy (%), mean ± s.d. over seeds (number of seeds in brackets), Qwen3.5-4B. \label{tab:main}
+: Test worst-group accuracy (%), mean ± s.d. over seeds (number of seeds in brackets), Qwen3.5-4B. With 5 seeds the MLP projector and Q-Former give 74.4 and 72.8 on Waterbirds and 66.2 and 69.2 on Watermark. \label{tab:main}
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/main_connectors.pdf}
-\caption{Test worst-group accuracy of the four connectors (Qwen3.5-4B, SigLIP-base). Bars are means over seeds and dots are single seeds. Only the learnable, zero-start gate fails, and it is also the least stable.}\label{fig:main}
-\end{figure}
+\caption{Test worst-group accuracy of the four connectors (Qwen3.5-4B, SigLIP-base) on (a) Waterbirds and (b) Watermark. Bars are means with one standard deviation; dots are single seeds; hatching distinguishes connectors. Only the learnable, zero-start gate fails, and it is also the least stable}\label{fig:main}
+\end{figure*}
 
 Fixing the gate raises worst-group accuracy in all four LLM and task cells (Table 2, Figure \ref{fig:forest}). The
 effects are large ($d_z$ = 1.10 and 1.34 on Qwen3.5-4B) and every cell survives Holm correction (largest adjusted
@@ -43,8 +43,8 @@ after the 5-seed test missed $\alpha$ ($p = 0.044$); tested alone they give $p =
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.85\linewidth]{figures/forest_gain.png}
-\caption{Paired gain from fixing the gate (fixed minus learnable, worst-group accuracy points) with 95\% confidence intervals for both LLMs and both tasks.}\label{fig:forest}
+\includegraphics[width=\linewidth]{figures/forest_gain.pdf}
+\caption{Paired gain from fixing the gate (fixed minus learnable gate, worst-group accuracy points) with 95\% confidence intervals; squares Qwen3.5-4B, circles Phi-4-mini}\label{fig:forest}
 \end{figure}
 
 The learnable gate also makes robustness depend on the seed (H2). On Qwen3.5-4B its variance is higher on both tasks
@@ -52,11 +52,11 @@ The learnable gate also makes robustness depend on the seed (H2). On Qwen3.5-4B 
 the fixed gate (Figure \ref{fig:seeds}). On Phi-4-mini the variance difference is not significant ($p$ = 0.20 and
 0.23), and on Watermark the fixed gate still collapses in 6 of 10 runs.
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=0.85\linewidth]{figures/h1_seeds_qwen.pdf}
-\caption{Each line joins one seed's learnable-gate run to its fixed-gate run (Qwen3.5-4B).}\label{fig:seeds}
-\end{figure}
+\includegraphics[width=\linewidth]{figures/h1_seeds_qwen.pdf}
+\caption{Each line joins one paired run of the learnable gate to the fixed gate (Qwen3.5-4B) on (a) Waterbirds and (b) Watermark. Solid lines rise and dashed lines fall; the dotted line marks the 50\% collapse threshold}\label{fig:seeds}
+\end{figure*}
 
 ## The zero start, not learnability, is the cause
 
@@ -123,14 +123,14 @@ seeds).
 *Shortcut strength.* At a 90% watermark correlation all arms learn the task (learnable 75.7, fixed 77.5); at 99% all
 arms fail (6.7 and 20.1). The gap is largest at the 95% used in the main experiment.
 
-*Group labels.* Group DRO, which uses group labels in training, closes the gap on Waterbirds (+2.3, $p$ = 0.70,
+*Group labels.* Group distributionally robust optimisation (Group DRO) [sagawa2020groupdro], which uses group labels in training, closes the gap on Waterbirds (+2.3, $p$ = 0.70,
 4 seeds) but not on Watermark (+17.5, $p$ = 0.059).
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/encoder_scale.pdf}
-\caption{Waterbirds worst-group accuracy with SigLIP-base and SigLIP-large features. Every connector gains from the larger encoder; the learnable gate still lags.}\label{fig:encoder}
-\end{figure}
+\caption{Waterbirds worst-group accuracy with SigLIP-base and SigLIP-large features. Every connector gains from the larger encoder; the learnable gate still lags}\label{fig:encoder}
+\end{figure*}
 
 ## Free-form answers under shifted priors
 
@@ -159,11 +159,11 @@ fixed-gate connector on Watermark from 72.5 to 89.6 ± 0.5 (5 seeds). This beats
 gives no gain (73.9 to 74.1) (Figure \ref{fig:fixes}). Qwen3.5-4B with its own vision tower, zero-shot and with a
 threshold calibrated on validation, reaches only 35.5 on Waterbirds.
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/fixes.pdf}
-\caption{Connector-only reweighting (conn-DFR), group-balanced sampling and a linear probe on the frozen features. Conn-DFR on the fixed gate reaches 89.6\% worst-group accuracy on Watermark and gives no gain on Waterbirds.}\label{fig:fixes}
-\end{figure}
+\caption{Connector-only deep feature reweighting (conn-DFR), group-balanced sampling and a linear probe on the frozen features. Conn-DFR on the fixed gate reaches 89.6\% worst-group accuracy on Watermark and gives no gain on Waterbirds}\label{fig:fixes}
+\end{figure*}
 
 ## Gates in released models
 

@@ -15,8 +15,8 @@ initialisation and sampling. Seeds are paired across connectors.
 ## Model
 
 A frozen SigLIP-base encoder [zhai2023siglip] gives 196 patch features of dimension 768 per image, computed once
-and cached, so every connector receives identical inputs. The LLM is Qwen3.5-4B [qwen2026qwen35] in 4-bit NF4 with
-LoRA of rank 16 [dettmers2023qlora; hu2022lora]; Phi-4-mini [abouelenin2025phi4mini] replicates the main
+and cached, so every connector receives identical inputs. The LLM is Qwen3.5-4B [qwen2026qwen35] in 4-bit NF4 quantisation with
+low-rank adaptation (LoRA) of rank 16 [dettmers2023qlora; hu2022lora]; Phi-4-mini [abouelenin2025phi4mini] replicates the main
 comparison. The answer is read from the next-token distribution restricted to the two class words, which removes
 free-text parsing as a confounder on the classification tasks.
 
@@ -24,10 +24,10 @@ free-text parsing as a confounder on the classification tasks.
 
 Let $P \in \mathbb{R}^{196 \times 768}$ be the patch features and $e_t$ the embedding of text token $t$.
 
-*MLP projector* [liu2024llava15]. A LayerNorm–Linear–GELU–Linear map over $2 \times 2$-pooled patches gives 49 image
+*Multilayer-perceptron (MLP) projector* [liu2024llava15]. A LayerNorm–Linear–GELU–Linear map over $2 \times 2$-pooled patches gives 49 image
 tokens that are placed before the text (8.5M parameters).
 
-*Q-Former* [li2023blip2]. Thirty-two learned queries attend to the patches in one block with 8 heads and give 32
+*Query transformer (Q-Former)* [li2023blip2]. Thirty-two learned queries attend to the patches in one block with 8 heads and give 32
 image tokens (11.4M parameters).
 
 *Gated cross-attention* (8.9M parameters, no image tokens). Each text token queries the patches and the result is
