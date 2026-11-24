@@ -78,3 +78,17 @@ Status: **Done** · **To do** · **Authors** (only the authors can do it) · **W
 | Editable tables | Yes | Done |
 | Equations in a math editor | Yes | Done (LaTeX) |
 | Societal impact section | Yes | Done ("Practical and societal implications") |
+
+## 6. Springer Nature journal policies (pasted by the authors, 24 Nov 2026)
+
+| Policy | What it requires | Status |
+| :--- | :--- | :--- |
+| Declarations | Headings for Funding, Competing interests, Ethics approval, Consent to participate, Consent for publication, Data and Code availability, Author contributions; write "Not applicable" where a heading does not apply | Done (all headings present); Authors: funding, competing interests, contributions |
+| Citations | Authors must have read every cited source; cite the original work; include DOIs; no non-existent or AI-hallucinated references; cite peer-reviewed versions where possible | Existence and titles verified for all 121 DOIs and arXiv IDs (one title differs only by "&" vs "and", MM1); all non-DOI links resolve. **Authors: reading every cited source is your responsibility and cannot be delegated; 115 references** |
+| AI use (risk framework) | Assistive use permitted; interpretive use (analyses, drafting, literature comparison) permitted with human oversight and disclosure; presenting AI-generated analyses or reasoning as human-derived is not permitted | Methods disclosure rewritten to list everything the assistant did. **Authors: confirm it is accurate** |
+| Sex and gender (SAGER) | Use sex and gender terms carefully | CelebA's "Male" attribute described as an annotator label of perceived gender presentation, used only to form groups; limitation added |
+| Consent and identifiable images | No identifiable images without consent | No CelebA face is reproduced; stated under Consent for publication |
+| Error bars | Every error bar defined in its figure legend | Done for all figures |
+| Preprints | Allowed; disclose the preprint DOI and licence at submission | Authors, if posted |
+| Suggested reviewers | Independent, not recent collaborators or same institution; institutional e-mail and ORCID or Scopus ID | Authors |
+| Reviewer questions | Key results, validity, originality, data and methods, statistics, conclusions, references, clarity | Covered by sections 2 and 3 above |

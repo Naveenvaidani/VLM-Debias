@@ -197,7 +197,7 @@ arms fail (6.7 and 20.1). The gap is largest at the 95\% used in the main experi
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/encoder_scale.pdf}
-\caption{Waterbirds worst-group accuracy with SigLIP-base and SigLIP-large features. Every connector gains from the larger encoder; the learnable gate still lags}\label{fig:encoder}
+\caption{Waterbirds worst-group accuracy with SigLIP-base and SigLIP-large features. Bars are means with one standard deviation and dots are single seeds. Every connector gains from the larger encoder; the learnable gate still lags}\label{fig:encoder}
 \end{figure*}
 
 \subsection{Free-form answers under shifted priors}
@@ -258,7 +258,7 @@ threshold calibrated on validation, reaches only 35.5 on Waterbirds.
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/fixes.pdf}
-\caption{Connector-only deep feature reweighting (conn-DFR), group-balanced sampling and a linear probe on the frozen features. Conn-DFR on the fixed gate reaches 89.6\% worst-group accuracy on Watermark and gives no gain on Waterbirds}\label{fig:fixes}
+\caption{Connector-only deep feature reweighting (conn-DFR), group-balanced sampling and a linear probe on the frozen features. Bars are means with one standard deviation and dots are single seeds; (a) Waterbirds, (b) Watermark. Conn-DFR on the fixed gate reaches 89.6\% worst-group accuracy on Watermark and gives no gain on Waterbirds}\label{fig:fixes}
 \end{figure*}
 
 \subsection{Gates in released models}

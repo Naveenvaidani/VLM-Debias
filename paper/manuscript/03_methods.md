@@ -59,8 +59,10 @@ of Flamingo and Llama 3.2 Vision, at about the same parameter count (9.3M).
 Waterbirds [sagawa2020groupdro] places CUB birds [wah2011cub] on Places backgrounds [zhou2018places] (official
 splits: 4,795 / 1,199 / 5,794 images). Watermark is a controlled task we built from COCO [lin2014coco]: the question
 asks whether a dog is present, and a corner text watermark co-occurs with dogs in 95% of training images; validation
-(1,200) and test (2,400) are group-balanced. CelebA [liu2015celeba] predicts blond hair with gender as the spurious
-attribute (stratified 8,000-image training subsample, official test set). VQA-CP v2 [agrawal2018vqacp] tests
+(1,200) and test (2,400) are group-balanced. CelebA [liu2015celeba] predicts blond hair with the dataset's binary "Male" attribute as the spurious attribute
+(stratified 8,000-image training subsample, official test set). This attribute is an annotator label of perceived
+gender presentation, not a record of sex or gender identity; we use it only to define evaluation groups, as in prior
+group-robustness work [sagawa2020groupdro], and the study draws no conclusion about sex or gender. VQA-CP v2 [agrawal2018vqacp] tests
 free-form answers when the answer prior of each question type differs between training and test; we use an
 image-disjoint subset of 8,000 training, 1,000 validation and 2,000 in-distribution test questions from its training
 split and 3,000 questions from its test split. Images used for alignment are excluded from every evaluation split.
@@ -110,6 +112,8 @@ as well. Code, job scripts, pinned package versions and every run's results are 
 
 ## Use of AI tools
 
-An AI assistant (Claude, Anthropic) was used to write and test experiment code, run the statistical analyses and
-draft parts of the text. The authors designed the study, checked the code and every reported number against the
-saved run outputs, and revised the text, and they take full responsibility for the content.
+An AI assistant (Claude, Anthropic) was used throughout the project: to write and test the experiment code, to
+propose control experiments and statistical tests, to run the analyses, to search and summarise the literature, and to
+draft parts of the text. The authors set the research question, decided which experiments to run, checked the code
+and every reported number against the saved run outputs, read the cited sources, and revised the text. They take full
+responsibility for the content.

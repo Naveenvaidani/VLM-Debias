@@ -255,7 +255,8 @@ BOOKS = r"""
   volume = {6},
   number = {2},
   pages = {65--70},
-  year = {1979}
+  year = {1979},
+  url = {https://www.jstor.org/stable/4615733}
 }
 
 @book{cohen1988power,
@@ -271,7 +272,8 @@ BOOKS = r"""
   title = {The Caltech-UCSD Birds-200-2011 Dataset},
   institution = {California Institute of Technology},
   number = {CNS-TR-2011-001},
-  year = {2011}
+  year = {2011},
+  url = {https://www.vision.caltech.edu/datasets/cub_200_2011/}
 }
 
 @misc{qwen2026qwen35,

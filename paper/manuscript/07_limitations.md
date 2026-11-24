@@ -21,6 +21,7 @@ or in the output layer. The second difference cannot be removed, because both at
 half-open controls separate the two as far as possible, but the open gate barely moves because its gradient is scaled
 by $1 - \tanh^2\alpha \approx 0.01$.
 
-Equivalence between connector types is not established. CelebA uses an 8,000-image training subsample, the watermark
+Equivalence between connector types is not established. CelebA uses an 8,000-image training subsample and a binary,
+annotator-assigned "Male" attribute, so its results say nothing about sex or gender beyond that label; the watermark
 shortcut is partly textual [materzynska2022disentangling], and SigLIP's web pre-training may include images from the
 source datasets, a factor shared by every arm. Group DRO is the only full-model group-robust baseline we ran.
