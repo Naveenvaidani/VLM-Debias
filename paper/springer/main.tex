@@ -83,22 +83,21 @@
 \affil*[1]{\orgdiv{Faculty of Engineering and Technology}, \orgname{Sri Ramachandra Institute of Higher Education and Research}, \orgaddress{\street{Porur}, \city{Chennai}, \country{India}}}
 
 \abstract{\textbf{Purpose.} Vision-language models that connect a vision encoder to a large language model can rely on
-spurious cues, such as image backgrounds or watermarks, and fail silently on under-represented groups. Prior work
-blames data, scale or the vision encoder and compares connector designs only on average accuracy.
+spurious cues, such as backgrounds or watermarks, and fail on under-represented groups. Prior work blames data, scale
+or the encoder and compares connectors only on average accuracy.
 \textbf{Methods.} We hold the language model, frozen vision features, data and training budget fixed and vary only the
 connector: a multilayer-perceptron projector, a query transformer, and gated cross-attention whose tanh injection gate
 is learnable from zero, learnable from other start values, or fixed. We measure worst-group accuracy on three shortcut
-tasks, with two language models and two encoder sizes, testing hypotheses formed on a pilot on up to fifteen paired
-seeds.
-\textbf{Results.} The zero-initialised gate never opens, although its gradient is large, and the model relies on the
-shortcut. Fixing the gate raises worst-group accuracy by 10.6 and 25.2 points (paired Cohen's $d_z$ = 1.10 and 1.34,
-$p < 0.001$) and removes runs that collapse below 50\%. A learnable gate started half open matches the fixed gate, so
-the zero start, not learnability, is the cause. With the gate fixed, connector type has no detectable effect. The
-effect is limited to a single input-level gate: per-layer gates show no gap, and on open-ended question answering
-with shifted answer priors the strong fixed injection harms generation.
-\textbf{Conclusion.} The starting value of the injection gate is a controllable architectural cause of shortcut
-reliance, robustness claims need seed-level evaluation, and gate initialisation and injection norm should be chosen
-together.}
+tasks with two language models, on up to fifteen paired seeds.
+\textbf{Results.} The zero-initialised gate never opens, although its gradient is large and changes sign on almost
+half of the steps, and the model relies on the shortcut while still using the image. Fixing the gate raises
+worst-group accuracy by 10.6 and 25.2 points (paired Cohen's $d_z$ = 1.10 and 1.34, $p < 0.001$) and removes runs
+that collapse below 50\%. Gates started at 0.1 or higher match the fixed gate; a start of 0.01 falls back near zero.
+With the gate fixed, connector type has no detectable effect, and per-layer gates show no gap. On open-ended question
+answering, strong injection harms generation; capping it at the text norm repairs generation but gives back most of
+the robustness gain.
+\textbf{Conclusion.} A gate started at or near zero is a controllable architectural cause of shortcut reliance,
+injection strength trades robustness against generation quality, and robustness claims need seed-level evaluation.}
 
 \keywords{Shortcut learning, Spurious correlations, Vision-language models, Multimodal large language models, Group robustness, Gated cross-attention}
 

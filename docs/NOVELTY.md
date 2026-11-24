@@ -172,7 +172,11 @@ Results so far (24 Nov 2026, 17:30 IST):
 - **Capped on binary tasks — done.** Waterbirds 69.9 (fixed 73.1, p = 0.13); Watermark 50.6 (fixed 67.2,
   p = 0.002). Norm matching repairs generation but costs shortcut robustness: a trade-off, and a direct
   contradiction of Farazi et al.'s matched-norm advice on a measure they did not have.
-- **Pending:** (`r9-capped`), 5-seed pathway tests (`r9-ablate`).
+- **Pathway tests — done (3–4 seeds; session ran out).** Removing or zeroing the image makes the learned-gate
+  model give one answer to every image in every run (p = 0.035 and 0.003): weak, not closed. Signed gradient of
+  the zero-start gate measured: 37–60% of steps positive, sign flips on 45–49% of steps. The shuffled-image
+  control was invalid (same-group swap; see CONTRADICTIONS 1b) and is not reported.
+- **Pending (round 10, Qwen3.5-9B):** learnable vs fixed on Watermark and Waterbirds, start 0.1, capped.
 
 Remaining, not queued:
 - Gradient modulation (OGM-GE [peng2022balanced]) as a baseline next to the fixed gate.

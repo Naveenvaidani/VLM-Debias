@@ -75,7 +75,7 @@ worst-group accuracy [park2026scer]. We isolate a cause.
    starts half open behaves like the fixed one, so the zero start, not learnability, is the cause.
 2. **A different mechanism from the one known.** Our connector is text-coupled, so the dead-gradient account does
    not apply: the gate's gradient is large, yet the gate barely moves, which implies a self-cancelling gradient. The
-   pathway is weak, not closed: removing it drops the model to the majority-class share. Gate value is therefore not
+   pathway is weak, not closed: removing it makes the model give one answer to every image. Gate value is therefore not
    evidence of use in either direction.
 3. **Robustness as a seed-level outcome.** The zero-start gate collapses below 50% worst-group accuracy in up to 10 of
    15 seeds on Qwen3.5-4B, the fixed gate in none (on Phi-4-mini Watermark the fixed gate still collapses in 6 of 10). With the gate fixed, connector type has no detectable effect (equivalence not

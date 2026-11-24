@@ -37,8 +37,10 @@ they list as a limitation or never test), **Agrees**, **Pending** (round 9 will 
   text-coupled injection as untested future work. Our data shows near-zero gates also arise there, through a
   different mechanism.
 - **Limits of our evidence.** Rounds 1–8 logged |∂L/∂α| but not its sign, so the cancellation is inferred from
-  Adam's bounded step, not observed directly. The 1–2% figure is an order of magnitude, not a measurement. The
-  signed gradient is now logged (see the end of this page), so round 9 measures it.
+  Adam's bounded step, not observed directly. The 1–2% figure is an order of magnitude, not a measurement.
+- **Round 9 (`r9-ablate`, 7 zero-start runs) — measured.** Mean |∂L/∂α| 37–1,282 per epoch; 37–60% of steps push
+  the gate up; the sign flips on 45–49% of consecutive steps; final gate 0.001–0.005. The cancellation is now
+  observed directly, not inferred.
 
 ### 1b. Text-coupled injection does not escape closure — **Contradicts their expectation**
 
@@ -60,8 +62,14 @@ they list as a limitation or never test), **Agrees**, **Pending** (round 9 will 
   against 99 for the fixed gate).
 - **Reading.** Their principle holds in the opposite direction too: a near-zero gate can come with an *active*
   pathway. Gate value alone misreads both cases.
-- **Strength.** 1–2 seeds per cell. **Pending** round 9 (`r9-ablate`, 5 seeds, with pathway removed, zero
-  features and a shuffled-image control that their protocol lacks).
+- **Round 9 (`r9-ablate`).** Pathway removed or image features zeroed: the learned-gate model gives one answer to
+  every image in every run (Waterbirds 83.0 → one-class share, −46.9, 4/4 seeds, p = 0.035; Watermark 81.8 → 50.0,
+  3/3 seeds, p = 0.003). **Strength now moderate** (3–4 seeds; the session ran out before seed 4).
+- **Shuffled-image control: invalid as run.** Test files are stored group by group and evaluated in order, so
+  "batch rolled by one" swapped each image with a same-group neighbour (same label and shortcut). It changed
+  accuracy by ≤ 0.5 points for both connectors, which is expected for a same-group swap and says nothing about
+  instance-level use. Not reported in the paper. Fixed in code (seeded random test order for the shuffle mode)
+  for future runs; round-10 runs cloned the old code, so their shuffle numbers are also invalid.
 
 ### 1d. Gate start value — **Extends (they never vary it)**
 
@@ -89,7 +97,7 @@ they list as a limitation or never test), **Agrees**, **Pending** (round 9 will 
 - **Round 9, generation side (`r9-vqacp`, 3 seeds) — Agrees.** The capped connector (per-token cap at the text
   norm) scores 49.6 in distribution and 30.6 under shifted priors: +7.0 over the uncapped fixed gate in distribution
   (p = 0.020) and +3.5 over a text-only model under shifted priors (p = 0.028). It is the only model whose accuracy
-  falls when the image is removed, zeroed or shuffled (−2.6 to −3.5 in distribution). The uncapped fixed gate is
+  falls when the image is removed or zeroed (−2.8 to −3.5 in distribution; the shuffled control is invalid, see 1b). The uncapped fixed gate is
   *below* the text-only model (−5.7, p = 0.001); the learnable gate equals it in distribution (−0.6, p = 0.23).
 - **Round 9, robustness side (`r9-capped`, 5 seeds) — Contradicts.** Matching the norm costs robustness:
   Waterbirds 69.9 vs 73.1 for the uncapped fixed gate (p = 0.13); Watermark 50.6 vs 67.2 (−16.6, p = 0.002,
@@ -105,7 +113,7 @@ they list as a limitation or never test), **Agrees**, **Pending** (round 9 will 
 | :--- | :--- |
 | Most LLaVA configurations are single runs | 15 paired seeds for the main comparison, 4–5 for most controls |
 | No spurious-correlation, shortcut or worst-group measure | Worst-group accuracy on three tasks, plus VQA-CP shifted priors |
-| No random or mismatched-input control | Shuffled-image control in `r9-ablate` and `r9-vqacp` |
+| No random or mismatched-input control | Planned (shuffled image); the round-9 version was invalid (same-group swap), fixed for future runs |
 | One backbone for the behavioural ablations | Two LLMs (Qwen3.5-4B, Phi-4-mini) for the main effect; ablation on Qwen only |
 
 ---
@@ -193,7 +201,7 @@ connectors; we do not compete with label-using robustness methods. The paper mus
 | :--- | :--- | :--- | :--- |
 | Near-zero gates also arise in text-coupled injection (Farazi expected not) | Every learned-gate run | Strong in our setting | – |
 | There the gate is stuck by a large, self-cancelling gradient, not a dead one | Logged \|∂L/∂α\| 3–1,528 with Δα ≤ 0.003 | Moderate (sign inferred) | Signed-gradient logging, now in the code; round 9 |
-| A near-zero gate can still carry a used pathway | Pathway ablation, 1–2 seeds | Weak | `r9-ablate` (5 seeds) |
+| A near-zero gate can still carry a used pathway | Pathway removed / zeroed, 3–4 seeds, every run | Moderate | none |
 | The gate's start value, not its learnability, decides robustness | Starts 0.1, 0.5, 0.995, 5 seeds each | Moderate (exploratory p) | `r9-eps01` |
 | High injection norm helps a class readout but hurts generation; a norm cap repairs generation but costs robustness | Capped connector: 5 seeds binary, 3 seeds VQA-CP; text-only VQA-CP | Moderate to strong (Watermark p = 0.002) | none |
 | Connector type has no robustness effect when it is the only change | MLP vs Q-Former vs fixed gate, 5 seeds | Moderate (no equivalence) | More seeds, TOST |

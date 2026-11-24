@@ -11,7 +11,7 @@ Three of the four tasks use a binary readout from the first answer token. On the
 subset with three seeds, the gate effect did not appear, strong injection hurt generation, and only the capped
 connector used the test image beyond a text-only baseline; with three seeds these results are exploratory.
 
-Several controls have few seeds: the pathway ablation one or two, the learning-rate sweep two per setting, fp16 and the
+Several controls have few seeds: the pathway ablation three to four, the learning-rate sweep two per setting, fp16 and the
 shortcut-strength sweep two or three. They are reported as exploratory. Phi-4-mini Watermark was extended from five to
 ten seeds after its first test, which we disclose; the added seeds also pass on their own. Runs are not
 bit-reproducible on GPUs, so seeds are random replicates rather than exact repeats.

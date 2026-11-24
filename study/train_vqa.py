@@ -36,7 +36,12 @@ def run_eval(model, builder, spec, split, device, batch_size, max_n=0, ablate=Fa
     if max_n and len(ds) > max_n:
         ds.rows = ds.rows[np.linspace(0, len(ds.rows) - 1, max_n).astype(int)]
     rows, preds = [], []
-    for feats, r in tqdm(DataLoader(ds, batch_size=batch_size, num_workers=2), desc=f"gen {split}", leave=False):
+    # questions are stored grouped by image; for "shuffle" a seeded random order makes the rolled-in image
+    # come from a random other question rather than, often, the same image
+    shuffled = ablate == "shuffle"
+    loader = DataLoader(ds, batch_size=batch_size, num_workers=2, shuffle=shuffled,
+                        generator=torch.Generator().manual_seed(0) if shuffled else None)
+    for feats, r in tqdm(loader, desc=f"gen {split}", leave=False):
         qs = spec.questions.loc[r.numpy(), "question"].tolist()
         with autocast(device, model.compute_dtype):
             preds += generate(model, builder, feats.to(device), qs, device)

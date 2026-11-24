@@ -239,7 +239,11 @@ def main():
                 model.ablate_visual = mode
                 abl = []
                 for t in range(len(spec.questions)):
-                    loader = DataLoader(cap(TaskDataset(spec, "test", template=t)), batch_size=args.batch_size * 2, num_workers=2)
+                    # test files are stored group by group; for "shuffle" a seeded random order makes the
+                    # rolled-in image come from a random other example, not a same-group neighbour
+                    loader = DataLoader(cap(TaskDataset(spec, "test", template=t)), batch_size=args.batch_size * 2,
+                                        num_workers=2, shuffle=(mode == "shuffle"),
+                                        generator=torch.Generator().manual_seed(0) if mode == "shuffle" else None)
                     abl.append(evaluate(model, builder, loader, device, spec.group_names)["metrics"])
                 model.ablate_visual = False
                 results["test"][rule][key] = {k: float(np.mean([m[k] for m in abl])) for k in abl[0] if k != "inject_ratio"}

@@ -96,17 +96,21 @@ not small: the mean absolute pre-clipping gradient per epoch ranges from 3 to 1,
 and in some runs it is almost all of the global gradient norm. With Adam, each step moves $\alpha$ by at most about
 the learning rate $\eta = 2 \times 10^{-4}$, so over the roughly 900 to 1,200 task steps a gradient of constant sign
 would move $\alpha$ by up to about 0.2. The observed change is below 0.003. The gradient must therefore change sign
-from step to step and cancel. The signed gradient, logged for the gate started at 0.01, confirms this: it stays
-large (mean signed value up to 159 per epoch), yet only 30% to 58% of steps push the gate up, and the gate settles
-at 0.001 to 0.008. This differs from the dead-gradient account of [farazi2026gate], which requires an
+from step to step and cancel. The signed gradient, logged in seven further zero-start runs, confirms this: the mean
+absolute gradient reaches 37 to 1,282 per epoch, yet 37% to 60% of steps push the gate up, the sign changes on 45%
+to 49% of consecutive steps, and the gate ends at 0.001 to 0.005. The gate started at 0.01 behaves the same way
+(30% to 58% of steps push it up). This differs from the dead-gradient account of [farazi2026gate], which requires an
 injected signal that does not depend on the text; ours does.
 
 ## The pathway is weak, not closed
 
 The learnable gate passes 15 to 35 times less visual signal than the fixed gate (injection ratio 3.5 against 112,
-6 runs each), because $W_o$ grows to partly offset the small gate. Removing the visual pathway at inference drops the
-learnable-gate model to the majority-class share (Waterbirds average accuracy 89.4 to 77.8; Watermark 77.9 to 50.0;
-one to two seeds), so it still uses the image. Within learnable-gate runs the injection ratio does not predict
+6 runs each), because $W_o$ grows to partly offset the small gate. Removing the visual pathway at inference, or
+zeroing the image features, makes the learnable-gate model give the same answer to every image in every run:
+average accuracy falls from 83.0 to the share of one class on Waterbirds ($-46.9$ points, 4 of 4 seeds, $p$ = 0.035)
+and from 81.8 to 50.0 on Watermark (3 of 3 seeds, $p$ = 0.003). The fixed-gate model does the same. The learnable
+gate therefore still uses the image; its pathway is weak, not closed. In these runs the fixed gate again led on
+worst-group accuracy (+16.2 on Waterbirds, 4 seeds; +14.4 on Watermark, 3 seeds). Within learnable-gate runs the injection ratio does not predict
 worst-group accuracy (Spearman $\rho$ = 0.33, $p$ = 0.27). Both gate variants attend to the watermark corner more
 than to the rest of the image (16.7% and 18.2% of attention against 8.2% if uniform), yet only the learnable-gate
 model relies on it.
@@ -158,13 +162,13 @@ raises shifted-prior accuracy by 4.6 points.
 Capping the injected signal at the text norm removes this cost. The capped connector scores 49.6 in distribution and
 30.6 under shifted priors, 7.0 points above the uncapped fixed gate in distribution ($p$ = 0.020) and 3.5 points
 above the text-only model under shifted priors ($p$ = 0.028). It is also the only model whose accuracy depends on
-the test image: removing the pathway, zeroing the image features or giving it another question's image costs 2.6
+the test image: removing the pathway or zeroing the image features costs 2.8
 to 3.5 points in distribution and 1.0 to 2.0 under shifted priors ($p$ = 0.041 to 0.063, 3 seeds). Strong injection
 therefore disturbs free-form generation, and an injection held at the text norm avoids that while still using the
 image. On the binary shortcut tasks, however, the cap gives back much of the fixed gate's gain (Table 3): Waterbirds
 69.9 against 73.1 for the uncapped fixed gate ($p$ = 0.13) and Watermark 50.6 against 67.2 ($p$ = 0.002, $d_z$ =
 $-3.1$), with two of five Watermark seeds collapsed. The capped model still uses the image on these tasks: removing
-the pathway drops it to the majority-class share. Injection strength therefore trades shortcut robustness on a
+the pathway makes it give one answer to every image. Injection strength therefore trades shortcut robustness on a
 class readout against the quality of free-form answers.
 
 | Model | Test, same priors | Image removed | Test, shifted priors | Image removed | Prior answer rate | Injection ratio |
