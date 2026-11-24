@@ -90,7 +90,7 @@ directly:
 Measured: the injection ratio is 3.5 for the learned gate vs 112 for the fixed gate, and with the image removed
 the learned-gate model falls to the majority-class share (Waterbirds average accuracy 89.4 → 77.8; Watermark
 77.9 → 50.0, 1–2 seeds). The pathway is open but narrow, not behaviourally closed. Round 9 repeats this on
-5 seeds with Farazi et al.'s full protocol (pathway absent, zeroed features, another example's image).
+5 seeds with the pathway absent, with zero image features, and with another example's image (shuffled).
 
 **"Gating and shortcut learning are both well studied. What is new?"**
 - *Both halves are old, and we say so.* Gated fusion goes back to the GMU [arevalo2017gmu], zero-initialised
