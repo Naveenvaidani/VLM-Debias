@@ -98,6 +98,7 @@ def main():
     parser.add_argument("--seed_start", type=int, default=0, help="first seed to run (e.g. 2 to finish seed 2 only)")
     parser.add_argument("--gpus", type=int, default=2)
     parser.add_argument("--align_steps", type=int, default=1200)
+    parser.add_argument("--align_lr", type=float, default=None, help="stage-1 learning rate (align.py default 1e-3)")
     parser.add_argument("--epochs", type=int, default=6)
     parser.add_argument("--job_budget_min", type=float, default=70, help="per training job")
     parser.add_argument("--total_budget_min", type=float, default=630, help="Kaggle kills sessions at 12 h")
@@ -231,6 +232,7 @@ def main():
             align_jobs.append((os.path.relpath(d, runs), [
                 py, "study/align.py", "--llm", args.llm, "--connector", c, "--out", d,
                 "--steps", str(args.align_steps), "--seed", str(seed)] + ckpt +
+                (["--lr", str(args.align_lr)] if args.align_lr else []) +
                 (["--ltd_weight", str(args.align_ltd)] if args.align_ltd else []),
                 os.path.join(d, "connector.pt"), os.path.join(d, "align.log")))
     pool.run(align_jobs, on_done=export)
