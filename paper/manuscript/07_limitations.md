@@ -4,7 +4,8 @@
 
 The confirmatory tests use 4B-parameter models. The 9B replication is exploratory, with five seeds on Watermark and
 three on Waterbirds, where it is not significant. All models run in 4-bit with LoRA, with a frozen vision encoder and
-a short alignment of 300 steps. Released gated models are larger, trained for longer and update their encoders, so our results show a
+a short alignment of 300 steps. Longer alignment (up to 6,000 steps) left the gate closed but nearly removed the
+Waterbirds gap, so the size of the effect depends on how long the connector is aligned. Released gated models are larger, trained for longer and update their encoders, so our results show a
 risk in this regime, not a property of every gated model. The effect is limited to a single input-level gated block:
 per-layer gates showed no gap.
 

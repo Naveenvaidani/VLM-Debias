@@ -226,3 +226,13 @@ signed mean, the fraction of steps that push the gate up (`gate_grad_frac_positi
 and the step-to-step sign-flip rate (`gate_grad_sign_flip_rate`). This turns the cancelling-gradient argument into a
 measurement. It needs no new run design: every round-9 job that trains a learnable gate records it
 (`r9-eps01`, `r9-eps1`, `r9-ablate`).
+
+### Round 12: longer, stable alignment (`results_study/r12_long_align_runs.csv`)
+- Setting: lr 3e-4, 3,000 steps (Watermark and Waterbirds) and 6,000 steps (Watermark), 5 paired seeds, Qwen3.5-4B.
+- Alignment stable for both arms (no divergence). Zero-start gate peak |tanh α| ≤ 0.003; caption loss ends higher
+  than the fixed gate's (2.23–2.34 vs 1.84–2.05). **Supports** "the gate does not open with more training".
+- Watermark: +14.4 (3k, p = 0.11, 2/5 collapsed vs 0/5) and +24.7 (6k, p = 0.014, d_z 1.50, 3/5 vs 0/5); the
+  300-step gap on the same seeds is +24.6. **Supports.**
+- Waterbirds: learnable 61.2 → 71.3; gap +2.7 (p = 0.15), no collapses. **Contradicts** a task-general effect:
+  on the easier task longer alignment makes the closed gate almost harmless. Reported in Results and Limitations.
+- Caveat: learning rate changed with length, so length and lr are not separated.

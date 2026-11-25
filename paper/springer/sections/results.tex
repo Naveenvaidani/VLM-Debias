@@ -198,6 +198,8 @@ Gate excluded from gradient clipping & 3 & 67.2 / 52.9 & zero start, same seeds 
 No weight decay on the gate & 2 & 52.2 / 28.0 & zero start, same seeds 60.9 / 44.9 & no rescue \\
 Connector learning rate \(5 \times 10^{-5}\) / \(2 \times 10^{-4}\) / \(10^{-3}\) (Waterbirds) & 2 & 35.9 / 56.8 / 65.8 & fixed 65.6 / 73.5 / 66.5 & the gap shrinks as the gate moves further (final 0.002 / 0.004 / 0.018) \\
 fp16 weights instead of 4-bit & 3 & 63.2 / 44.1 & fixed 73.2 / 65.1 & same direction (+10.0, +21.1; not significant with 3 seeds) \\
+Alignment 3,000 steps at \(3 \times 10^{-4}\) & 5 & 71.3 / 54.6 & fixed 73.9 / 69.1 & gate stays below 0.003 in alignment; gap +2.7 and +14.4 (neither significant); 2 of 5 Watermark seeds collapse \\
+Alignment 6,000 steps at \(3 \times 10^{-4}\) (Watermark) & 5 & 46.2 & fixed 70.8 & +24.7 (\(p\) = 0.014); 3 of 5 learnable seeds collapse, none fixed \\
 Eight training epochs (Waterbirds) & 4 & 67.9 & fixed 79.0 & +11.0 (\(p\) = 0.023); one of five fixed-gate runs collapsed \\
 \bottomrule
 \end{tabular}
@@ -217,9 +219,19 @@ same seeds), so the extra loss with \(W_o = 0\) came from the \(W_o\) initialisa
 (0.070 to 0.074). It matches the fixed gate on Waterbirds (73.2 against 74.6) and recovers about two thirds of the
 gap on Watermark (58.9 against 44.2 and 67.4), though with three and four seeds neither difference is significant.
 The threshold therefore lies between 0.01 and 0.1, and the size of the gain from a 0.1 start depends partly on
-\(W_o\). Ten times longer alignment
-leaves the zero-start gate below 0.003 but also destabilises the learnable-gate alignment (caption loss rises from
-2.0 to 7.9), so that run shows fragility rather than a clean effect and is reported only in the supplement.
+\(W_o\).
+
+\emph{Longer alignment.} A first run with ten times longer alignment at the default learning rate destabilised the
+learnable-gate alignment (caption loss rose from 2.0 to 7.9), so we repeated it at a lower learning rate
+(\(3 \times 10^{-4}\)) with 3,000 and 6,000 steps, five paired seeds each. Both arms now aligned stably. The zero-start
+gate still never exceeded \(|\tanh\alpha| = 0.003\) during alignment, and its caption loss ended higher than the fixed
+gate's (2.23 to 2.34 against 1.84 to 2.05). The robustness gap depends on the task. On Watermark it remained: +14.4
+points after 3,000 steps (\(p\) = 0.11, 2 of 5 learnable runs collapsed, none fixed) and +24.7 after 6,000 steps
+(\(p\) = 0.014, \(d_z\) = 1.50, 3 of 5 against none), the same size as with the default alignment (+24.6 on the same
+seeds). On Waterbirds it almost closed: the learnable gate rose from 61.2 to 71.3 and the gap fell to +2.7
+(\(p\) = 0.15), with no collapsed runs. Longer alignment therefore does not open the gate, but on the easier task it
+makes the closed gate less harmful. Because the learning rate also changed, these runs separate alignment length
+from the default setting only together with the learning rate.
 
 \subsection{The gate's gradient is large but cancels itself}
 
