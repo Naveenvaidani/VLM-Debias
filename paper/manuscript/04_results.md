@@ -93,6 +93,8 @@ Controls change one property of the learnable gate at a time (Table \ref{tab:con
 | Fixed gate with injection capped at the text norm | 5 | 69.9 / 50.6 | zero start 61.2 / 42.6; fixed 73.1 / 67.2 | keeps part of the gain on Waterbirds ($-3.2$ against fixed, $p$ = 0.13) but loses most on Watermark ($-16.6$, $p$ = 0.002); 2 of 5 Watermark seeds collapse |
 | Learnable gate started at $\tanh\alpha_0 = 0.01$ | 5 | 69.1 / 22.5 | zero start 61.2 / 42.6; fixed 73.1 / 67.2 | gate falls back to 0.001 to 0.008; Watermark collapses in 5 of 5 seeds, $-20.1$ below the zero start ($p$ = 0.041) |
 | Learnable gate started at $\tanh\alpha_0 = 0.1$ | 5 | 73.1 / 65.3 | zero start 61.2 / 42.6; fixed 73.1 / 67.2 | +11.9 and +22.7 over the zero start ($p$ = 0.041, 0.072); no difference from the fixed gate |
+| Learnable gate started at $\tanh\alpha_0 = 0.01$, default $W_o$ | 3 / 4 | 66.6 / 46.1 | zero start, same seeds 64.4 / 44.2; fixed 74.6 / 67.3 | gate falls back to 0.002 to 0.009; no better than the zero start (+2.2, +1.9); 2 of 4 Watermark seeds collapse |
+| Learnable gate started at $\tanh\alpha_0 = 0.1$, default $W_o$ | 3 / 4 | 73.2 / 58.9 | zero start, same seeds 64.4 / 44.2; fixed 74.6 / 67.4 | gate stays at 0.070 to 0.074; +8.8 and +14.6 over the zero start, $-1.4$ and $-8.5$ against fixed (all $p \ge 0.15$) |
 | Learnable gate started half open ($\tanh\alpha_0 = 0.5$) | 5 | 72.6 / 62.7 | zero start 61.2 / 42.6; fixed 73.1 / 67.2 | +11.4 and +20.1 over the zero start ($p$ = 0.014, 0.006); no difference from the fixed gate |
 | Gate excluded from gradient clipping | 3 | 67.2 / 52.9 | zero start, same seeds 64.4 / 39.3 | no significant change; gate stays below 0.003 |
 | No weight decay on the gate | 2 | 52.2 / 28.0 | zero start, same seeds 60.9 / 44.9 | no rescue |
@@ -108,9 +110,15 @@ enough. That gate shrinks during training, to 0.058 to 0.064, but stays about a 
 gate, and its worst-group accuracy equals the fixed gate's on Waterbirds (73.1 against 73.1). Its gradient also
 changes sign often: 27% to 51% of steps per epoch push the gate up, with a slight net push down. A start of 0.01
 is not enough. That gate falls back to the zero-start range (final $|\tanh\alpha|$ 0.001 to 0.008), and Watermark
-collapses below 50% in all five seeds (22.5, against 42.6 for the zero start). Because this control also starts
-$W_o$ at zero, the gradient of $W_o$ is scaled by the small gate, which may explain why it ends below the zero
-start. The threshold therefore lies between 0.01 and 0.1. Ten times longer alignment
+collapses below 50% in all five seeds (22.5, against 42.6 for the zero start). This control also starts
+$W_o$ at zero, so it differs from the zero-start arm in two ways. Repeating the 0.01 and 0.1 starts with the default
+$W_o$ initialisation of the zero-start arm, so that only the gate's start value differs, separates the two. With the
+default $W_o$, the 0.01 start behaves like the zero start rather than worse (66.6 / 46.1 against 64.4 / 44.2 on the
+same seeds), so the extra loss with $W_o = 0$ came from the $W_o$ initialisation. The 0.1 start still stays open
+(0.070 to 0.074). It matches the fixed gate on Waterbirds (73.2 against 74.6) and recovers about two thirds of the
+gap on Watermark (58.9 against 44.2 and 67.4), though with three and four seeds neither difference is significant.
+The threshold therefore lies between 0.01 and 0.1, and the size of the gain from a 0.1 start depends partly on
+$W_o$. Ten times longer alignment
 leaves the zero-start gate below 0.003 but also destabilises the learnable-gate alignment (caption loss rises from
 2.0 to 7.9), so that run shows fragility rather than a clean effect and is reported only in the supplement.
 
@@ -134,7 +142,11 @@ The learnable gate passes 15 to 35 times less visual signal than the fixed gate 
 zeroing the image features, makes the learnable-gate model give the same answer to every image in every run:
 average accuracy falls from 83.0 to the share of one class on Waterbirds ($-46.9$ points, 4 of 4 seeds, $p$ = 0.035)
 and from 81.8 to 50.0 on Watermark (3 of 3 seeds, $p$ = 0.003). The fixed-gate model does the same. The learnable
-gate therefore still uses the image; its pathway is weak, not closed. In these runs the fixed gate again led on
+gate therefore still uses the image; its pathway is weak, not closed. Giving each test example the image of a
+randomly chosen other example (4 seeds on Watermark, 3 on Waterbirds) confirms that the answer depends on the
+particular image. Average accuracy falls to chance on Watermark for both gates (learnable 68.6 to 51.1, fixed 86.2 to
+52.0) and drops on Waterbirds (85.8 to 62.3 and 90.1 to 64.9). On Watermark the learnable gate's worst-group accuracy
+rises with the wrong image (24.6 to 44.2), as expected if its errors come from the watermark in its own image. In these runs the fixed gate again led on
 worst-group accuracy (+16.2 on Waterbirds, 4 seeds; +14.4 on Watermark, 3 seeds). Within learnable-gate runs the injection ratio does not predict
 worst-group accuracy (Spearman $\rho$ = 0.33, $p$ = 0.27). Both gate variants attend to the watermark corner more
 than to the rest of the image (16.7% and 18.2% of attention against 8.2% if uniform), yet only the learnable-gate

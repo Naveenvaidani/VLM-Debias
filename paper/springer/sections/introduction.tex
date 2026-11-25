@@ -68,7 +68,7 @@ worst-group accuracy \citep{park2026scer}. We isolate a cause.
   \textbf{A controlled architectural cause.} In a single input-level connector, a learnable gate that starts at zero
   makes shortcut reliance more likely. Fixing the gate raises worst-group accuracy by 10.6 and 25.2 points
   (\(d_z\) = 1.10 and 1.34, 15 paired seeds; all four LLM × task cells survive Holm correction). Gates started at
-  0.1 or higher behave like the fixed one while a start of 0.01 falls back near zero, so a start at or near
+  0.1 or higher come close to the fixed one while a start of 0.01 falls back near zero, so a start at or near
   zero, not learnability, is the cause.
 \item
   \textbf{A different mechanism from the one known.} Our connector is text-coupled, so the dead-gradient account does

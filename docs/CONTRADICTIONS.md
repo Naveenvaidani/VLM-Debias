@@ -70,6 +70,15 @@ they list as a limitation or never test), **Agrees**, **Pending** (round 9 will 
   accuracy by ≤ 0.5 points for both connectors, which is expected for a same-group swap and says nothing about
   instance-level use. Not reported in the paper. Fixed in code (seeded random test order for the shuffle mode)
   for future runs; round-10 runs cloned the old code, so their shuffle numbers are also invalid.
+- **Shuffled-image control, rerun with a random order (round 11, `results_study/r11_shuffle_runs.csv`).** Valid now.
+  Another example's image drops average accuracy to chance on Watermark for both gates (learnable 68.6 → 51.1,
+  fixed 86.2 → 52.0, 4 seeds) and on Waterbirds 85.8 → 62.3 and 90.1 → 64.9 (3 seeds). The learnable gate's
+  Watermark WGA rises with the wrong image (24.6 → 44.2). **Supports** instance-level image use: weak, not closed.
+- **W_o-init confound (round 11, `results_study/r11_wo_runs.csv`).** Starts 0.01 / 0.1 with the default W_o (only
+  the start value differs from the zero-start arm). 0.01: 66.6 / 46.1 vs zero start 64.4 / 44.2 on the same seeds,
+  so the extra collapse of the W_o = 0 version came from W_o. 0.1: gate stays 0.070–0.074; 73.2 / 58.9 vs fixed
+  74.6 / 67.4 (−1.4, −8.5, ns; 3 / 4 seeds). **Partly supports** the threshold: 0.1 matches fixed on Waterbirds,
+  recovers ~2/3 of the Watermark gap. Paper wording changed from "match" to "approach".
 
 ### 1d. Gate start value — **Extends (they never vary it)**
 
@@ -113,7 +122,7 @@ they list as a limitation or never test), **Agrees**, **Pending** (round 9 will 
 | :--- | :--- |
 | Most LLaVA configurations are single runs | 15 paired seeds for the main comparison, 4–5 for most controls |
 | No spurious-correlation, shortcut or worst-group measure | Worst-group accuracy on three tasks, plus VQA-CP shifted priors |
-| No random or mismatched-input control | Planned (shuffled image); the round-9 version was invalid (same-group swap), fixed for future runs |
+| No random or mismatched-input control | Done in round 11 (random order); round-9 version was invalid |
 | One backbone for the behavioural ablations | Two LLMs (Qwen3.5-4B, Phi-4-mini) for the main effect; ablation on Qwen only |
 
 ---
