@@ -44,7 +44,7 @@ These lines of work have not met, which leaves three gaps.
 
 We test whether the vision-language connector, and specifically its injection gate, determines shortcut reliance
 in LLM-based VLMs.
-- Held fixed: the LLM (Qwen3.5-4B, replicated with Phi-4-mini), frozen SigLIP features, data, prompts and
+- Held fixed: the LLM (Qwen3.5-4B, replicated with Phi-4-mini and, exploratorily, Qwen3.5-9B), frozen SigLIP features, data, prompts and
   training budget.
 - Varied: only the connector: an MLP projector, a Q-Former, and text-coupled gated cross-attention whose tanh
   gate is learnable from zero, learnable from a non-zero start, or fixed. The gate variants have the same parameter count.
@@ -69,11 +69,12 @@ worst-group accuracy [park2026scer]. We isolate a cause.
    pathway is weak, not closed: removing it makes the model give one answer to every image. Gate value is therefore not
    evidence of use in either direction.
 3. **Robustness as a seed-level outcome.** The zero-start gate collapses below 50% worst-group accuracy in up to 10 of
-   15 seeds on Qwen3.5-4B, the fixed gate in none (on Phi-4-mini Watermark the fixed gate still collapses in 6 of 10). With the gate fixed, connector type has no detectable effect (equivalence not
+   15 seeds on Qwen3.5-4B and in 5 of 5 on Qwen3.5-9B, the fixed gate in none (on Phi-4-mini Watermark the fixed
+   gate still collapses in 6 of 10). With the gate fixed, connector type has no detectable effect (equivalence not
    established).
 4. **Boundaries, reported as found.** Per-layer gated injection shows no gap; a stronger encoder narrows the gap on
    one task but not the other; and on open-ended VQA-CP the strong fixed injection harms free-form generation. Capping
-   the injection at the text norm repairs generation but gives back most of the robustness gain, a trade-off that
+   the injection at the text norm repairs generation but, at 4B, gives back most of the robustness gain, a trade-off that
    prior norm-matching advice could not see because it did not measure shortcuts.
 5. **A cheap fix and reproducible evidence.** Retraining only the connector on a small group-balanced set reaches
    89.6% worst-group accuracy on the watermark task. Code, job scripts, pinned versions and per-seed results are public.

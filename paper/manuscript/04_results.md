@@ -44,7 +44,7 @@ after the 5-seed test missed $\alpha$ ($p = 0.044$); tested alone they give $p =
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/forest_gain.pdf}
-\caption{Paired gain from fixing the gate (fixed minus learnable gate, worst-group accuracy points) with 95\% confidence intervals; squares Qwen3.5-4B, circles Phi-4-mini}\label{fig:forest}
+\caption{Paired gain from fixing the gate (fixed minus learnable gate, worst-group accuracy points) with 95\% confidence intervals; squares Qwen3.5-4B, circles Phi-4-mini, open triangles Qwen3.5-9B (exploratory, Table \ref{tab:9b})}\label{fig:forest}
 \end{figure}
 
 The learnable gate also makes robustness depend on the seed (H2). On Qwen3.5-4B its variance is higher on both tasks
@@ -57,6 +57,31 @@ the fixed gate (Figure \ref{fig:seeds}). On Phi-4-mini the variance difference i
 \includegraphics[width=\linewidth]{figures/h1_seeds_qwen.pdf}
 \caption{Each line joins one paired run of the learnable gate to the fixed gate (Qwen3.5-4B) on (a) Waterbirds and (b) Watermark. Solid lines rise and dashed lines fall; the dotted line marks the 50\% collapse threshold}\label{fig:seeds}
 \end{figure*}
+
+## The effect grows with a larger language model
+
+We repeated the comparison with Qwen3.5-9B, keeping the code, features, data and training budget unchanged
+(Table \ref{tab:9b}). These runs are exploratory. On Watermark, the zero-start gate fell to 12.8% worst-group
+accuracy and collapsed in all five seeds, while the fixed gate reached 63.2% and collapsed in none. The gain, +50.3
+points ($d_z$ = 2.03), is twice the 4B gain. Average accuracy rose from 63.7% to 86.1%. On Waterbirds a 12-hour
+session finished only three paired seeds. The direction is the same, +13.7 points, but not significant
+($p$ = 0.08). Two of four zero-start runs collapsed against none of three fixed-gate runs. The behaviour of the
+gate is the same as at 4B. The zero-start gate ended below $|\tanh\alpha| = 0.005$ in every run, and its gradient
+changed sign on 39% to 51% of steps. A gate started at 0.1 drifted to about 0.073 and matched the fixed gate (69.7%,
++56.9 over the zero start). On this task the capped injection also kept the gain (63.9%), unlike at 4B, where it
+lost 16.6 points on Watermark.
+
+| Task | Seeds | Learnable | Fixed | Gain [95% CI] | $p$ | $d_z$ | Collapsed |
+| :---------------------- | :---: | :-------: | :-----: | :--------------------: | :----------: | :----: | :-----------: |
+| Waterbirds | 3 | 60.1 | 73.8 | +13.7 [−13.7, 41.1] | 0.082 | 1.24 | 2 of 4 / 0 of 3 |
+| Watermark | 5 | 12.8 | 63.2 | +50.3 [19.6, 81.1] | 0.005 | 2.03 | 5 of 5 / 0 of 5 |
+| Watermark, start 0.1 | 5 | 12.8 | 69.7 | +56.9 [42.3, 71.4] | $2 \times 10^{-4}$ | 4.85 | 5 of 5 / 0 of 5 |
+| Watermark, capped | 5 | 12.8 | 63.9 | +51.0 [45.7, 56.4] | $6 \times 10^{-6}$ | 11.94 | 5 of 5 / 1 of 5 |
+
+: Qwen3.5-9B (exploratory), test worst-group accuracy (%), paired by seed. "Fixed" is the fixed gate, or the
+variant named in the row. The $p$-values are from one-sided paired t-tests and are uncorrected. On Waterbirds the
+learnable mean is over the three paired seeds; over all four seeds it is 49.9 ± 22.7. Collapsed: runs below 50%,
+learnable / fixed. \label{tab:9b}
 
 ## The zero start, not learnability, is the cause
 

@@ -27,6 +27,6 @@ were tested outside their training conditions [degrave2021covid; brown2023shortc
 the same risk. Those failures fall on the groups that are rare in training, which makes them a fairness problem
 as well as an accuracy problem [ongly2024shortcut]. Our results show that one routine architectural default can make
 such failures more likely, and that a cost-free change to the same component reduces the risk without collecting
-group labels. The experiments ran on single commodity GPUs with a 4B-parameter model, so the checks we recommend are
+group labels. The experiments ran on single commodity GPUs with 4B- and 9B-parameter models, so the checks we recommend are
 within reach of groups without large compute budgets. The work uses only public datasets and releases code and
 results, and we see no new misuse risk from a finding about initialisation.

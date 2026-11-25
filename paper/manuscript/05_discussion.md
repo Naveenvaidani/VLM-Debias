@@ -31,7 +31,8 @@ reports that visual tokens with much larger norms than text tokens lose informat
 [li2025unseen] and the advice to inject at a matched norm [farazi2026gate]. Capping the injection at the text norm
 repairs generation in our connector: the capped model is the best on both VQA-CP test splits and the only one whose
 answers depend on the test image. The same cap, however, gives back most of the robustness gain on the watermark
-task (50.6 against 67.2). Neither earlier study measures shortcut reliance, so this cost of norm matching was not
+task at 4B (50.6 against 67.2), although with the 9B model it kept the gain (63.9 against 63.2), so the cost may
+shrink with scale. Neither earlier study measures shortcut reliance, so this cost of norm matching was not
 visible to them. In our data a strong visual signal is what lets the class readout override a textual or
 background shortcut, and the same strength disturbs free-form decoding. No single injection strength was best on
 both kinds of task, so the strength should be chosen for the output the model must produce, and robustness should

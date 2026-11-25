@@ -1,7 +1,7 @@
 # Cover letter (draft)
 
 *To be sent through Editorial Manager with the submission. Items in [square brackets] must be filled in or deleted by
-the authors before sending. The 9B sentence depends on the round-10 results.*
+the authors before sending. *
 
 ---
 
@@ -23,8 +23,9 @@ Qwen3.5-4B (paired $d_z$ 1.10 and 1.34, $p < 0.001$, confirmatory tests on fresh
 Phi-4-mini, and made robustness depend on the random seed. Gates started at 0.1 or higher behaved like a fixed gate.
 The zero-start gate stays small because its large gradient keeps changing sign, which we measure directly, and its
 visual pathway stays in use rather than closing. On open-ended question answering, strong injection harms generation,
-and capping it at the text-embedding norm repairs generation but gives back most of the robustness gain.
-[If round 10 holds: The main effect repeats with Qwen3.5-9B.]
+and capping it at the text-embedding norm repairs generation but, at 4B, gives back most of the robustness gain.
+With Qwen3.5-9B the watermark gap grows to 50.3 points (5 paired seeds, $d_z$ 2.03, exploratory), so the effect
+does not shrink with model size.
 
 **Fit with the call.** The paper addresses two of the listed topics:
 - *Topic I, Unified Modeling Architectures (encoder–LLM pipelines; representation alignment across modalities).* The

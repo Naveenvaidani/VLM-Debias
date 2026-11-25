@@ -35,15 +35,32 @@ def hypotheses(path, llm):
     return rows
 
 
+def scale9b():
+    """Exploratory Qwen3.5-9B rows (round 10): paired gain over seeds both arms finished, t-based 95% CI."""
+    from scipy import stats
+    d = pd.read_csv(os.path.join(ROOT, "results_study/r10_scale9b_runs.csv"))
+    rows = []
+    for task, name in [("waterbirds", "Waterbirds"), ("watermark_p0.95", "Watermark")]:
+        t = d[d.task == task]
+        a = t[t.connector == "bottleneck"].set_index("seed").wga
+        b = t[t.connector == "bottleneck_fixed"].set_index("seed").wga
+        s = sorted(set(a.index) & set(b.index))
+        diff = (b[s] - a[s]).values
+        h = stats.t.ppf(0.975, len(s) - 1) * diff.std(ddof=1) / np.sqrt(len(s))
+        rows.append(("Qwen3.5-9B", name, len(s), diff.mean(), diff.mean() - h, diff.mean() + h))
+    return rows
+
+
 def forest():
     rows = hypotheses(os.path.join(ROOT, "results_study/hypotheses.md"), "Qwen3.5-4B") + \
-        hypotheses(os.path.join(ROOT, "results_study/phi/hypotheses.md"), "Phi-4-mini")
+        hypotheses(os.path.join(ROOT, "results_study/phi/hypotheses.md"), "Phi-4-mini") + scale9b()
     fig, ax = plt.subplots(figsize=(84 * MM, 58 * MM))
     y = np.arange(len(rows))[::-1]
     ax.axvline(0, color="#444", lw=0.6)
     for yi, (llm, task, n, g, lo, hi) in zip(y, rows):
         ax.plot([lo, hi], [yi, yi], color="#222", lw=1.2)
-        ax.plot(g, yi, marker="s" if llm.startswith("Qwen") else "o", color="#222", ms=4)
+        ax.plot(g, yi, marker="^" if "9B" in llm else "s" if llm.startswith("Qwen") else "o",
+                color="#222", mfc="white" if "9B" in llm else "#222", ms=4)
         ax.text(g, yi + 0.18, f"+{g:.1f}", ha="center", va="bottom", fontsize=7)  # above the marker, inside the axes
     ax.set_yticks(y, [f"{llm}\n{task}, n = {n}" for llm, task, n, *_ in rows], fontsize=7)
     ax.set_xlabel("Fixed minus learnable gate,\nworst-group accuracy (points)")

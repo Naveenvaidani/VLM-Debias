@@ -26,37 +26,15 @@ Each option is 10–15 words, with the keywords in the first 65 characters and n
 3. **Hook and subtitle:** *When the Gate Stays Shut: Connector Design and Spurious Correlations in Multimodal
    Large Language Models* (15 words)
 
-## Abstract (≈ 230 words, five-part formula, no citations, acronyms spelled out)
+## Abstract (as in paper/springer/main.tex, 250 words; IJCV limit 150–250)
 
-> **[Context]** Vision-language models built by connecting a vision encoder to a large language model are
-> increasingly deployed in settings where reliance on spurious cues, such as image backgrounds or watermarks,
-> causes silent failures on under-represented groups.
+> **Purpose.** Vision-language models that connect a vision encoder to a large language model can rely on spurious cues, such as backgrounds or watermarks, and fail on under-represented groups. Prior work compares connectors only on average accuracy.
 >
-> **[Gap]** Prior work attributes these failures to data, scale or the vision encoder, and compares connector
-> designs only on average benchmark accuracy. Whether the connector itself determines shortcut reliance has not
-> been tested.
+> **Methods.** We hold the language model, frozen vision features, data and training budget fixed and vary only the connector: a multilayer-perceptron projector, a Q-Former, and gated cross-attention whose tanh injection gate is learnable from zero or other values, or fixed. We measure worst-group accuracy on three shortcut tasks with three language models of 3.8B to 9B parameters, on up to fifteen paired seeds.
 >
-> **[Method]** We hold the language model, frozen vision features, data and training budget fixed and vary only
-> the connector: a multilayer-perceptron projector, a query transformer, and gated cross-attention with either
-> a learnable or a fixed injection gate. We measure worst-group accuracy on three shortcut tasks, two language
-> models and two encoder sizes, with hypotheses formed on a pilot and confirmed on new paired
-> training seeds (up to fifteen in total).
+> **Results.** The zero-initialised gate never opens, although its large gradient changes sign on almost half the steps, and the model relies on the shortcut while still using the image. Fixing the gate raises worst-group accuracy by 10.6 and 25.2 points (paired Cohen's d_z = 1.10 and 1.34, p < 0.001) and removes runs below 50%; at 9B the watermark gain doubles to 50.3 points. Gates started at 0.1 or higher match the fixed gate; a start of 0.01 falls back near zero. With the gate fixed, connector type has no detectable effect, and per-layer gates show no gap. On open-ended question answering, strong injection harms generation; capping it at the text norm repairs generation but, at 4B, gives back most of the robustness gain.
 >
-> **[Findings]** The learnable gate, initialised at zero, never opens during alignment, and with it the model
-> relies on the shortcut.
-> Fixing the gate open raises worst-group accuracy by 10.6 and 25.2 points, large effects (paired Cohen's
-> d = 1.10 and 1.34, p < 0.001). It also eliminates the training runs that collapse below 50%, which occur in
-> up to 10 of 15 seeds with the learnable gate. A learnable gate initialised open behaves like the fixed
-> one, and ten times longer alignment leaves the zero-initialised gate shut and destabilises it. Once the gate is fixed, no significant difference between
-> connector types is detected. Retraining only the connector on a small group-balanced set reaches 89.6% worst-group accuracy
-> on the watermark task.
->
-> **[Contribution]** These results identify the injection gate as a transmission bottleneck between features
-> and readout. They show that robustness claims require seed-level evaluation, and they give practitioners a
-> zero-cost, label-free design rule that removes one source of shortcut reliance, and a cheap connector-level
-> fix when group labels are available.
-
-Word count: about 230 (check against the journal's limit).
+> **Conclusion.** A gate started at or near zero is a controllable architectural cause of shortcut reliance, injection strength trades robustness against generation quality, and robustness claims need seed-level evaluation.
 
 ## Keywords (5–7)
 
