@@ -19,10 +19,10 @@ Same learned gate, one change: the gate is left out of gradient clipping (`clipx
 
 | Control | Task | Seeds | Control WGA | Default learned WGA (same seeds) | Difference | p | Final tanh α |
 | :--- | :--- | :---: | ---: | ---: | ---: | ---: | ---: |
-| gate out of clipping | waterbirds | 3 | 67.2 ± 8.0 | 64.4 ± 8.4 | +2.9 | 0.090 | 0.0016 |
-| gate out of clipping | watermark_p0.95 | 3 | 52.9 ± 9.3 | 39.3 ± 13.3 | +13.5 | 0.372 | 0.0007 |
-| gate without weight decay | waterbirds | 2 | 52.2 ± 10.1 | 60.9 ± 8.4 | -8.7 | 0.089 | 0.0019 |
-| gate without weight decay | watermark_p0.95 | 2 | 28.0 ± 8.4 | 44.9 ± 12.9 | -16.9 | 0.465 | 0.0024 |
+| gate out of clipping | waterbirds | 3 | 67.2 ± 8.0 | 62.1 ± 14.9 | +5.1 | 0.373 | 0.0016 |
+| gate out of clipping | watermark_p0.95 | 3 | 52.9 ± 9.3 | 50.3 ± 16.1 | +2.5 | 0.878 | 0.0007 |
+| gate without weight decay | waterbirds | 2 | 52.2 ± 10.1 | 56.8 ± 16.6 | -4.6 | 0.496 | 0.0019 |
+| gate without weight decay | watermark_p0.95 | 2 | 28.0 ± 8.4 | 47.6 ± 21.8 | -19.6 | 0.528 | 0.0024 |
 
 ## 3. Shortcut strength (Watermark, round 5)
 
@@ -32,7 +32,7 @@ Watermark correlation p in training. p = 0.95 is the main setting (see `hypothes
 | :--- | :---: | :---: | :---: |
 | 0.9 | 68.0 ± 7.5 (3) | 75.7 ± 2.0 (3) | 77.5 ± 1.3 (3) |
 | 0.99 | 16.9 ± 1.3 (3) | 6.7 ± 2.2 (2) | 20.1 ± 5.4 (2) |
-| 0.95 (main setting, `h1`) | – | 39.4 ± 14.6 | 64.9 ± 8.7 |
+| 0.95 (main setting, `h1`) | – | 40.5 ± 18.0 | 65.7 ± 10.3 |
 
 ## 4. Per-layer gates, full precision, half-open gate (rounds 6-7)
 
@@ -42,15 +42,15 @@ Watermark correlation p in training. p = 0.95 is the main setting (see `hypothes
 | per-layer gates (4-bit) | watermark_p0.95 | 68.3 ± 18.9 | 70.6 ± 10.2 | +2.3 | 4 | 0.792 | 0.0274 |
 | single block, fp16 weights | waterbirds | 63.2 ± 12.6 | 73.2 ± 1.4 | +10.0 | 3 | 0.339 | 0.0031 |
 | single block, fp16 weights | watermark_p0.95 | 44.1 ± 26.6 | 65.1 ± 7.5 | +21.1 | 3 | 0.387 | 0.0026 |
-| single block, 4-bit (default, seeds 0-4) | waterbirds | 61.2 ± 7.4 | 73.1 ± 2.6 | +11.9 | 5 | 0.013 | – |
-| single block, 4-bit (default, seeds 0-4) | watermark_p0.95 | 42.6 ± 13.2 | 67.2 ± 7.2 | +24.6 | 5 | 0.019 | – |
+| single block, 4-bit (default, seeds 0-4) | waterbirds | 61.9 ± 12.9 | 72.9 ± 1.2 | +11.0 | 5 | 0.116 | – |
+| single block, 4-bit (default, seeds 0-4) | watermark_p0.95 | 49.7 ± 17.2 | 72.1 ± 7.3 | +22.5 | 5 | 0.056 | – |
 
 Half-open gate: the learnable gate starts at tanh α = 0.5 (gradient scale 0.75), seeds 0-4.
 
 | Task | Half-open init | Learned (zero init) | Fixed | Final |tanh α|, half-open | Half-open − learned (p) | Half-open − fixed (p) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| waterbirds | 72.6 ± 5.3 | 61.2 ± 7.4 | 73.1 ± 2.6 | 0.442 | +11.4 (0.014) | -0.5 (0.858) |
-| watermark_p0.95 | 62.7 ± 11.0 | 42.6 ± 13.2 | 67.2 ± 7.2 | 0.442 | +20.1 (0.006) | -4.6 (0.501) |
+| waterbirds | 72.6 ± 5.3 | 61.9 ± 12.9 | 72.9 ± 1.2 | 0.442 | +10.7 (0.194) | -0.3 (0.911) |
+| watermark_p0.95 | 62.7 ± 11.0 | 49.7 ± 17.2 | 72.1 ± 7.3 | 0.442 | +13.0 (0.149) | -9.5 (0.066) |
 
 ## 5. Group DRO (rounds 4 and 7)
 

@@ -253,3 +253,20 @@ measurement. It needs no new run design: every round-9 job that trains a learnab
   the sources state for balaji2026forget, rm2026zerogated, farazi2026gate (gate initialisation was not "untested"),
   li2025unseen, sarridis2026scaling, zou2024videodistill, ahn2026evident. The study earlier described as
   "Akbari et al." is Lialin et al. 2023 (arXiv 2304.02080).
+
+## Seed labels in results_study/h1 (26 Nov 2026, found by study/check_numbers.py)
+
+- **Bug.** `study/aggregate.py` stored `int(seed_dir[-1])`, the last digit of the seed folder, so runs s10-s14 were
+  saved as seeds 0-4. The 15-seed H1/H2 tests were unaffected (`hypotheses.py` pairs by folder name), but
+  `rounds_4_8.base_runs()` averaged seed k with seed k+10, so every control compared against "the zero start / fixed
+  gate on seeds 0-4" used mixed references (61.2 / 42.6 and 73.1 / 67.2 instead of 61.9 / 49.7 and 72.9 / 72.1).
+- **Fix.** Parsing fixed (`int(basename[1:])`). The h1 seed column was rebuilt by matching each row's worst-group
+  accuracy to the original `s<k>/results.json` downloaded from the h1a, h1b, seeds34, study-run, study-seed2,
+  study-fixedgate and r4-wm-seeds kernels: 60 of 60 rows matched one folder each, none ambiguous.
+- **Consequences in the paper.** With correct pairing the 5-seed gains of the 0.1 and 0.5 starts over the zero start
+  are no longer significant (e.g. half open +10.7 / +13.0, p = 0.19 / 0.15, was +11.4 / +20.1, p = 0.014 / 0.006).
+  Starts of 0.1 or 0.5 match the fixed gate on Waterbirds but recover only a third to two thirds of the Watermark
+  gap (0.1 with default W_o: -14.6 vs fixed, p = 0.017). The capped injection loses all of the Watermark gain
+  (50.6 vs 72.1; zero start 49.7). The 0.01 start with W_o = 0 is -27.2 below the zero start (p = 0.009).
+  Abstract, introduction, results, discussion, implications, conclusion, cover letter and README were revised.
+  `study/check_numbers.py` recomputes these values and fails if a stale reference value remains.

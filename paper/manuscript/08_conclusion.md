@@ -5,12 +5,13 @@
 Holding the LLM, features, data and training budget fixed, we varied only the connector of an LLM-based vision-language
 model. A learnable injection gate that starts at zero lowered worst-group accuracy by 10.6 and 25.2 points on
 Qwen3.5-4B and by 9.7 and 25.5 points on Phi-4-mini, and made robustness depend on the seed. With Qwen3.5-9B the
-gaps were 9.9 and 50.3 points. Connector-level DFR removed the gap on the watermark task but not on Waterbirds. A gate that starts at
-0.1 or higher came close to a fixed gate, while one started at 0.01 fell back near zero, so a start at
-or near zero is the cause. The gate stays small because its large gradient
+gaps were 9.9 and 50.3 points. Connector-level DFR removed the gap on the watermark task but not on Waterbirds. A learnable gate
+that starts open nearly matched a fixed gate, so the zero start, not learnability, drives the cost; starts of 0.1
+or 0.5 matched it on Waterbirds but closed only part of the gap on the watermark task, and a start of 0.01 fell
+back near zero. The gate stays small because its large gradient
 cancels itself, not because the gradient vanishes, and the visual pathway stays weak rather than closed. The effect
 did not appear with per-layer gates or on open-ended VQA-CP answers, where strong injection hurt generation. Capping the
-injection at the text norm gave the best free-form answers but gave back most of the robustness gain on the
+injection at the text norm gave the best free-form answers but gave back all of the robustness gain on the
 watermark task at 4B (not at 9B), so injection strength can trade one kind of reliability against the other. All experiments ran on free T4 GPUs. Future work should test released gated models and larger models trained for longer
 and benchmarks of spurious cues for
 open-ended answers [ye2026mmspubench; yang2025spuriverse].

@@ -61,9 +61,9 @@ worst-group accuracy [park2026scer]. We isolate a cause.
 
 1. **A controlled architectural cause.** In a single input-level connector, a learnable gate that starts at zero
    makes shortcut reliance more likely. Fixing the gate raises worst-group accuracy by 10.6 and 25.2 points
-   (d_z = 1.10 and 1.34, 15 paired seeds; all four LLM × task cells survive Holm correction). Gates started at
-   0.1 or higher come close to the fixed one while a start of 0.01 falls back near zero, so a start at or near
-   zero, not learnability, is the cause.
+   (d_z = 1.10 and 1.34, 15 paired seeds; all four LLM × task cells survive Holm correction). A learnable gate
+   started open nearly matches the fixed gate, so learnability is not the cause; starts of 0.1 or 0.5 match it on
+   Waterbirds and recover a third to two thirds of the gap on Watermark, and a start of 0.01 falls back near zero.
 2. **A different mechanism from the one known.** That zero-start gates stay small is known
    [lialin2023scalable; farazi2026gate]; why is not, in a text-coupled connector, where the dead-gradient account does
    not apply. We measure it directly: the gate's gradient is large, yet the gate barely moves, because the gradient
@@ -76,7 +76,7 @@ worst-group accuracy [park2026scer]. We isolate a cause.
    established).
 4. **Boundaries, reported as found.** Per-layer gated injection shows no gap; a stronger encoder narrows the gap on
    one task but not the other; and on open-ended VQA-CP the strong fixed injection harms free-form generation. Capping
-   the injection at the text norm repairs generation but, at 4B, gives back most of the robustness gain, a trade-off that
+   the injection at the text norm repairs generation but, at 4B, gives back the robustness gain on the watermark task, a trade-off that
    prior norm-matching advice could not see because it did not measure shortcuts.
 5. **Standard fixes and reproducible evidence.** Retraining only the connector on a small group-balanced set reaches
    89.6% worst-group accuracy on the watermark task and rescues the zero-start gate there, but not on Waterbirds,

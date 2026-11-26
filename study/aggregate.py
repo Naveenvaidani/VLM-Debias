@@ -50,7 +50,7 @@ def load(runs_dir):
             m = res["mean_over_templates"]
             held = res["per_template"][str(max(int(k) for k in res["per_template"]))]
             lo, hi = bootstrap_wga(arrays[f"{rule}_t0_preds"], arrays["labels"], arrays["groups"])
-            rows.append({"task": task, "connector": connector, "seed": int(seed_dir[-1]), "rule": rule,
+            rows.append({"task": task, "connector": connector, "seed": int(os.path.basename(seed_dir)[1:]), "rule": rule,
                          **{k: m[k] for k, _ in METRICS}, "heldout_wga": held["worst_group_acc"],
                          "wga_ci_lo": lo, "wga_ci_hi": hi, "best_epoch": res["best_epoch"],
                          "connector_params": r["connector_params"], "train_minutes": r["train_minutes"]})

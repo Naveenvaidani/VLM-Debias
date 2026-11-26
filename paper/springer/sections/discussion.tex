@@ -53,7 +53,8 @@ what the small gate does: in our setting it does not remove the image, it weaken
 \subsection{Initialisation and injection strength must be chosen together}
 
 A non-zero start, as LayerScale recommends for optimisation \citep{touvron2021cait} and as recent connectors already use
-\citep{lialin2023scalable,yan2026dgp}, removes the robustness cost of the gate. Standard fixes do not reliably remove it:
+\citep{lialin2023scalable,yan2026dgp}, reduces the robustness cost of the gate: an open start removed it, and starts of
+0.1 or 0.5 removed it on Waterbirds but only partly on the watermark task. Standard fixes do not reliably remove it:
 connector-level DFR rescued the zero-start gate on the watermark task but not on Waterbirds, and JTT on neither, so
 the start value should be set at design time rather than repaired afterwards.
 Strong injection has its own cost: the fixed gate injects about 70 to 130 times the text-embedding norm, which helps
@@ -61,8 +62,8 @@ the binary readout but disturbs free-form answers on VQA-CP, where it scores bel
 reports that visual tokens with much larger norms than text tokens lose information in pre-norm MLLMs
 \citep{li2025unseen} and the advice to inject at a matched norm \citep{farazi2026gate}. Capping the injection at the text norm
 repairs generation in our connector: the capped model is the best on both VQA-CP test splits and the only one whose
-answers depend on the test image. The same cap, however, gives back most of the robustness gain on the watermark
-task at 4B (50.6 against 67.2), although with the 9B model it kept the gain (63.9 against 63.2), so the cost may
+answers depend on the test image. The same cap, however, gives back all of the robustness gain on the watermark
+task at 4B (50.6 against 72.1 for the fixed gate and 49.7 for the zero start), although with the 9B model it kept the gain (63.9 against 63.2), so the cost may
 shrink with scale. Neither earlier study measures shortcut reliance, so this cost of norm matching was not
 visible to them. In our data a strong visual signal is what lets the class readout override a textual or
 background shortcut, and the same strength disturbs free-form decoding. No single injection strength was best on

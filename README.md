@@ -70,8 +70,8 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
    learning rate moves the gate further and closes the gap (dose-response). The learned gate is not fully shut:
    it still injects visual signal, but 15–35× less than the fixed gate. Group DRO shrinks the gap but does not
    remove it. New in rounds 4–7: a half-open learnable gate (starts at tanh α = 0.5, 5 seeds) matches the fixed
-   gate (Waterbirds 72.6 vs 73.1, Watermark 62.7 vs 67.2) and beats the zero-start gate by +11.4 and +20.1 points
-   (p = 0.014 and 0.006, exploratory); leaving the gate out of gradient clipping or weight decay does not open it
+   gate on Waterbirds (72.6 vs 72.9) but not fully on Watermark (62.7 vs 72.1, p = 0.066) and lies +10.7 and +13.0
+   points above the zero-start gate (p = 0.19 and 0.15, exploratory; seeds paired by true seed, see Reproducibility); leaving the gate out of gradient clipping or weight decay does not open it
    (final |tanh α| ≤ 0.0024); and with the image switched off the learned-gate model drops to the majority-class
    share (Waterbirds 89.4 → 77.8 average accuracy), so it still uses the image, through a much weaker signal.
 8. **The effect is specific to the single input-level block, and it does not carry over to open-ended VQA.**
@@ -454,8 +454,8 @@ Full tables, per-seed values and the code: [`results_study/extra_analyses.md`](r
 | **Group DRO** instead of ERM | 2 | 72.5 / 69.2 | 76.0 / 79.0 | +3.5 / +9.9 | A group-robust loss rescues most of it; the fixed gate still leads. |
 | **Injection ratio** ‖injected‖ / ‖text‖ | 6 / 6 | 3.5 (1.2–7.5) | 112 (95–129) | 15–35× | The learned pathway is open (out_proj grows) but much weaker; its size does not predict WGA (ρ = 0.33, p = 0.27). |
 | **CelebA** (third task) | 5 | 43.5 | 51.1 | +7.7 (p = 0.48) | Same direction, not significant. |
-| **Half-open gate**: learnable, starts at tanh = 0.5 (Waterbirds / Watermark) | 5 | 61.2 / 42.6 (zero start) | 73.1 / 67.2 | half-open: +11.4 / +20.1 over zero start (p = 0.014 / 0.006); −0.5 / −4.6 vs fixed (n.s.) | A learnable gate that starts open behaves like the fixed gate and moves little (final \|tanh α\| 0.44), so learnability is not the cause; the zero start is. |
-| **Gate out of gradient clipping** (3 seeds) / **no weight decay on the gate** (2 seeds) | 2–3 | 67.2 / 52.2 (Waterbirds), 52.9 / 28.0 (Watermark) | – | vs default learned: +2.9 / −8.7, +13.5 / −16.9 (all n.s.) | Neither protects the gate; it still ends at \|tanh α\| ≤ 0.0024. Clipping and weight decay are not what keeps it shut. |
+| **Half-open gate**: learnable, starts at tanh = 0.5 (Waterbirds / Watermark) | 5 | 61.9 / 49.7 (zero start) | 72.9 / 72.1 | half-open: +10.7 / +13.0 over zero start (p = 0.19 / 0.15); −0.3 / −9.5 vs fixed (p = 0.91 / 0.066) | The half-open gate moves little (final \|tanh α\| 0.44) and matches the fixed gate on Waterbirds but only partly on Watermark. |
+| **Gate out of gradient clipping** (3 seeds) / **no weight decay on the gate** (2 seeds) | 2–3 | 67.2 / 52.2 (Waterbirds), 52.9 / 28.0 (Watermark) | – | vs default learned, same seeds: +5.1 / −4.6, +2.5 / −19.6 (all n.s.) | Neither protects the gate; it still ends at \|tanh α\| ≤ 0.0024. Clipping and weight decay are not what keeps it shut. |
 | **Pathway ablation**: image switched off at test time | 1–2 | avg acc 89.4 → 77.8 (Waterbirds); 77.9 → 50.0 (Watermark) | 87.6 → 22.2; 88.3 → 50.0 | – | The learned-gate model still uses the image (falls to the majority-class share without it), through a signal about 38× weaker (injection ratio 2.6 vs 99). The gate is not shut; it is weak. |
 | **Shortcut strength** p = 0.9 / 0.99 (Watermark) | 2–3 | 75.7 / 6.7 | 77.5 / 20.1 (MLP 68.0 / 16.9) | +1.8 / +13.4 | The gap is small at p = 0.9 (all arms learn), large at 0.95 (+25), and at 0.99 every arm collapses (WGA 7–20). |
 | **Per-layer gates** (4 layers, learned vs fixed) | 5 / 4 | 70.8 / 68.3 | 70.4 / 70.6 | −0.4 / +2.3 (n.s.) | **No gap** with per-layer gates, although their learned gates are also small (mean \|tanh α\| 0.027). The effect is specific to one input-level block. |
@@ -725,8 +725,9 @@ paper/                         paper kit: outline, introduction, methodology, re
 - **The gate effect did not appear with per-layer gates and was reversed on VQA-CP** (fixed gate −5.0 test-ID). The
   claim is limited to a single input-level gated block on binary tasks; VQA-CP had no connector-free text-only
   baseline and only 3 seeds on a small subset.
-- Seeds in `results_study/h1` are run indices: seeds 0–4 appear twice (same-seed reruns, and seed 14 stored as 4), and
-  comparisons to those baselines in `rounds_4_8.md` average duplicates per seed id.
+- Seeds in `results_study/h1` are the true seeds 0–14. An earlier version of `study/aggregate.py` stored only the
+  last digit of the seed folder (s10–s14 became 0–4); the seed column was rebuilt by matching every row to its
+  original `s<k>/results.json` (60 of 60 unique matches), and control comparisons are now paired by true seed.
 - CelebA trains on an 8k subsample, so its numbers are not comparable to full-data benchmarks.
 - Group DRO is a full-model baseline with 2 seeds; JTT only at the connector.
 - The three classification tasks read out the first answer token; only VQA-CP tests open-ended generation.

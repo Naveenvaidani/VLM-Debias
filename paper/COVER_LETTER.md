@@ -20,10 +20,10 @@ several inject visual features through a tanh gate that starts at zero (Flamingo
 adapters in 2026). We hold the language model, frozen visual features, data and training budget fixed and vary only
 the connector. A learnable gate started at or near zero lowered worst-group accuracy by 10.6 and 25.2 points on
 Qwen3.5-4B (paired $d_z$ 1.10 and 1.34, $p < 0.001$, confirmatory tests on fresh seeds) and by 9.7 and 25.5 points on
-Phi-4-mini, and made robustness depend on the random seed. Gates started at 0.1 or higher came close to a fixed gate.
+Phi-4-mini, and made robustness depend on the random seed. A learnable gate started open nearly matched a fixed gate; starts of 0.1 or 0.5 matched it on one task only.
 The zero-start gate stays small because its large gradient keeps changing sign, which we measure directly, and its
 visual pathway stays in use rather than closing. On open-ended question answering, strong injection harms generation,
-and capping it at the text-embedding norm repairs generation but, at 4B, gives back most of the robustness gain.
+and capping it at the text-embedding norm repairs generation but, at 4B, gives back the robustness gain on the watermark task.
 With Qwen3.5-9B the gaps are 9.9 points on Waterbirds and 50.3 on the watermark task (5 paired seeds each,
 exploratory), so the effect does not shrink with model size. Connector-level reweighting on a small balanced set
 removes the gap on the watermark task but not on Waterbirds. All experiments ran on free T4 GPUs and are released with

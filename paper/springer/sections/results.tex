@@ -116,7 +116,7 @@ further, unpaired zero-start run of seed 3 reached only 19.3\%. Seeds 3 and 4 we
 seeds 0 to 2, so the alignment is shared only within each pair. The behaviour of the gate is the same as at 4B. The zero-start gate ended below \(|\tanh\alpha| = 0.005\) in every run, and its gradient
 changed sign on 39\% to 51\% of steps. A gate started at 0.1 drifted to about 0.073 and matched the fixed gate (69.7\%,
 +56.9 over the zero start). On this task the capped injection also kept the gain (63.9\%), unlike at 4B, where it
-lost 16.6 points on Watermark.
+lost 21.5 points on Watermark.
 
 \begin{table*}[t]
 \centering
@@ -189,14 +189,14 @@ What it shows
 \end{minipage} \\
 \midrule
 Learnable gate started open (\(\tanh\alpha_0 = 0.995\)) & 5 & 71.8 / 66.8 & fixed 72.9 / 72.1 & starting open removes most of the gap \\
-Fixed gate with injection capped at the text norm & 5 & 69.9 / 50.6 & zero start 61.2 / 42.6; fixed 73.1 / 67.2 & keeps part of the gain on Waterbirds (\(-3.2\) against fixed, \(p\) = 0.13) but loses most on Watermark (\(-16.6\), \(p\) = 0.002); 2 of 5 Watermark seeds collapse \\
-Learnable gate started at \(\tanh\alpha_0 = 0.01\) & 5 & 69.1 / 22.5 & zero start 61.2 / 42.6; fixed 73.1 / 67.2 & gate falls back to 0.001 to 0.008; Watermark collapses in 5 of 5 seeds, \(-20.1\) below the zero start (\(p\) = 0.041) \\
-Learnable gate started at \(\tanh\alpha_0 = 0.1\) & 5 & 73.1 / 65.3 & zero start 61.2 / 42.6; fixed 73.1 / 67.2 & +11.9 and +22.7 over the zero start (\(p\) = 0.041, 0.072); no difference from the fixed gate \\
-Learnable gate started at \(\tanh\alpha_0 = 0.01\), default \(W_o\) & 5 & 68.9 / 52.0 & zero start 61.2 / 42.6; fixed 73.1 / 67.2 & gate falls back to 0.002 to 0.009; not significantly better than the zero start (+7.7, +9.5; \(p\) = 0.29, 0.55); 2 of 5 Watermark seeds collapse \\
-Learnable gate started at \(\tanh\alpha_0 = 0.1\), default \(W_o\) & 5 & 73.9 / 57.6 & zero start 61.2 / 42.6; fixed 73.1 / 67.2 & gate stays at 0.046 to 0.074; +12.7 and +15.0 over the zero start (\(p\) = 0.021, 0.063); +0.7 and \(-9.6\) against fixed (\(p\) = 0.70, 0.064) \\
-Learnable gate started half open (\(\tanh\alpha_0 = 0.5\)) & 5 & 72.6 / 62.7 & zero start 61.2 / 42.6; fixed 73.1 / 67.2 & +11.4 and +20.1 over the zero start (\(p\) = 0.014, 0.006); no difference from the fixed gate \\
-Gate excluded from gradient clipping & 3 & 67.2 / 52.9 & zero start, same seeds 64.4 / 39.3 & no significant change; gate stays below 0.003 \\
-No weight decay on the gate & 2 & 52.2 / 28.0 & zero start, same seeds 60.9 / 44.9 & no rescue \\
+Fixed gate with injection capped at the text norm & 5 & 69.9 / 50.6 & zero start 61.9 / 49.7; fixed 72.9 / 72.1 & keeps most of the gain on Waterbirds (\(-3.0\) against fixed, \(p\) = 0.090) but loses all of it on Watermark (\(-21.5\), \(p\) = 0.003; +0.9 over the zero start); 2 of 5 Watermark seeds collapse \\
+Learnable gate started at \(\tanh\alpha_0 = 0.01\) & 5 & 69.1 / 22.5 & zero start 61.9 / 49.7; fixed 72.9 / 72.1 & gate falls back to 0.001 to 0.008; Watermark collapses in 5 of 5 seeds, \(-27.2\) below the zero start (\(p\) = 0.009) \\
+Learnable gate started at \(\tanh\alpha_0 = 0.1\) & 5 & 73.1 / 65.3 & zero start 61.9 / 49.7; fixed 72.9 / 72.1 & +11.2 and +15.6 over the zero start (\(p\) = 0.11, 0.11); +0.2 and \(-6.8\) against fixed (\(p\) = 0.91, 0.49) \\
+Learnable gate started at \(\tanh\alpha_0 = 0.01\), default \(W_o\) & 5 & 68.9 / 52.0 & zero start 61.9 / 49.7; fixed 72.9 / 72.1 & gate falls back to 0.002 to 0.009; not significantly different from the zero start (+7.0, +2.4; \(p\) = 0.39, 0.89); 2 of 5 Watermark seeds collapse \\
+Learnable gate started at \(\tanh\alpha_0 = 0.1\), default \(W_o\) & 5 & 73.9 / 57.6 & zero start 61.9 / 49.7; fixed 72.9 / 72.1 & gate stays at 0.046 to 0.074; +12.0 and +7.9 over the zero start (\(p\) = 0.12, 0.39); +0.9 and \(-14.6\) against fixed (\(p\) = 0.48, 0.017) \\
+Learnable gate started half open (\(\tanh\alpha_0 = 0.5\)) & 5 & 72.6 / 62.7 & zero start 61.9 / 49.7; fixed 72.9 / 72.1 & +10.7 and +13.0 over the zero start (\(p\) = 0.19, 0.15); \(-0.3\) and \(-9.5\) against fixed (\(p\) = 0.91, 0.066) \\
+Gate excluded from gradient clipping & 3 & 67.2 / 52.9 & zero start, same seeds 62.1 / 50.3 & no significant change (+5.1, +2.5); gate stays below 0.003 \\
+No weight decay on the gate & 2 & 52.2 / 28.0 & zero start, same seeds 56.8 / 47.6 & no rescue (\(-4.6\), \(-19.6\)) \\
 Connector learning rate \(5 \times 10^{-5}\) / \(2 \times 10^{-4}\) / \(10^{-3}\) (Waterbirds) & 2 & 35.9 / 56.8 / 65.8 & fixed 65.6 / 73.5 / 66.5 & the gap shrinks as the gate moves further (final 0.002 / 0.004 / 0.018) \\
 fp16 weights instead of 4-bit & 3 & 63.2 / 44.1 & fixed 73.2 / 65.1 & same direction (+10.0, +21.1; not significant with 3 seeds) \\
 Alignment 300 steps at \(3 \times 10^{-4}\) (Waterbirds) & 5 & 71.6 & fixed 76.0 & +4.4 (\(p\) = 0.065); no collapsed runs \\
@@ -207,20 +207,22 @@ Eight training epochs (Waterbirds) & 4 & 67.9 & fixed 79.0 & +11.0 (\(p\) = 0.02
 \end{tabular}
 \end{table*}
 
-A learnable gate that starts half open behaves like the fixed gate and moves little (final \(\tanh\alpha\) 0.44),
-so the outcome depends on where the gate starts rather than on whether it can learn. A start of 0.1 is already
-enough. That gate shrinks during training, to 0.058 to 0.064, but stays about a hundred times above the zero-start
-gate, and its worst-group accuracy equals the fixed gate's on Waterbirds (73.1 against 73.1). Its gradient also
-changes sign often: 27\% to 51\% of steps per epoch push the gate up, with a slight net push down. A start of 0.01
-is not enough. That gate falls back to the zero-start range (final \(|\tanh\alpha|\) 0.001 to 0.008), and Watermark
-collapses below 50\% in all five seeds (22.5, against 42.6 for the zero start). This control also starts
-\(W_o\) at zero, so it differs from the zero-start arm in two ways. Repeating the 0.01 and 0.1 starts with the default
-\(W_o\) initialisation of the zero-start arm, so that only the gate's start value differs, separates the two. With the
-default \(W_o\), the 0.01 start is no worse than the zero start (68.9 / 52.0 against 61.2 / 42.6, five paired seeds,
-neither difference significant), so the extra loss with \(W_o = 0\) came from the \(W_o\) initialisation. The 0.1 start
-still stays open (0.046 to 0.074). It matches the fixed gate on Waterbirds (73.9 against 73.1) and recovers about
-three fifths of the gap on Watermark (57.6 against 42.6 and 67.2; \(p\) = 0.063 against both). The threshold therefore
-lies between 0.01 and 0.1, and the size of the gain from a 0.1 start depends partly on \(W_o\).
+A learnable gate that starts open (\(\tanh\alpha_0 = 0.995\)) comes within 1.1 and 5.3 points of the fixed gate, so
+the cost does not come from the gate being learnable. Smaller starts help on Waterbirds but only partly on Watermark.
+On Waterbirds, gates started at 0.1 or 0.5 match the fixed gate (within one point) and lie 10.7 to 12.0 points above
+the zero start, although with five seeds none of these gains over the zero start is significant. On Watermark they
+recover between a third and two thirds of the gap: they lie 7.9 to 15.6 points above the zero start and 6.8 to 14.6
+below the fixed gate; with the default \(W_o\) the 0.1 start remains significantly below the fixed gate (\(p\) = 0.017).
+The half-open gate moves little (final \(\tanh\alpha\) 0.44). The 0.1 start shrinks during training, to 0.058 to 0.064,
+but stays about a hundred times above the zero-start gate; its gradient also changes sign often (27\% to 51\% of steps
+per epoch push the gate up, with a slight net push down). A start of 0.01 is not enough. That gate falls back to the
+zero-start range (final \(|\tanh\alpha|\) 0.001 to 0.008), and with \(W_o = 0\) Watermark collapses below 50\% in all five
+seeds (22.5, against 49.7 for the zero start on the same seeds, \(p\) = 0.009). Because this control also starts \(W_o\)
+at zero, we repeated the 0.01 and 0.1 starts with the default \(W_o\) of the zero-start arm, so that only the gate's
+start value differs. With the default \(W_o\) the 0.01 start is no different from the zero start (68.9 / 52.0 against
+61.9 / 49.7), so the extra loss with \(W_o = 0\) came from the \(W_o\) initialisation, and the 0.1 start still stays open
+(0.046 to 0.074). The threshold therefore lies between 0.01 and 0.1. A start at or near zero is the largest single
+cost, but on the watermark task a small non-zero start does not fully close the gap to a fixed gate.
 
 \emph{Longer alignment.} A first run with ten times longer alignment at the default learning rate destabilised the
 learnable-gate alignment (caption loss rose from 2.0 to 7.9), so we repeated it at a lower learning rate
@@ -228,11 +230,11 @@ learnable-gate alignment (caption loss rose from 2.0 to 7.9), so we repeated it 
 gate still never exceeded \(|\tanh\alpha| = 0.003\) during alignment, and its caption loss ended higher than the fixed
 gate's (2.23 to 2.34 against 1.84 to 2.05). The robustness gap depends on the task. On Watermark it remained: +14.4
 points after 3,000 steps (\(p\) = 0.11, 2 of 5 learnable runs collapsed, none fixed) and +24.7 after 6,000 steps
-(\(p\) = 0.014, \(d_z\) = 1.50, 3 of 5 against none), the same size as with the default alignment (+24.6 on the same
-seeds). On Waterbirds the gap was smaller at every length: +2.7 after 3,000 steps (\(p\) = 0.15) and +8.5 after 6,000
+(\(p\) = 0.014, \(d_z\) = 1.50, 3 of 5 against none), about the size of the gap with the default alignment (+22.5 on
+the same seeds). On Waterbirds the gap was smaller at every length: +2.7 after 3,000 steps (\(p\) = 0.15) and +8.5 after 6,000
 (\(p\) = 0.062), with no collapsed runs. To separate the learning rate from the length, we also aligned for the
 default 300 steps at \(3 \times 10^{-4}\) on Waterbirds. The gap was +4.4 (\(p\) = 0.065), already within the range of
-the longer runs and below the +11.9 of the default setting on the same seeds. On Waterbirds, then, the lower
+the longer runs and below the +11.0 of the default setting on the same seeds. On Waterbirds, then, the lower
 alignment learning rate rather than the longer alignment shrinks the gap, and ten or twenty times more steps do not
 shrink it further. In no setting did longer alignment open the gate or reverse the direction of the gap.
 
@@ -316,9 +318,9 @@ above the text-only model under shifted priors (\(p\) = 0.028). It is also the o
 the test image: removing the pathway or zeroing the image features costs 2.8
 to 3.5 points in distribution and 1.0 to 2.0 under shifted priors (\(p\) = 0.041 to 0.063, 3 seeds). Strong injection
 therefore disturbs free-form generation, and an injection held at the text norm avoids that while still using the
-image. On the binary shortcut tasks, however, the cap gives back much of the fixed gate's gain (Table \ref{tab:controls}): Waterbirds
-69.9 against 73.1 for the uncapped fixed gate (\(p\) = 0.13) and Watermark 50.6 against 67.2 (\(p\) = 0.002, \(d_z\) =
-\(-3.1\)), with two of five Watermark seeds collapsed. The capped model still uses the image on these tasks: removing
+image. On the binary shortcut tasks, however, the cap gives back part of the fixed gate's gain on Waterbirds and all of it on Watermark (Table \ref{tab:controls}):
+Waterbirds 69.9 against 72.9 for the uncapped fixed gate (\(p\) = 0.090) and Watermark 50.6 against 72.1 (\(p\) = 0.003,
+\(d_z\) = \(-3.0\)), the level of the zero-start gate (49.7), with two of five Watermark seeds collapsed. The capped model still uses the image on these tasks: removing
 the pathway makes it give one answer to every image. Injection strength therefore trades shortcut robustness on a
 class readout against the quality of free-form answers.
 
