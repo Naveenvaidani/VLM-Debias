@@ -137,7 +137,7 @@ def main():
     code_file = meta["code_file"]
     new_slug = f"{slug}-{a.suffix}"
     meta.update(id=f"{owner}/{new_slug}", title=new_slug.replace("-", " "), code_file=f"{new_slug}.py",
-                kernel_sources=[f"{owner}/vlm-shortcut-data-prep"],
+                kernel_sources=[f"{owner}/" + k.split("/", 1)[1] for k in meta.get("kernel_sources", [])],
                 dataset_sources=[f"{owner}/{ds_slug}"] if have else [])
     json.dump(meta, open(os.path.join(dst_dir, "kernel-metadata.json"), "w"))
     code = open(os.path.join(src_dir, code_file)).read()
@@ -159,7 +159,7 @@ RESUME = f" --resume_from {RES}" if RES else ""
     code = "\n".join(lines) + "\n"
     code = re.sub(r'(run\(base \+ "[^"]*")', r'\1 + RESUME', code)
     open(os.path.join(dst_dir, f"{new_slug}.py"), "w").write(code)
-    prep = f"{owner}/vlm-shortcut-data-prep"
+    prep = meta["kernel_sources"][0]
     if wait(a.target, prep, 120) != "COMPLETE":
         log(f"data prep {prep} did not complete; kernel not pushed")
         return

@@ -13,6 +13,31 @@ above every vision-language model trained with plain empirical risk minimisation
 the readout. This is a concrete case of modality under-use [wu2022greedy; huang2022modality] located in one component
 that ships in released models.
 
+## A toy model of weak injection
+
+Why should a weak injection favour the shortcut rather than simply slow learning? A two-feature toy model gives a
+simple account (code in `study/toy/`). A logistic readout sees two image features through an injection gain $g$: a
+core feature that separates the classes in every group but has a small scale ($\pm 0.5$, noise s.d. 0.1), and a
+shortcut feature that agrees with the label in 95% of training examples and has a large scale ($\pm 2$, noise s.d.
+1). To classify the minority groups, the core weight must exceed the shortcut weight by more than the ratio of
+their scales, so the effective weights $g\,w$ must grow large. The gain slows that growth: each update changes
+$g\,w$ by about $g$ times the step for Adam and $g^2$ times for SGD. With $g = 1$, 1,000 Adam steps reach 84.6%
+worst-group accuracy on a balanced test set and 3,000 steps 99.8%; with $g \le 0.1$ the readout is still in the
+early regime, where both weights are similar and the larger-scale shortcut decides, and worst-group accuracy stays
+below 17% (Table \ref{tab:toy}). More steps move the threshold to smaller gains. The toy fixes the gain, so it explains why a weak injection keeps the model on the shortcut, not why the
+learnable gate stays weak; its settings were chosen so that the full-gain model can learn the core feature, as the
+fixed-gate model does on our tasks.
+
+| Optimiser, steps | $g$ = 0.01 | 0.03 | 0.1 | 0.3 | 1 |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| Adam, 1,000 | 3.7 | 5.8 | 7.5 | 14.8 | 84.6 |
+| Adam, 3,000 | 5.6 | 7.1 | 16.1 | 85.5 | 99.8 |
+| SGD, 1,000 | 0.5 | 2.3 | 3.7 | 27.1 | 99.5 |
+| SGD, 3,000 | 1.6 | 3.0 | 6.4 | 87.0 | 99.9 |
+
+: Toy model: worst-group accuracy (%) of a logistic readout behind an injection gain $g$, mean over 20 seeds
+(s.d. at most 5.4). \label{tab:toy}
+
 ## Relation to gate closure in frozen VLMs
 
 Farazi et al. find that learnable gates on image-derived pathways in frozen VLMs settle near zero and that the
