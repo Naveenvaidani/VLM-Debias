@@ -85,6 +85,21 @@ def default_gap():
     return out
 
 
+def own_pairs():
+    """Controls whose two arms ran together (round 14): fixed minus zero start, one-sided paired t."""
+    rows = []
+    for job in ("r13-lr300", "r14-lr300-wm", "r14-frac-wm", "r14-lora-wm"):
+        d = runs(os.path.join(ROOT, "kaggle_out"), job)
+        for (tag, t), g in d.groupby(["tag", "task"]):
+            a = g[g.connector == "bottleneck"].groupby("seed").wga.mean()
+            b = g[g.connector == "bottleneck_fixed"].groupby("seed").wga.mean()
+            s = sorted(set(a.index) & set(b.index))
+            rows.append(dict(job=job, tag=tag, task=t, seeds=len(s), zero=a[s].mean(), fixed=b[s].mean(),
+                             gain=(b[s] - a[s]).mean(),
+                             p=stats.ttest_rel(b[s], a[s], alternative="greater").pvalue))
+    return pd.DataFrame(rows)
+
+
 def manuscript():
     files = glob.glob(os.path.join(ROOT, "paper/manuscript/*.md")) + \
         [os.path.join(ROOT, "paper", f) for f in ("INTRODUCTION.md", "RELATED_WORK.md", "COVER_LETTER.md")] + \
@@ -103,6 +118,11 @@ def main():
     text = "\n".join(manuscript().values())
     print("\nVariant means not found in the manuscript (formatted to one decimal):")
     missing = [f"{r.control} / {r.task}: {r.variant:.1f}" for r in c.itertuples() if f"{r.variant:.1f}" not in text]
+    o = own_pairs()
+    print("\nControls with both arms in one job (fixed minus zero start, one-sided p):")
+    print(o.round(3).to_string(index=False))
+    missing += [f"{r.tag} / {r.task}: {v:.1f}" for r in o.itertuples() for v in (r.zero, r.fixed, r.gain)
+                if f"{abs(v):.1f}" not in text]
     print("  " + ("\n  ".join(missing) if missing else "none"))
     stale = [v for v in ("61.2 / 42.6", "73.1 / 67.2", "64.4 / 39.3", "60.9 / 44.9", "+24.6 on the same", "+11.9 of the")
              if v in text]

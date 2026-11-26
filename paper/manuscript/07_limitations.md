@@ -5,8 +5,9 @@
 All training ran on free Kaggle sessions with two 16 GB T4 GPUs, which set the scale of the study. The confirmatory
 tests use 4B-parameter models; the 9B replication is exploratory, with five paired seeds per task, and its Waterbirds
 interval includes zero. All models run in 4-bit with LoRA, with a frozen vision encoder and a short alignment of 300
-steps. A lower alignment learning rate shrank the Waterbirds gap to between 3 and 9 points, and longer alignment did
-not shrink it further, so the size of the effect depends on the alignment settings. Released gated models are
+steps. A lower alignment learning rate shrank the Waterbirds gap to between 3 and 9 points and the Watermark gap
+at 300 steps to 9.8, and longer alignment did not shrink it further, so the size of the effect depends on the
+alignment settings. The LoRA-rank and training-set-size controls have three seeds each. Released gated models are
 larger, trained for longer and update their encoders, so our results show a risk in this low-budget regime, not a
 property of every gated model. The effect is limited to a single input-level gated block: per-layer gates showed no
 gap.

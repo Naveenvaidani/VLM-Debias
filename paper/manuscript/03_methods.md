@@ -87,7 +87,9 @@ rate $10^{-3}$). Stage 2 trains LoRA and the connector on the task for 4 epochs 
 $2 \times 10^{-4}$, cosine schedule, gradient-norm clipping at 1) and stops early after two epochs without
 validation gain. The budget is equal in steps for every connector. The checkpoint is chosen by validation
 worst-group accuracy; selection by validation average accuracy, which needs no group labels, is reported as a check.
-Alignment controls use 3,000 or 6,000 steps, or 300 steps at a learning rate of $3 \times 10^{-4}$.
+Alignment controls use 3,000 or 6,000 steps, or 300 steps at a learning rate of $3 \times 10^{-4}$. Further
+controls change the LoRA rank to 4 or 64, or train on a random half or quarter of the training set, drawn within
+each group so that group proportions are kept (seed $1000 + s$ for training seed $s$).
 
 Two standard fixes are applied after stage 2, with the LLM and LoRA frozen and only the connector retrained. The
 connector-level DFR retrains on a group-balanced half of the validation set and selects on the other half, following

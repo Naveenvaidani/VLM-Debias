@@ -101,10 +101,12 @@ Controls change one property of the learnable gate at a time (Table \ref{tab:con
 | No weight decay on the gate | 2 | 52.2 / 28.0 | zero start, same seeds 56.8 / 47.6 | no rescue ($-4.6$, $-19.6$) |
 | Connector learning rate $5 \times 10^{-5}$ / $2 \times 10^{-4}$ / $10^{-3}$ (Waterbirds) | 2 | 35.9 / 56.8 / 65.8 | fixed 65.6 / 73.5 / 66.5 | the gap shrinks as the gate moves further (final 0.002 / 0.004 / 0.018) |
 | fp16 weights instead of 4-bit | 3 | 63.2 / 44.1 | fixed 73.2 / 65.1 | same direction (+10.0, +21.1; not significant with 3 seeds) |
-| Alignment 300 steps at $3 \times 10^{-4}$ (Waterbirds) | 5 | 71.6 | fixed 76.0 | +4.4 ($p$ = 0.065); no collapsed runs |
+| Alignment 300 steps at $3 \times 10^{-4}$ | 5 | 71.6 / 50.5 | fixed 76.0 / 60.3 | +4.4 ($p$ = 0.065) and +9.8 ($p$ = 0.11); 0 and 2 of 5 learnable seeds collapse, none fixed |
 | Alignment 3,000 steps at $3 \times 10^{-4}$ | 5 | 71.3 / 54.6 | fixed 73.9 / 69.1 | gate stays below 0.003 in alignment; gap +2.7 and +14.4 (neither significant); 2 of 5 Watermark seeds collapse |
 | Alignment 6,000 steps at $3 \times 10^{-4}$ | 5 | 65.5 / 46.2 | fixed 74.0 / 70.8 | +8.5 ($p$ = 0.062) and +24.7 ($p$ = 0.014); 0 and 3 of 5 learnable seeds collapse, none fixed |
 | Eight training epochs (Waterbirds) | 4 | 67.9 | fixed 79.0 | +11.0 ($p$ = 0.023); one of five fixed-gate runs collapsed |
+| LoRA rank 4 / 64 instead of 16 (Watermark) | 3 | 53.8 / 53.0 | fixed 71.9 / 70.7 | +18.1 ($p$ = 0.023) and +17.7 ($p$ = 0.041); gate stays below 0.007 |
+| Half / quarter of the training set (Watermark) | 3 | 46.4 / 35.9 | fixed 55.9 / 65.5 | +9.5 ($p$ = 0.15) and +29.5 ($p$ = 0.015); 2 and 3 of 3 learnable seeds collapse, 0 and 1 fixed |
 
 : Controls on Qwen3.5-4B, test worst-group accuracy (%), Waterbirds / Watermark unless stated. \label{tab:controls}
 
@@ -137,7 +139,16 @@ the same seeds). On Waterbirds the gap was smaller at every length: +2.7 after 3
 default 300 steps at $3 \times 10^{-4}$ on Waterbirds. The gap was +4.4 ($p$ = 0.065), already within the range of
 the longer runs and below the +11.0 of the default setting on the same seeds. On Waterbirds, then, the lower
 alignment learning rate rather than the longer alignment shrinks the gap, and ten or twenty times more steps do not
-shrink it further. In no setting did longer alignment open the gate or reverse the direction of the gap.
+shrink it further. On Watermark the same 300-step alignment at $3 \times 10^{-4}$ left a gap of +9.8 ($p$ = 0.11,
+2 of 5 learnable runs collapsed, none fixed), smaller than with the default alignment but in the same direction. In
+no setting did longer alignment open the gate or reverse the direction of the gap.
+
+*Adapter rank and training-set size.* On Watermark, with three paired seeds each, the gap did not depend on the LoRA
+rank: +18.1 points at rank 4 ($p$ = 0.023) and +17.7 at rank 64 ($p$ = 0.041), against +19.3 at the default rank 16
+on the same seeds. Training on a group-stratified half or quarter of the training set, with the same number of
+epochs, left the gap at +9.5 ($p$ = 0.15) and +29.5 ($p$ = 0.015). With a quarter of the data every learnable-gate
+run collapsed below 50%, against one of three fixed-gate runs. In all of these runs the zero-start gate stayed below
+$|\tanh\alpha| = 0.007$.
 
 ## The gate's gradient is large but cancels itself
 
