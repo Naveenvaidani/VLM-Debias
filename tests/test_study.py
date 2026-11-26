@@ -268,3 +268,16 @@ class TestStudy(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_stratified_subset_keeps_every_group_and_fraction():
+    import numpy as np
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "study"))
+    from train_task import stratified_subset
+    group = np.array([0] * 100 + [1] * 10 + [2] * 3 + [3] * 50)
+    keep = stratified_subset(group, 0.5, seed=0)
+    counts = np.bincount(group[keep], minlength=4)
+    assert list(counts) == [50, 5, 2, 25]
+    assert np.all(np.diff(keep) > 0)
+    assert np.array_equal(keep, stratified_subset(group, 0.5, seed=0))
+    assert not np.array_equal(keep, stratified_subset(group, 0.5, seed=1))

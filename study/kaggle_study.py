@@ -123,6 +123,8 @@ def main():
     parser.add_argument("--balanced_sampling", action="store_true")
     parser.add_argument("--connector_lr", type=float, default=None, help="stage-2 connector learning rate")
     parser.add_argument("--lora_lr", type=float, default=None, help="stage-2 LoRA learning rate")
+    parser.add_argument("--lora_rank", type=int, default=None, help="stage-2 LoRA rank (train_task default 16)")
+    parser.add_argument("--train_frac", type=float, default=None, help="group-stratified fraction of training data")
     parser.add_argument("--attn_entropy_weight", type=float, default=0.0)
     parser.add_argument("--loss", choices=["erm", "groupdro"], default="erm")
     parser.add_argument("--clip_exclude_gate", action="store_true", help="control: gate left out of gradient clipping")
@@ -252,6 +254,8 @@ def main():
                        (["--balanced_sampling"] if args.balanced_sampling else []) + \
                        (["--connector_lr", str(args.connector_lr)] if args.connector_lr else []) + \
                        (["--lr", str(args.lora_lr)] if args.lora_lr else []) + \
+                       (["--lora_rank", str(args.lora_rank)] if args.lora_rank else []) + \
+                       (["--train_frac", str(args.train_frac)] if args.train_frac else []) + \
                        (["--attn_entropy_weight", str(args.attn_entropy_weight)] if args.attn_entropy_weight else []) + \
                        (["--loss", args.loss] if args.loss != "erm" else []) + \
                        (["--gate_no_wd"] if args.gate_no_wd else [])

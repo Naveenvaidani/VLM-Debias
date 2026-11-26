@@ -27,6 +27,16 @@ from src.study.connectors import CONNECTOR_NAMES
 from src.study.vlm import StudyVLM
 
 
+def stratified_subset(group, frac, seed):
+    """Sorted indices of a random subset holding `frac` of every group (at least one example per group)."""
+    rng = np.random.default_rng(seed)
+    keep = []
+    for g in np.unique(group):
+        idx = np.flatnonzero(group == g)
+        keep.append(rng.choice(idx, size=max(1, int(round(frac * len(idx)))), replace=False))
+    return np.sort(np.concatenate(keep))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--llm", required=True)
@@ -50,6 +60,8 @@ def main():
     parser.add_argument("--no_4bit", action="store_true", help="fp16 weights instead of NF4 (faster if it fits)")
     parser.add_argument("--time_budget_min", type=float, default=0)
     parser.add_argument("--max_train_samples", type=int, default=0, help="debug only")
+    parser.add_argument("--train_frac", type=float, default=1.0,
+                        help="random, group-stratified fraction of the training set (data-size control)")
     parser.add_argument("--freeze_llm", action="store_true", help="no LoRA: only the connector trains")
     parser.add_argument("--save_adapter", action="store_true",
                         help="save the selected (val WGA) LoRA + connector weights as adapter.pt for stage 3")
@@ -96,6 +108,11 @@ def main():
     if args.max_train_samples:
         train_set.indices, train_set.y, train_set.group = (x[:args.max_train_samples] for x in
                                                             (train_set.indices, train_set.y, train_set.group))
+    if args.train_frac < 1.0:
+        keep = stratified_subset(train_set.group, args.train_frac, seed=1000 + args.seed)
+        train_set.indices, train_set.y, train_set.group = (x[keep] for x in
+                                                            (train_set.indices, train_set.y, train_set.group))
+        print(f"train_frac {args.train_frac}: kept {len(keep)} training examples", flush=True)
     def cap(ds):
         """Evenly spaced subset, so every group stays represented (smoke tests only)."""
         if args.max_eval_samples and len(ds.indices) > args.max_eval_samples:
