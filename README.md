@@ -149,7 +149,7 @@ tanh = 0.995, which barely moves because its gradient is scaled by 0.01) and the
 | Stage 2 (task) | LoRA r 16, alpha 32, dropout 0.05 on attention, linear-attention and MLP projections; PagedAdamW8bit, lr 2e-4 (LoRA and connector), weight decay 0.01, batch 16, 4 epochs, 5% warmup + cosine, grad clip 1.0, early stop after 2 epochs without val WGA gain |
 | Prompting | Chat template; answer = first token of the class word; 2 training question phrasings, 1 held out for test |
 | Checkpoint selection | Best val worst-group accuracy (uses group labels); best val average accuracy reported as the label-free alternative |
-| Stage 3 (connector-only) | From the selected stage-2 model, LLM and LoRA frozen. DFR-style: group-balanced half of val, other half selects. JTT-style: training set with the stage-2 model's errors repeated 20x. 1 epoch |
+| Stage 3 (connector-only) | From the selected stage-2 model, LLM and LoRA frozen. DFR-style: group-balanced half of val, other half selects. JTT-style: training set with the stage-2 model's errors repeated 20x. 1 epoch (3 epochs in the round-13 runs on both gates) |
 | Seeds | 15 per arm on both tasks for the gate comparison, 5 for MLP vs Q-Former, Phi-4-mini and connector-DFR, 2–4 for follow-ups. A seed fixes data order and LoRA init; it does not replay a run exactly (non-deterministic GPU kernels), so seeds are random replicates and unpaired tests are reported too. Watermark seeds 8 and 14 were first missed (session budget), not excluded, and later run to equalise the arms at 15. Phi-4-mini Watermark seeds 5–9 were added after the 5-seed test missed α (disclosed; tested alone too). Every finished run is reported |
 | Hardware | Kaggle 2x NVIDIA T4 (16 GB); one job per GPU |
 

@@ -24,8 +24,10 @@ Phi-4-mini, and made robustness depend on the random seed. Gates started at 0.1 
 The zero-start gate stays small because its large gradient keeps changing sign, which we measure directly, and its
 visual pathway stays in use rather than closing. On open-ended question answering, strong injection harms generation,
 and capping it at the text-embedding norm repairs generation but, at 4B, gives back most of the robustness gain.
-With Qwen3.5-9B the watermark gap grows to 50.3 points (5 paired seeds, $d_z$ 2.03, exploratory), so the effect
-does not shrink with model size.
+With Qwen3.5-9B the gaps are 9.9 points on Waterbirds and 50.3 on the watermark task (5 paired seeds each,
+exploratory), so the effect does not shrink with model size. Connector-level reweighting on a small balanced set
+removes the gap on the watermark task but not on Waterbirds. All experiments ran on free T4 GPUs and are released with
+per-seed results.
 
 **Fit with the call.** The paper addresses two of the listed topics:
 - *Topic I, Unified Modeling Architectures (encoder–LLM pipelines; representation alignment across modalities).* The

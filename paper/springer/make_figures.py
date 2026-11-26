@@ -36,9 +36,12 @@ def hypotheses(path, llm):
 
 
 def scale9b():
-    """Exploratory Qwen3.5-9B rows (round 10): paired gain over seeds both arms finished, t-based 95% CI."""
+    """Exploratory Qwen3.5-9B rows: paired gain over seeds both arms finished, t-based 95% CI. Waterbirds seeds 3-4
+    come from round 13 (both arms in one session); the earlier unpaired round-10 learnable run of seed 3 is dropped."""
     from scipy import stats
     d = pd.read_csv(os.path.join(ROOT, "results_study/r10_scale9b_runs.csv"))
+    d = d[~((d.task == "waterbirds") & (d.seed >= 3))]
+    d = pd.concat([d, pd.read_csv(os.path.join(ROOT, "results_study/r13_9b_wb34_runs.csv"))])
     rows = []
     for task, name in [("waterbirds", "Waterbirds"), ("watermark_p0.95", "Watermark")]:
         t = d[d.task == task]

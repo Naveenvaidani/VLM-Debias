@@ -24,7 +24,10 @@ what the small gate does: in our setting it does not remove the image, it weaken
 
 ## Initialisation and injection strength must be chosen together
 
-A non-zero start, as LayerScale recommends for optimisation [touvron2021cait], removes the robustness cost of the gate.
+A non-zero start, as LayerScale recommends for optimisation [touvron2021cait] and as recent connectors already use
+[lialin2023scalable; yan2026dgp], removes the robustness cost of the gate. Standard fixes do not reliably remove it:
+connector-level DFR rescued the zero-start gate on the watermark task but not on Waterbirds, and JTT on neither, so
+the start value should be set at design time rather than repaired afterwards.
 Strong injection has its own cost: the fixed gate injects about 70 to 130 times the text-embedding norm, which helps
 the binary readout but disturbs free-form answers on VQA-CP, where it scores below a text-only model. This matches
 reports that visual tokens with much larger norms than text tokens lose information in pre-norm MLLMs

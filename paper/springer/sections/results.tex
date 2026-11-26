@@ -104,15 +104,16 @@ the fixed gate (Figure \ref{fig:seeds}). On Phi-4-mini the variance difference i
 \caption{Each line joins one paired run of the learnable gate to the fixed gate (Qwen3.5-4B) on (a) Waterbirds and (b) Watermark. Solid lines rise and dashed lines fall; the dotted line marks the 50\% collapse threshold}\label{fig:seeds}
 \end{figure*}
 
-\subsection{The effect grows with a larger language model}
+\subsection{The effect holds with a larger language model}
 
 We repeated the comparison with Qwen3.5-9B, keeping the code, features, data and training budget unchanged
 (Table \ref{tab:9b}). These runs are exploratory. On Watermark, the zero-start gate fell to 12.8\% worst-group
 accuracy and collapsed in all five seeds, while the fixed gate reached 63.2\% and collapsed in none. The gain, +50.3
-points (\(d_z\) = 2.03), is twice the 4B gain. Average accuracy rose from 63.7\% to 86.1\%. On Waterbirds a 12-hour
-session finished only three paired seeds. The direction is the same, +13.7 points, but not significant
-(\(p\) = 0.08). Two of four zero-start runs collapsed against none of three fixed-gate runs. The behaviour of the
-gate is the same as at 4B. The zero-start gate ended below \(|\tanh\alpha| = 0.005\) in every run, and its gradient
+points (\(d_z\) = 2.03), is twice the 4B gain. Average accuracy rose from 63.7\% to 86.1\%. On Waterbirds, five
+paired seeds give +9.9 points (\(p\) = 0.040, \(d_z\) = 1.05; Wilcoxon \(p\) = 0.031), about the 4B gain; the confidence
+interval includes zero. One of five paired zero-start runs collapsed, against none of the fixed-gate runs, and a
+further, unpaired zero-start run of seed 3 reached only 19.3\%. Seeds 3 and 4 were aligned in a later session than
+seeds 0 to 2, so the alignment is shared only within each pair. The behaviour of the gate is the same as at 4B. The zero-start gate ended below \(|\tanh\alpha| = 0.005\) in every run, and its gradient
 changed sign on 39\% to 51\% of steps. A gate started at 0.1 drifted to about 0.073 and matched the fixed gate (69.7\%,
 +56.9 over the zero start). On this task the capped injection also kept the gain (63.9\%), unlike at 4B, where it
 lost 16.6 points on Watermark.
@@ -120,9 +121,9 @@ lost 16.6 points on Watermark.
 \begin{table*}[t]
 \centering
 \caption{Qwen3.5-9B (exploratory), test worst-group accuracy (\%), paired by seed. ``Fixed'' is the fixed gate, or the
-variant named in the row. The \(p\)-values are from one-sided paired t-tests and are uncorrected. On Waterbirds the
-learnable mean is over the three paired seeds; over all four seeds it is 49.9 ± 22.7. Collapsed: runs below 50\%,
-learnable / fixed. \label{tab:9b}}
+variant named in the row. The \(p\)-values are from one-sided paired t-tests and are uncorrected. On Waterbirds an
+additional, unpaired zero-start run of seed 3 (19.3\%) is not included in the paired test. Collapsed: paired runs
+below 50\%, learnable / fixed. \label{tab:9b}}
 \footnotesize
 \begin{tabular}{@{}
   >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.2371}}
@@ -152,7 +153,7 @@ Gain {[}95\% CI{]}
 Collapsed
 \end{minipage} \\
 \midrule
-Waterbirds & 3 & 60.1 & 73.8 & +13.7 {[}−13.7, 41.1{]} & 0.082 & 1.24 & 2 of 4 / 0 of 3 \\
+Waterbirds & 5 & 60.9 & 70.7 & +9.9 {[}−1.8, 21.6{]} & 0.040 & 1.05 & 1 of 5 / 0 of 5 \\
 Watermark & 5 & 12.8 & 63.2 & +50.3 {[}19.6, 81.1{]} & 0.005 & 2.03 & 5 of 5 / 0 of 5 \\
 Watermark, start 0.1 & 5 & 12.8 & 69.7 & +56.9 {[}42.3, 71.4{]} & \(2 \times 10^{-4}\) & 4.85 & 5 of 5 / 0 of 5 \\
 Watermark, capped & 5 & 12.8 & 63.9 & +51.0 {[}45.7, 56.4{]} & \(6 \times 10^{-6}\) & 11.94 & 5 of 5 / 1 of 5 \\
@@ -191,15 +192,16 @@ Learnable gate started open (\(\tanh\alpha_0 = 0.995\)) & 5 & 71.8 / 66.8 & fixe
 Fixed gate with injection capped at the text norm & 5 & 69.9 / 50.6 & zero start 61.2 / 42.6; fixed 73.1 / 67.2 & keeps part of the gain on Waterbirds (\(-3.2\) against fixed, \(p\) = 0.13) but loses most on Watermark (\(-16.6\), \(p\) = 0.002); 2 of 5 Watermark seeds collapse \\
 Learnable gate started at \(\tanh\alpha_0 = 0.01\) & 5 & 69.1 / 22.5 & zero start 61.2 / 42.6; fixed 73.1 / 67.2 & gate falls back to 0.001 to 0.008; Watermark collapses in 5 of 5 seeds, \(-20.1\) below the zero start (\(p\) = 0.041) \\
 Learnable gate started at \(\tanh\alpha_0 = 0.1\) & 5 & 73.1 / 65.3 & zero start 61.2 / 42.6; fixed 73.1 / 67.2 & +11.9 and +22.7 over the zero start (\(p\) = 0.041, 0.072); no difference from the fixed gate \\
-Learnable gate started at \(\tanh\alpha_0 = 0.01\), default \(W_o\) & 3 / 4 & 66.6 / 46.1 & zero start, same seeds 64.4 / 44.2; fixed 74.6 / 67.3 & gate falls back to 0.002 to 0.009; no better than the zero start (+2.2, +1.9); 2 of 4 Watermark seeds collapse \\
-Learnable gate started at \(\tanh\alpha_0 = 0.1\), default \(W_o\) & 3 / 4 & 73.2 / 58.9 & zero start, same seeds 64.4 / 44.2; fixed 74.6 / 67.4 & gate stays at 0.070 to 0.074; +8.8 and +14.6 over the zero start, \(-1.4\) and \(-8.5\) against fixed (all \(p \ge 0.15\)) \\
+Learnable gate started at \(\tanh\alpha_0 = 0.01\), default \(W_o\) & 5 & 68.9 / 52.0 & zero start 61.2 / 42.6; fixed 73.1 / 67.2 & gate falls back to 0.002 to 0.009; not significantly better than the zero start (+7.7, +9.5; \(p\) = 0.29, 0.55); 2 of 5 Watermark seeds collapse \\
+Learnable gate started at \(\tanh\alpha_0 = 0.1\), default \(W_o\) & 5 & 73.9 / 57.6 & zero start 61.2 / 42.6; fixed 73.1 / 67.2 & gate stays at 0.046 to 0.074; +12.7 and +15.0 over the zero start (\(p\) = 0.021, 0.063); +0.7 and \(-9.6\) against fixed (\(p\) = 0.70, 0.064) \\
 Learnable gate started half open (\(\tanh\alpha_0 = 0.5\)) & 5 & 72.6 / 62.7 & zero start 61.2 / 42.6; fixed 73.1 / 67.2 & +11.4 and +20.1 over the zero start (\(p\) = 0.014, 0.006); no difference from the fixed gate \\
 Gate excluded from gradient clipping & 3 & 67.2 / 52.9 & zero start, same seeds 64.4 / 39.3 & no significant change; gate stays below 0.003 \\
 No weight decay on the gate & 2 & 52.2 / 28.0 & zero start, same seeds 60.9 / 44.9 & no rescue \\
 Connector learning rate \(5 \times 10^{-5}\) / \(2 \times 10^{-4}\) / \(10^{-3}\) (Waterbirds) & 2 & 35.9 / 56.8 / 65.8 & fixed 65.6 / 73.5 / 66.5 & the gap shrinks as the gate moves further (final 0.002 / 0.004 / 0.018) \\
 fp16 weights instead of 4-bit & 3 & 63.2 / 44.1 & fixed 73.2 / 65.1 & same direction (+10.0, +21.1; not significant with 3 seeds) \\
+Alignment 300 steps at \(3 \times 10^{-4}\) (Waterbirds) & 5 & 71.6 & fixed 76.0 & +4.4 (\(p\) = 0.065); no collapsed runs \\
 Alignment 3,000 steps at \(3 \times 10^{-4}\) & 5 & 71.3 / 54.6 & fixed 73.9 / 69.1 & gate stays below 0.003 in alignment; gap +2.7 and +14.4 (neither significant); 2 of 5 Watermark seeds collapse \\
-Alignment 6,000 steps at \(3 \times 10^{-4}\) (Watermark) & 5 & 46.2 & fixed 70.8 & +24.7 (\(p\) = 0.014); 3 of 5 learnable seeds collapse, none fixed \\
+Alignment 6,000 steps at \(3 \times 10^{-4}\) & 5 & 65.5 / 46.2 & fixed 74.0 / 70.8 & +8.5 (\(p\) = 0.062) and +24.7 (\(p\) = 0.014); 0 and 3 of 5 learnable seeds collapse, none fixed \\
 Eight training epochs (Waterbirds) & 4 & 67.9 & fixed 79.0 & +11.0 (\(p\) = 0.023); one of five fixed-gate runs collapsed \\
 \bottomrule
 \end{tabular}
@@ -214,12 +216,11 @@ is not enough. That gate falls back to the zero-start range (final \(|\tanh\alph
 collapses below 50\% in all five seeds (22.5, against 42.6 for the zero start). This control also starts
 \(W_o\) at zero, so it differs from the zero-start arm in two ways. Repeating the 0.01 and 0.1 starts with the default
 \(W_o\) initialisation of the zero-start arm, so that only the gate's start value differs, separates the two. With the
-default \(W_o\), the 0.01 start behaves like the zero start rather than worse (66.6 / 46.1 against 64.4 / 44.2 on the
-same seeds), so the extra loss with \(W_o = 0\) came from the \(W_o\) initialisation. The 0.1 start still stays open
-(0.070 to 0.074). It matches the fixed gate on Waterbirds (73.2 against 74.6) and recovers about two thirds of the
-gap on Watermark (58.9 against 44.2 and 67.4), though with three and four seeds neither difference is significant.
-The threshold therefore lies between 0.01 and 0.1, and the size of the gain from a 0.1 start depends partly on
-\(W_o\).
+default \(W_o\), the 0.01 start is no worse than the zero start (68.9 / 52.0 against 61.2 / 42.6, five paired seeds,
+neither difference significant), so the extra loss with \(W_o = 0\) came from the \(W_o\) initialisation. The 0.1 start
+still stays open (0.046 to 0.074). It matches the fixed gate on Waterbirds (73.9 against 73.1) and recovers about
+three fifths of the gap on Watermark (57.6 against 42.6 and 67.2; \(p\) = 0.063 against both). The threshold therefore
+lies between 0.01 and 0.1, and the size of the gain from a 0.1 start depends partly on \(W_o\).
 
 \emph{Longer alignment.} A first run with ten times longer alignment at the default learning rate destabilised the
 learnable-gate alignment (caption loss rose from 2.0 to 7.9), so we repeated it at a lower learning rate
@@ -228,10 +229,12 @@ gate still never exceeded \(|\tanh\alpha| = 0.003\) during alignment, and its ca
 gate's (2.23 to 2.34 against 1.84 to 2.05). The robustness gap depends on the task. On Watermark it remained: +14.4
 points after 3,000 steps (\(p\) = 0.11, 2 of 5 learnable runs collapsed, none fixed) and +24.7 after 6,000 steps
 (\(p\) = 0.014, \(d_z\) = 1.50, 3 of 5 against none), the same size as with the default alignment (+24.6 on the same
-seeds). On Waterbirds it almost closed: the learnable gate rose from 61.2 to 71.3 and the gap fell to +2.7
-(\(p\) = 0.15), with no collapsed runs. Longer alignment therefore does not open the gate, but on the easier task it
-makes the closed gate less harmful. Because the learning rate also changed, these runs separate alignment length
-from the default setting only together with the learning rate.
+seeds). On Waterbirds the gap was smaller at every length: +2.7 after 3,000 steps (\(p\) = 0.15) and +8.5 after 6,000
+(\(p\) = 0.062), with no collapsed runs. To separate the learning rate from the length, we also aligned for the
+default 300 steps at \(3 \times 10^{-4}\) on Waterbirds. The gap was +4.4 (\(p\) = 0.065), already within the range of
+the longer runs and below the +11.9 of the default setting on the same seeds. On Waterbirds, then, the lower
+alignment learning rate rather than the longer alignment shrinks the gap, and ten or twenty times more steps do not
+shrink it further. In no setting did longer alignment open the gate or reverse the direction of the gap.
 
 \subsection{The gate's gradient is large but cancels itself}
 
@@ -358,13 +361,64 @@ Capped injection & 49.6 ± 1.7 & 46.7 ± 0.4 & 30.6 ± 0.9 & 29.7 ± 1.2 & 39.0\
 \end{tabular}
 \end{table*}
 
-\subsection{A connector-only fix}
+\subsection{Standard fixes on both gates}
 
-Retraining only the connector on half of the group-balanced validation set, with the LLM and LoRA frozen, lifts the
-fixed-gate connector on Watermark from 72.5 to 89.6 ± 0.5 (5 seeds). This beats the same fix on the MLP projector
-(81.2; +8.4, \(p < 0.001\)) and a linear probe trained the same way on the frozen features (85.1). On Waterbirds it
-gives no gain (73.9 to 74.1) (Figure \ref{fig:fixes}). Qwen3.5-4B with its own vision tower, zero-shot and with a
-threshold calibrated on validation, reaches only 35.5 on Waterbirds.
+Retraining only the connector on half of the group-balanced validation set, with the LLM and LoRA frozen (a
+connector-level form of deep feature reweighting, DFR \citep{kirichenko2023dfr}), lifts the fixed-gate connector on
+Watermark from 72.5 to 89.6 ± 0.5 (5 seeds). This beats the same fix on the MLP projector (81.2; +8.4,
+\(p < 0.001\)) and a linear probe trained the same way on the frozen features (85.1) (Figure \ref{fig:fixes}). On
+Waterbirds one epoch of retraining gives almost nothing (+0.2 over five seeds, 73.9 to 74.1; seeds 0 to 2 gained
+2.6 to 4.2 points and seeds 3 and 4 lost), and three epochs give +8.9 over three seeds (73.9 to 82.7, \(p\) = 0.077).
+The Watermark result above uses one epoch.
+Qwen3.5-4B with its own vision tower, zero-shot and with a threshold calibrated on validation, reaches only 35.5 on
+Waterbirds.
+
+To test whether standard fixes remove the gate effect, we applied the same connector-level DFR and a
+just-train-twice (JTT) retraining \citep{liu2021jtt}, which repeats the stage-2 model's training errors 20 times, to both
+gates (Table \ref{tab:fixes}; three paired seeds, exploratory). DFR rescues the zero-start gate on Watermark (51.3 to
+87.9, \(p\) = 0.013), where it comes within 2.5 points of the fixed gate with DFR. On Waterbirds it does not rescue it
+(65.0 to 68.5, \(p\) = 0.22), and the fixed gate with DFR stays 14.2 points ahead (\(p\) = 0.023). JTT does not help the
+zero-start gate on either task, and on Waterbirds the fixed gate with JTT is 20.9 points ahead of the zero-start gate
+with JTT (\(p\) = 0.006). Group labels used only at the connector thus undo the gate's cost when the shortcut is a
+local visual mark, but not when it is the image background, and error upweighting without group labels does not
+undo it.
+
+\begin{table*}[t]
+\centering
+\caption{Connector-level DFR (balanced half of validation, other half selects) and JTT (training errors repeated 20 times),
+both retraining only the connector for three epochs from the stage-2 model, Qwen3.5-4B, test worst-group accuracy
+(\%), mean ± s.d. over seeds 0 to 2. \label{tab:fixes}}
+\footnotesize
+\begin{tabular}{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1176}}
+  >{\centering\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1471}}
+  >{\centering\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1471}}
+  >{\centering\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1471}}
+  >{\centering\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1471}}
+  >{\centering\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1471}}
+  >{\centering\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1471}}@{}}
+\toprule
+\begin{minipage}[b]{\linewidth}\raggedright
+Task
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Learnable
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
++ DFR
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
++ JTT
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Fixed
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
++ DFR
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
++ JTT
+\end{minipage} \\
+\midrule
+Waterbirds & 65.0 ± 9.5 & 68.5 ± 5.9 & 54.6 ± 6.2 & 73.9 ± 4.8 & 82.7 ± 4.4 & 75.5 ± 4.3 \\
+Watermark & 51.3 ± 13.0 & 87.9 ± 2.4 & 52.9 ± 24.9 & 68.8 ± 1.8 & 90.4 ± 0.9 & 56.6 ± 8.1 \\
+\bottomrule
+\end{tabular}
+\end{table*}
 
 \begin{figure*}[t]
 \centering

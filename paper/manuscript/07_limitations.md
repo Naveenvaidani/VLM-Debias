@@ -2,33 +2,37 @@
 
 ---
 
-The confirmatory tests use 4B-parameter models. The 9B replication is exploratory, with five seeds on Watermark and
-three on Waterbirds, where it is not significant. All models run in 4-bit with LoRA, with a frozen vision encoder and
-a short alignment of 300 steps. Longer alignment (up to 6,000 steps) left the gate closed but nearly removed the
-Waterbirds gap, so the size of the effect depends on how long the connector is aligned. Released gated models are larger, trained for longer and update their encoders, so our results show a
-risk in this regime, not a property of every gated model. The effect is limited to a single input-level gated block:
-per-layer gates showed no gap.
+All training ran on free Kaggle sessions with two 16 GB T4 GPUs, which set the scale of the study. The confirmatory
+tests use 4B-parameter models; the 9B replication is exploratory, with five paired seeds per task, and its Waterbirds
+interval includes zero. All models run in 4-bit with LoRA, with a frozen vision encoder and a short alignment of 300
+steps. A lower alignment learning rate shrank the Waterbirds gap to between 3 and 9 points, and longer alignment did
+not shrink it further, so the size of the effect depends on the alignment settings. Released gated models are
+larger, trained for longer and update their encoders, so our results show a risk in this low-budget regime, not a
+property of every gated model. The effect is limited to a single input-level gated block: per-layer gates showed no
+gap.
 
 Three of the four tasks use a binary readout from the first answer token. On the one open-ended benchmark, a VQA-CP v2
 subset with three seeds, the gate effect did not appear, strong injection hurt generation, and only the capped
 connector used the test image beyond a text-only baseline; with three seeds these results are exploratory.
 
-Several controls have few seeds: the pathway ablation and the default-$W_o$ starts three to four, the learning-rate sweep two per setting, fp16 and the
-shortcut-strength sweep two or three. They are reported as exploratory. Phi-4-mini Watermark was extended from five to
+Several controls have few seeds: the pathway ablation three to four, the DFR and JTT comparison on both gates three,
+the learning-rate sweep two per setting, fp16 and the shortcut-strength sweep two or three. They are reported as exploratory. Phi-4-mini Watermark was extended from five to
 ten seeds after its first test, which we disclose; the added seeds also pass on their own. Runs are not
 bit-reproducible on GPUs, so seeds are random replicates rather than exact repeats.
 
 The learnable and fixed gates differ in two ways, whether the gate trains and whether the zero start sits in the gate
 or in the output layer. The second difference cannot be removed, because both at zero cannot train; the 0.01 and
-0.1 starts with the default $W_o$ separate them, but with three and four seeds. The open gate barely moves because its
+0.1 starts with the default $W_o$ separate them (five seeds each). The open gate barely moves because its
 gradient is scaled by $1 - \tanh^2\alpha \approx 0.01$.
 
 Equivalence between connector types is not established. CelebA uses an 8,000-image training subsample and a binary,
 annotator-assigned "Male" attribute, so its results say nothing about sex or gender beyond that label; the watermark
 shortcut is partly textual [materzynska2022disentangling], and SigLIP's web pre-training may include images from the
-source datasets, a factor shared by every arm. Group DRO is the only full-model group-robust baseline we ran; we did
-not run gradient-modulation methods for modality imbalance [peng2022balanced] or label-free reweighting at full
-scale, because the study isolates a cause rather than competing with fixes. Two of the tasks are standard but small
+source datasets, a factor shared by every arm. Group DRO is the only full-model group-robust baseline we ran; DFR
+and JTT retrain only the connector. We did not run gradient-modulation methods for modality imbalance
+[peng2022balanced], which balance two separately encoded modalities fused at the output and have no direct
+counterpart in a model where the image enters the LLM's input, because the study isolates a cause rather than
+competing with fixes. Two of the tasks are standard but small
 group-robustness benchmarks and one is synthetic; open-ended spurious-cue benchmarks for MLLMs
 [ye2026mmspubench; yang2025spuriverse] need a different training protocol and are left to future work. A first version
 of the control that gives each test example another example's image swapped images only within a group, because the

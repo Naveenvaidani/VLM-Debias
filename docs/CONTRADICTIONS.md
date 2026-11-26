@@ -236,3 +236,20 @@ measurement. It needs no new run design: every round-9 job that trains a learnab
 - Waterbirds: learnable 61.2 → 71.3; gap +2.7 (p = 0.15), no collapses. **Contradicts** a task-general effect:
   on the easier task longer alignment makes the closed gate almost harmless. Reported in Results and Limitations.
 - Caveat: learning rate changed with length, so length and lr are not separated.
+
+## Round 13 (26 Nov 2026)
+
+- **9B Waterbirds pairing.** Seed 3 of the zero-start gate exists twice: round 10 (19.3%, its fixed partner never
+  ran) and round 13 (60.1%, paired with a fixed run from the same session). A first merge averaged the two and gave
+  +13.9 (p = 0.034); the paper uses the clean pairing (round-10 seeds 0-2, round-13 seeds 3-4): +9.9 [-1.8, 21.6],
+  one-sided p = 0.040, d_z = 1.05. The round-10 seed-3 run is reported as unpaired.
+- **Connector-DFR on Waterbirds.** The first runs (stage3, stage3b, stage3c kernels) used `--stage3_epochs 1`
+  (+0.2, 5 seeds); round 13 used the default of 3 epochs (+8.9, 3 seeds). Both are reported, labelled by epochs.
+  README previously said "1 epoch" for all stage-3 runs; corrected.
+- **Waterbirds 6,000-step alignment.** With 4 of 5 seeds the gap was +5.2; with all 5 it is +8.5 (p = 0.062). The
+  earlier text "the Waterbirds gap almost closes" (from 3,000 steps, +2.7) is replaced: a lower alignment learning
+  rate shrinks the gap (+4.4 at 300 steps, 3e-4), longer alignment does not shrink it further.
+- **Citations.** All 75 cited entries matched arXiv/Crossref by title and first author. Wording corrected to what
+  the sources state for balaji2026forget, rm2026zerogated, farazi2026gate (gate initialisation was not "untested"),
+  li2025unseen, sarridis2026scaling, zou2024videodistill, ahn2026evident. The study earlier described as
+  "Akbari et al." is Lialin et al. 2023 (arXiv 2304.02080).
