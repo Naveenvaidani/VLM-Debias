@@ -115,7 +115,9 @@ interval includes zero. One of five paired zero-start runs collapsed, against no
 further, unpaired zero-start run of seed 3 reached only 19.3\%. Seeds 3 and 4 were aligned in a later session than
 seeds 0 to 2, so the alignment is shared only within each pair. The behaviour of the gate is the same as at 4B. The zero-start gate ended below \(|\tanh\alpha| = 0.005\) in every run, and its gradient
 changed sign on 39\% to 51\% of steps. A gate started at 0.1 drifted to about 0.073 and matched the fixed gate (69.7\%,
-+56.9 over the zero start). On this task the capped injection also kept the gain (63.9\%), unlike at 4B, where it
++56.9 over the zero start). On Waterbirds the 0.1 start also matched the fixed gate (70.6\% against 70.7\%, \(-0.2\)
+points, \(p\) = 0.86 two-sided) and lay 9.7 points above the zero start (\(p\) = 0.057), with its gate at 0.076 to 0.078
+and no collapsed runs. On this task the capped injection also kept the gain (63.9\%), unlike at 4B, where it
 lost 21.5 points on Watermark.
 
 \begin{table*}[t]
@@ -154,6 +156,7 @@ Collapsed
 \end{minipage} \\
 \midrule
 Waterbirds & 5 & 60.9 & 70.7 & +9.9 {[}−1.8, 21.6{]} & 0.040 & 1.05 & 1 of 5 / 0 of 5 \\
+Waterbirds, start 0.1 & 5 & 60.9 & 70.6 & +9.7 {[}−3.6, 23.0{]} & 0.057 & 0.90 & 1 of 5 / 0 of 5 \\
 Watermark & 5 & 12.8 & 63.2 & +50.3 {[}19.6, 81.1{]} & 0.005 & 2.03 & 5 of 5 / 0 of 5 \\
 Watermark, start 0.1 & 5 & 12.8 & 69.7 & +56.9 {[}42.3, 71.4{]} & \(2 \times 10^{-4}\) & 4.85 & 5 of 5 / 0 of 5 \\
 Watermark, capped & 5 & 12.8 & 63.9 & +51.0 {[}45.7, 56.4{]} & \(6 \times 10^{-6}\) & 11.94 & 5 of 5 / 1 of 5 \\
