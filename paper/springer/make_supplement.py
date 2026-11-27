@@ -124,6 +124,37 @@ def own_pairs():
                  "tab:s-own", "llrrrr")
 
 
+def long_align():
+    d = pd.concat([pd.read_csv(os.path.join(ROOT, f"results_study/{f}.csv"))
+                   for f in ("r12_long_align_runs", "r13_long6k_wb_runs")])
+    rows = []
+    for (tag, t), g in d.groupby(["tag", "task"]):
+        n = tag.split("long")[1]
+        for r in paired_rows(g).itertuples(index=False):
+            rows.append((f"{int(n):,} steps", TASK[t]) + tuple(r) +
+                        ((f1(g[(g.connector == 'bottleneck') & (g.seed == r[0])].gate.abs().max() * 1000),)
+                         if isinstance(r[0], (int, np.integer)) else ("",)))
+    return table(pd.DataFrame(rows), ["Alignment", "Task", "Seed", "Zero start", "Fixed", "Fixed $-$ zero",
+                                      r"Gate $\times 10^3$"],
+                 "Longer alignment at learning rate $3\\times10^{-4}$ (Qwen3.5-4B, test worst-group accuracy, \\%). "
+                 "Gate: final $|\\tanh\\alpha|$ of the zero-start arm.", "tab:s-align", "llrrrrr")
+
+
+def dfr_jtt():
+    d = pd.concat([pd.read_csv(os.path.join(ROOT, f"results_study/r13_dfrjtt_{t}_runs.csv")) for t in ("wb", "wm")])
+    cols = ["bottleneck", "bottleneck_dfr", "bottleneck_jtt", "bottleneck_fixed", "bottleneck_fixed_dfr",
+            "bottleneck_fixed_jtt"]
+    out = []
+    for t, g in d.groupby("task"):
+        w = g.pivot_table(index="seed", columns="connector", values="wga", aggfunc="mean")[cols]
+        df = w.map(f1).reset_index()
+        df.loc[len(df)] = [r"\textit{mean}"] + [f1(w[c].mean()) for c in cols]
+        out.append(table(df, ["Seed", "Zero", "Zero + DFR", "Zero + JTT", "Fixed", "Fixed + DFR", "Fixed + JTT"],
+                         f"Connector-level DFR and JTT on both gates, {TASK[t]} (Qwen3.5-4B, 3 epochs of "
+                         "connector retraining, test worst-group accuracy, \\%).", f"tab:s-dfr-{t[:5]}"))
+    return out
+
+
 def celeba():
     o = pd.read_csv(os.path.join(ROOT, "results_study/celeba/all_runs.csv"))
     o = o[o.rule == "wga"]
@@ -181,7 +212,8 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     s = [PRE, r"\section{Gate comparison per seed}"] + h1_tables()
     s += [r"\section{Larger language model}"] + scale9b()
-    s += [r"\section{Controls per seed}", controls(), own_pairs()]
+    s += [r"\section{Controls per seed}", controls(), own_pairs(), long_align()]
+    s += [r"\section{Standard fixes on both gates}"] + dfr_jtt()
     s += [r"\section{CelebA per seed}", celeba()]
     s += [r"\section{Toy model}", r"Settings as in the paper: core feature $\pm 0.5$ (noise s.d.\ 0.1), shortcut "
           r"$\pm 2$ (s.d.\ 1) agreeing with the label in 95\% of training examples; Adam learning rate 0.01, SGD 0.5; "

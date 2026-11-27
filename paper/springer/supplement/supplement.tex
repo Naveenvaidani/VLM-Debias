@@ -242,6 +242,63 @@ Half training set & Watermark & \textit{mean, paired} & 46.4 & 55.9 & 9.5 \\
 \bottomrule
 \end{longtable}
 
+\begin{longtable}{llrrrrr}
+\caption{Longer alignment at learning rate $3\times10^{-4}$ (Qwen3.5-4B, test worst-group accuracy, \%). Gate: final $|\tanh\alpha|$ of the zero-start arm.}\label{tab:s-align}\\
+\toprule
+Alignment & Task & Seed & Zero start & Fixed & Fixed $-$ zero & Gate $\times 10^3$ \\ \midrule
+\endhead
+3,000 steps & Waterbirds & 0 & 72.2 & 75.2 & 3.0 & 7.5 \\
+3,000 steps & Waterbirds & 1 & 71.0 & 78.7 & 7.6 & 9.5 \\
+3,000 steps & Waterbirds & 2 & 71.9 & 74.8 & 2.9 & 5.3 \\
+3,000 steps & Waterbirds & 3 & 73.7 & 68.2 & -5.5 & 3.8 \\
+3,000 steps & Waterbirds & 4 & 67.4 & 72.8 & 5.3 & 5.1 \\
+3,000 steps & Waterbirds & \textit{mean, paired} & 71.3 & 73.9 & 2.7 &  \\
+3,000 steps & Watermark & 0 & 49.4 & 71.6 & 22.2 & 2.3 \\
+3,000 steps & Watermark & 1 & 56.3 & 76.7 & 20.4 & 3.1 \\
+3,000 steps & Watermark & 2 & 58.3 & 61.9 & 3.6 & 1.6 \\
+3,000 steps & Watermark & 3 & 69.2 & 52.9 & -16.3 & 2.9 \\
+3,000 steps & Watermark & 4 & 39.9 & 82.3 & 42.3 & 2.2 \\
+3,000 steps & Watermark & \textit{mean, paired} & 54.6 & 69.1 & 14.4 &  \\
+6,000 steps & Waterbirds & 0 & 75.6 & 72.7 & -2.9 & 8.1 \\
+6,000 steps & Waterbirds & 1 & 67.2 & 74.1 & 6.9 & 9.8 \\
+6,000 steps & Waterbirds & 2 & 71.2 & 73.4 & 2.2 & 4.3 \\
+6,000 steps & Waterbirds & 3 & 62.1 & 76.9 & 14.8 & 8.6 \\
+6,000 steps & Waterbirds & 4 & 51.4 & 73.2 & 21.8 & 5.1 \\
+6,000 steps & Waterbirds & \textit{mean, paired} & 65.5 & 74.0 & 8.5 &  \\
+6,000 steps & Watermark & 0 & 61.3 & 61.4 & 0.1 & 2.7 \\
+6,000 steps & Watermark & 1 & 45.7 & 78.6 & 32.8 & 2.6 \\
+6,000 steps & Watermark & 2 & 50.7 & 66.2 & 15.6 & 3.2 \\
+6,000 steps & Watermark & 3 & 35.1 & 73.6 & 38.4 & 10.9 \\
+6,000 steps & Watermark & 4 & 38.0 & 74.3 & 36.3 & 4.4 \\
+6,000 steps & Watermark & \textit{mean, paired} & 46.2 & 70.8 & 24.7 &  \\
+\bottomrule
+\end{longtable}
+
+\section{Standard fixes on both gates}
+\begin{longtable}{lrrrrrr}
+\caption{Connector-level DFR and JTT on both gates, Waterbirds (Qwen3.5-4B, 3 epochs of connector retraining, test worst-group accuracy, \%).}\label{tab:s-dfr-water}\\
+\toprule
+Seed & Zero & Zero + DFR & Zero + JTT & Fixed & Fixed + DFR & Fixed + JTT \\ \midrule
+\endhead
+0 & 68.2 & 65.7 & 51.1 & 69.2 & 85.9 & 70.8 \\
+1 & 72.4 & 75.3 & 61.7 & 78.9 & 84.5 & 79.3 \\
+2 & 54.3 & 64.5 & 51.0 & 73.6 & 77.8 & 76.4 \\
+\textit{mean} & 65.0 & 68.5 & 54.6 & 73.9 & 82.7 & 75.5 \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{lrrrrrr}
+\caption{Connector-level DFR and JTT on both gates, Watermark (Qwen3.5-4B, 3 epochs of connector retraining, test worst-group accuracy, \%).}\label{tab:s-dfr-water}\\
+\toprule
+Seed & Zero & Zero + DFR & Zero + JTT & Fixed & Fixed + DFR & Fixed + JTT \\ \midrule
+\endhead
+0 & 60.1 & 89.3 & 60.3 & 68.8 & 90.8 & 65.3 \\
+1 & 57.4 & 89.3 & 25.2 & 67.1 & 89.4 & 49.4 \\
+2 & 36.4 & 85.1 & 73.3 & 70.6 & 91.1 & 55.0 \\
+\textit{mean} & 51.3 & 87.9 & 52.9 & 68.8 & 90.4 & 56.6 \\
+\bottomrule
+\end{longtable}
+
 \section{CelebA per seed}
 \begin{longtable}{lrrr}
 \caption{CelebA (Qwen3.5-4B): test worst-group accuracy (\%) per seed.}\label{tab:s-celeba}\\
