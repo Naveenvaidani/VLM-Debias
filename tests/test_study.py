@@ -66,6 +66,16 @@ class TestStudy(unittest.TestCase):
         fused.sum().backward()
         self.assertGreater(conn.out_proj.weight.grad.abs().sum().item(), 0)  # out_proj trains from step 0
 
+    def test_gate_found_for_separate_learning_rate(self):
+        from src.study.engine import learned_gates
+        conn = build_connector("bottleneck", 64, 32)
+        gates = learned_gates(conn)
+        self.assertEqual(len(gates), 1)
+        self.assertEqual(gates[0].numel(), 1)
+        rest = [p for p in conn.parameters() if id(p) not in {id(g) for g in gates}]
+        self.assertEqual(len(rest) + 1, len(list(conn.parameters())))
+        self.assertEqual(learned_gates(build_connector("bottleneck_fixed", 64, 32)), [])
+
     def test_small_start_gates(self):
         for name, start in (("bottleneck_eps01", 0.01), ("bottleneck_eps1", 0.1)):
             conn = build_connector(name, 64, 32)

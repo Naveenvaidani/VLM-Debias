@@ -19,7 +19,7 @@ from transformers import AutoTokenizer, get_cosine_schedule_with_warmup
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.study.data import CaptionDataset, PromptBuilder
 from src.study.device import autocast, get_device, is_xla, step_done, torch_device
-from src.study.engine import clip_and_log
+from src.study.engine import clip_and_log, learned_gates
 from src.study.connectors import CONNECTOR_NAMES
 from src.study.vlm import StudyVLM
 
@@ -47,6 +47,7 @@ def main():
                         help="latent target decoding (Bleeker et al., 2024): the image-side representation must "
                              "predict a sentence embedding of the caption; weight of that cosine loss")
     parser.add_argument("--ltd_encoder", default="sentence-transformers/all-MiniLM-L6-v2")
+    parser.add_argument("--gate_lr_mult", type=float, default=1.0, help="control: learning rate of the learned gate x this")
     parser.add_argument("--clip_exclude_gate", action="store_true",
                         help="leave the learned gate out of global-norm gradient clipping (control)")
     args = parser.parse_args()
@@ -84,7 +85,11 @@ def main():
             return (h * m).sum(1) / m.sum(1)
 
         ltd = (caption_embedding, ltd_head)
-    optimizer = torch.optim.AdamW(params, lr=args.lr, weight_decay=0.0)
+    gate_ids = {id(g) for g in learned_gates(model.connector)} if args.gate_lr_mult != 1.0 else set()
+    groups = [{"params": [p for p in params if id(p) not in gate_ids], "lr": args.lr}]
+    if gate_ids:
+        groups.append({"params": [p for p in params if id(p) in gate_ids], "lr": args.lr * args.gate_lr_mult})
+    optimizer = torch.optim.AdamW(groups, lr=args.lr, weight_decay=0.0)
     scheduler = get_cosine_schedule_with_warmup(optimizer, int(0.03 * args.steps), args.steps)
     scaler = torch.amp.GradScaler("cuda") if args.dtype == "fp16" and str(device).startswith("cuda") else None
     loader = DataLoader(data, batch_size=args.batch_size, shuffle=True, num_workers=2, drop_last=True)

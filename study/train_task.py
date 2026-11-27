@@ -83,6 +83,7 @@ def main():
     parser.add_argument("--clip_exclude_gate", action="store_true",
                         help="leave the learned gate out of global-norm gradient clipping (control)")
     parser.add_argument("--gate_no_wd", action="store_true", help="no weight decay on the learned gate (control)")
+    parser.add_argument("--gate_lr_mult", type=float, default=1.0, help="learning rate of the learned gate x this (control)")
     parser.add_argument("--no_ablation_eval", action="store_true",
                         help="skip the test-time pathway ablation (visual contribution removed) of the selected model")
     parser.add_argument("--dro_eta", type=float, default=0.01, help="Group DRO step size")
@@ -165,11 +166,12 @@ def main():
 
     lora_params = [p for n, p in model.decoder.named_parameters() if p.requires_grad]
     groups = [{"params": lora_params, "lr": args.lr}] if lora_params else []
-    gates = learned_gates(model.connector) if args.gate_no_wd else []
+    gates = learned_gates(model.connector) if args.gate_no_wd or args.gate_lr_mult != 1.0 else []
     conn = [p for p in model.connector.parameters() if id(p) not in {id(g) for g in gates}]
     param_groups = groups + [{"params": conn, "lr": args.connector_lr}]
     if gates:
-        param_groups.append({"params": gates, "lr": args.connector_lr, "weight_decay": 0.0})
+        param_groups.append({"params": gates, "lr": args.connector_lr * args.gate_lr_mult,
+                             "weight_decay": 0.0 if args.gate_no_wd else 0.01})
     model.clip_exclude_gate = args.clip_exclude_gate
     if str(device).startswith("cuda"):
         import bitsandbytes as bnb

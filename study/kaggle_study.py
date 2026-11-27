@@ -129,6 +129,7 @@ def main():
     parser.add_argument("--loss", choices=["erm", "groupdro"], default="erm")
     parser.add_argument("--clip_exclude_gate", action="store_true", help="control: gate left out of gradient clipping")
     parser.add_argument("--gate_no_wd", action="store_true", help="control: no weight decay on the learned gate")
+    parser.add_argument("--gate_lr_mult", type=float, default=1.0, help="control: gate learning rate x this (alignment and task)")
     parser.add_argument("--align_ltd", type=float, default=0.0, help="LTD weight for stage-1 alignment")
     parser.add_argument("--stage3_epochs", type=int, default=3)
     parser.add_argument("--run_tag", default="", help="suffix for the runs folder, e.g. _frozen")
@@ -146,6 +147,7 @@ def main():
     os.makedirs(runs, exist_ok=True)
     ckpt = ["--gradient_checkpointing"] if args.gradient_checkpointing else []
     ckpt += ["--clip_exclude_gate"] if args.clip_exclude_gate else []  # alignment and task training
+    ckpt += ["--gate_lr_mult", str(args.gate_lr_mult)] if args.gate_lr_mult != 1.0 else []
     ckpt += ["--mlp_pool", str(args.mlp_pool)] + (["--mlp_grid", str(args.mlp_grid)] if args.mlp_grid else []) + (["--no_4bit"] if args.no_4bit else [])
     tasks = args.tasks.split(",")
     connectors = args.connectors.split(",")
