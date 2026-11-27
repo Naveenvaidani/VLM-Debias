@@ -85,7 +85,7 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
    gate started at 0.1 matches the fixed gate on both tasks (69.7 and 70.6).
 10. **How much the start value matters (Qwen3.5-4B, 5 seeds, Waterbirds / Watermark).** Open start (0.995): 71.8 /
     66.8 against 72.9 / 72.1 fixed. Starts of 0.1 or 0.5 match the fixed gate on Waterbirds but recover only a third
-    to two thirds of the Watermark gap (0.1 with default W_o: 57.6, p = 0.017 against fixed). A start of 0.01 falls
+    to two thirds of the Watermark gap (0.1 with default W_o: 57.6, p = 0.017 against fixed, uncorrected; no control comparison survives Holm correction, see the supplement). A start of 0.01 falls
     back to the zero-start range. Capping the injection at the text norm helps free-form VQA-CP answers but loses all
     of the Watermark gain at 4B (50.6), though not at 9B (63.9).
 11. **The gap survives the obvious objections (Watermark, 3 to 5 seeds, exploratory).** Lower alignment learning

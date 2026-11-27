@@ -155,6 +155,41 @@ def dfr_jtt():
     return out
 
 
+def holm(p):
+    """Holm step-down adjusted p-values."""
+    p = np.asarray(p, float)
+    o = np.argsort(p)
+    adj = np.empty_like(p)
+    run = 0.0
+    for k, i in enumerate(o):
+        run = max(run, (len(p) - k) * p[i])
+        adj[i] = min(1.0, run)
+    return adj
+
+
+def holm_table():
+    """Every exploratory control comparison in the paper, with Holm adjustment over the whole family."""
+    from check_numbers import controls as cn_controls, own_pairs as cn_own
+    rows = []
+    for r in cn_controls().itertuples():
+        rows.append((r.control.replace("W_o", "$W_o$"), TASK[r.task], r.seeds, "vs zero start", r.vs_zero, r.p_zero))
+        rows.append((r.control.replace("W_o", "$W_o$"), TASK[r.task], r.seeds, "vs fixed", r.vs_fixed, r.p_fixed))
+    label = {"qwen35-4b_lr3e4": "Alignment lr $3\\times10^{-4}$", "qwen35-4b_r4": "LoRA rank 4",
+             "qwen35-4b_r64": "LoRA rank 64", "qwen35-4b_frac50": "Half training set",
+             "qwen35-4b_frac25": "Quarter training set"}
+    for r in cn_own().itertuples():
+        rows.append((label.get(r.tag, r.tag), TASK[r.task], r.seeds, "fixed vs zero (one-sided)", r.gain, r.p))
+    d = pd.DataFrame(rows, columns=["c", "t", "n", "cmp", "diff", "p"]).dropna(subset=["p"])
+    d["adj"] = holm(d.p.values)
+    d = d.assign(diff=d["diff"].map(lambda v: f"{v:+.1f}"), p=d.p.map(lambda v: f"{v:.3f}"),
+                 adj=d.adj.map(lambda v: f"{v:.3f}"))
+    return table(d, ["Control", "Task", "Seeds", "Comparison", "Difference", "$p$", "Holm $p$"],
+                 f"All {len(d)} exploratory control comparisons with Holm-adjusted $p$-values over the whole family. "
+                 "Paired t-tests by seed; two-sided unless stated. With this many tests and three to five seeds, no "
+                 "single control comparison is claimed as significant in the paper on its own.",
+                 "tab:s-holm", "llrlrrr")
+
+
 def celeba():
     o = pd.read_csv(os.path.join(ROOT, "results_study/celeba/all_runs.csv"))
     o = o[o.rule == "wga"]
@@ -193,6 +228,7 @@ PRE = r"""\documentclass[10pt]{article}
 \usepackage{booktabs,longtable,amsmath,helvet}
 \renewcommand{\familydefault}{\sfdefault}
 \setlength{\LTcapwidth}{\textwidth}
+\renewcommand{\thetable}{S\arabic{table}}
 \title{Supplementary material: A Zero-Initialised Injection Gate Makes Shortcut Learning More Likely in
 Vision-Language Models}
 \date{}
@@ -214,6 +250,7 @@ def main():
     s += [r"\section{Larger language model}"] + scale9b()
     s += [r"\section{Controls per seed}", controls(), own_pairs(), long_align()]
     s += [r"\section{Standard fixes on both gates}"] + dfr_jtt()
+    s += [r"\section{Multiple comparisons}", holm_table()]
     s += [r"\section{CelebA per seed}", celeba()]
     s += [r"\section{Toy model}", r"Settings as in the paper: core feature $\pm 0.5$ (noise s.d.\ 0.1), shortcut "
           r"$\pm 2$ (s.d.\ 1) agreeing with the label in 95\% of training examples; Adam learning rate 0.01, SGD 0.5; "

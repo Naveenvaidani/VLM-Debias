@@ -3,6 +3,7 @@
 \usepackage{booktabs,longtable,amsmath,helvet}
 \renewcommand{\familydefault}{\sfdefault}
 \setlength{\LTcapwidth}{\textwidth}
+\renewcommand{\thetable}{S\arabic{table}}
 \title{Supplementary material: A Zero-Initialised Injection Gate Makes Shortcut Learning More Likely in
 Vision-Language Models}
 \date{}
@@ -296,6 +297,53 @@ Seed & Zero & Zero + DFR & Zero + JTT & Fixed & Fixed + DFR & Fixed + JTT \\ \mi
 1 & 57.4 & 89.3 & 25.2 & 67.1 & 89.4 & 49.4 \\
 2 & 36.4 & 85.1 & 73.3 & 70.6 & 91.1 & 55.0 \\
 \textit{mean} & 51.3 & 87.9 & 52.9 & 68.8 & 90.4 & 56.6 \\
+\bottomrule
+\end{longtable}
+
+\section{Multiple comparisons}
+\begin{longtable}{llrlrrr}
+\caption{All 38 exploratory control comparisons with Holm-adjusted $p$-values over the whole family. Paired t-tests by seed; two-sided unless stated. With this many tests and three to five seeds, no single control comparison is claimed as significant in the paper on its own.}\label{tab:s-holm}\\
+\toprule
+Control & Task & Seeds & Comparison & Difference & $p$ & Holm $p$ \\ \midrule
+\endhead
+capped injection & Waterbirds & 5 & vs zero start & +8.0 & 0.266 & 1.000 \\
+capped injection & Waterbirds & 5 & vs fixed & -3.0 & 0.090 & 1.000 \\
+capped injection & Watermark & 5 & vs zero start & +0.9 & 0.929 & 1.000 \\
+capped injection & Watermark & 5 & vs fixed & -21.5 & 0.003 & 0.096 \\
+start 0.01 ($W_o$ = 0) & Waterbirds & 5 & vs zero start & +7.3 & 0.336 & 1.000 \\
+start 0.01 ($W_o$ = 0) & Waterbirds & 5 & vs fixed & -3.8 & 0.054 & 1.000 \\
+start 0.01 ($W_o$ = 0) & Watermark & 5 & vs zero start & -27.2 & 0.009 & 0.333 \\
+start 0.01 ($W_o$ = 0) & Watermark & 5 & vs fixed & -49.6 & 0.002 & 0.061 \\
+start 0.1 ($W_o$ = 0) & Waterbirds & 5 & vs zero start & +11.2 & 0.105 & 1.000 \\
+start 0.1 ($W_o$ = 0) & Waterbirds & 5 & vs fixed & +0.2 & 0.907 & 1.000 \\
+start 0.1 ($W_o$ = 0) & Watermark & 5 & vs zero start & +15.6 & 0.108 & 1.000 \\
+start 0.1 ($W_o$ = 0) & Watermark & 5 & vs fixed & -6.8 & 0.488 & 1.000 \\
+start 0.01, default $W_o$ & Waterbirds & 5 & vs zero start & +7.0 & 0.394 & 1.000 \\
+start 0.01, default $W_o$ & Waterbirds & 5 & vs fixed & -4.0 & 0.354 & 1.000 \\
+start 0.01, default $W_o$ & Watermark & 5 & vs zero start & +2.4 & 0.888 & 1.000 \\
+start 0.01, default $W_o$ & Watermark & 5 & vs fixed & -20.1 & 0.148 & 1.000 \\
+start 0.1, default $W_o$ & Waterbirds & 5 & vs zero start & +12.0 & 0.117 & 1.000 \\
+start 0.1, default $W_o$ & Waterbirds & 5 & vs fixed & +0.9 & 0.479 & 1.000 \\
+start 0.1, default $W_o$ & Watermark & 5 & vs zero start & +7.9 & 0.394 & 1.000 \\
+start 0.1, default $W_o$ & Watermark & 5 & vs fixed & -14.6 & 0.017 & 0.567 \\
+start 0.5 (half open) & Waterbirds & 5 & vs zero start & +10.7 & 0.194 & 1.000 \\
+start 0.5 (half open) & Waterbirds & 5 & vs fixed & -0.3 & 0.911 & 1.000 \\
+start 0.5 (half open) & Watermark & 5 & vs zero start & +13.0 & 0.149 & 1.000 \\
+start 0.5 (half open) & Watermark & 5 & vs fixed & -9.5 & 0.066 & 1.000 \\
+gate out of clipping & Waterbirds & 3 & vs zero start & +5.1 & 0.373 & 1.000 \\
+gate out of clipping & Waterbirds & 3 & vs fixed & -6.3 & 0.298 & 1.000 \\
+gate out of clipping & Watermark & 3 & vs zero start & +2.5 & 0.878 & 1.000 \\
+gate out of clipping & Watermark & 3 & vs fixed & -16.8 & 0.153 & 1.000 \\
+no weight decay on gate & Waterbirds & 2 & vs zero start & -4.6 & 0.496 & 1.000 \\
+no weight decay on gate & Waterbirds & 2 & vs fixed & -21.3 & 0.199 & 1.000 \\
+no weight decay on gate & Watermark & 2 & vs zero start & -19.6 & 0.528 & 1.000 \\
+no weight decay on gate & Watermark & 2 & vs fixed & -46.8 & 0.089 & 1.000 \\
+Alignment lr $3\times10^{-4}$ & Waterbirds & 5 & fixed vs zero (one-sided) & +4.4 & 0.065 & 1.000 \\
+Alignment lr $3\times10^{-4}$ & Watermark & 5 & fixed vs zero (one-sided) & +9.8 & 0.113 & 1.000 \\
+Quarter training set & Watermark & 3 & fixed vs zero (one-sided) & +29.5 & 0.015 & 0.519 \\
+Half training set & Watermark & 3 & fixed vs zero (one-sided) & +9.5 & 0.146 & 1.000 \\
+LoRA rank 4 & Watermark & 3 & fixed vs zero (one-sided) & +18.1 & 0.023 & 0.774 \\
+LoRA rank 64 & Watermark & 3 & fixed vs zero (one-sided) & +17.7 & 0.041 & 1.000 \\
 \bottomrule
 \end{longtable}
 

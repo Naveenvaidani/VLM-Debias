@@ -166,7 +166,9 @@ Watermark, capped & 5 & 12.8 & 63.9 & +51.0 {[}45.7, 56.4{]} & \(6 \times 10^{-6
 
 \subsection{The zero start, not learnability, is the cause}
 
-Controls change one property of the learnable gate at a time (Table \ref{tab:controls}; all exploratory).
+Controls change one property of the learnable gate at a time (Table \ref{tab:controls}; all exploratory, with
+uncorrected \(p\)-values; after Holm correction over all control comparisons none is below 0.05, smallest 0.061,
+Supplementary Table S12).
 
 \begin{table*}[t]
 \centering
@@ -217,7 +219,8 @@ the cost does not come from the gate being learnable. Smaller starts help on Wat
 On Waterbirds, gates started at 0.1 or 0.5 match the fixed gate (within one point) and lie 10.7 to 12.0 points above
 the zero start, although with five seeds none of these gains over the zero start is significant. On Watermark they
 recover between a third and two thirds of the gap: they lie 7.9 to 15.6 points above the zero start and 6.8 to 14.6
-below the fixed gate; with the default \(W_o\) the 0.1 start remains significantly below the fixed gate (\(p\) = 0.017).
+below the fixed gate; with the default \(W_o\) the 0.1 start lies 14.6 points below the fixed gate (\(p\) = 0.017
+uncorrected, 0.57 after Holm correction over all control comparisons).
 The half-open gate moves little (final \(\tanh\alpha\) 0.44). The 0.1 start shrinks during training, to 0.058 to 0.064,
 but stays about a hundred times above the zero-start gate; its gradient also changes sign often (27\% to 51\% of steps
 per epoch push the gate up, with a slight net push down). A start of 0.01 is not enough. That gate falls back to the
