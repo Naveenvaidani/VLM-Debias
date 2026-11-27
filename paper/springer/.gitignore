@@ -10,3 +10,6 @@ build.log
 upload/
 IJCV_upload.zip
 figures/*.png
+supplement/*.aux
+supplement/*.log
+supplement/*.out

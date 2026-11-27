@@ -10,10 +10,10 @@ controlled **Watermark** task and **CelebA**, with **Qwen3.5-4B** and **Phi-4-mi
 | | |
 | :--- | :--- |
 | **Question** | Does the connector, and specifically a learnable injection gate, decide how much a VLM relies on a shortcut? |
-| **Answer** | Yes for the gate: initialised at zero, it never opens at the default learning rate (tanh α peaks below 0.01 and ends ≈ 0.0005) and the model relies on the shortcut. Fixing it raises worst-group accuracy by **+10.6** (Waterbirds) and **+25.2** points (Watermark), d_z = 1.10 and 1.34, p < 0.001, with label-free model selection and unpaired tests too. Once the gate is fixed, no significant difference between connector types was found (equivalence not established). |
-| **Fix** | Retrain only the connector on a small group-balanced set (connector-DFR): **89.6 ± 0.5** worst-group accuracy on Watermark. |
-| **Scale** | 2 LLMs · 2 encoders · 3 tasks · 4 connectors · 200+ training runs on Kaggle T4s |
-| **Paper kit** | Literature review, methodology, results and discussion, 105 verified references: [`paper/`](paper/) |
+| **Answer** | Yes for the gate's start value: started at zero, it never opens (tanh α peaks below 0.01 and ends ≈ 0.0005) and the model relies on the shortcut. Fixing it raises worst-group accuracy by **+10.6** (Waterbirds) and **+25.2** points (Watermark), d_z = 1.10 and 1.34, p < 0.001 (Qwen3.5-4B, 15 seeds). It replicates on Phi-4-mini (+9.7, +25.5) and on Qwen3.5-9B (+9.9, +50.3, exploratory). A learnable gate that starts open nearly matches the fixed gate, so the zero start is the cause, not learnability. Once the gate is fixed, no significant difference between connector types was found (equivalence not established). |
+| **Fix** | Set the start value at design time. Retraining only the connector on a small group-balanced set (connector-DFR) reaches **89.6 ± 0.5** on Watermark with the fixed gate and rescues the zero-start gate there, but not on Waterbirds; JTT rescues it on neither. |
+| **Scale** | 3 LLMs (4B to 9B) · 2 encoders · 4 tasks · 4 connectors · 350+ training runs, all on free Kaggle T4s |
+| **Paper kit** | IJCV manuscript (`paper/springer/main.pdf`), supplementary material, 77 cited references each checked online: [`paper/`](paper/) |
 
 **Keywords:** shortcut learning · spurious correlations · group robustness · worst-group accuracy · vision-language
 models · multimodal LLM · connector / projector design · Q-Former · gated cross-attention · Flamingo gate ·
@@ -65,8 +65,8 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
    |tanh α| < 0.05.
 7. **Controls point at the zero initialisation, not at learnability or training budget**
    ([17](#17-control-experiments-rounds-3-7)). A learnable gate that *starts* open matches the fixed gate.
-   Ten times longer alignment leaves the gate shut, but the learned-gate alignment diverged (caption loss
-   2.0 → 7.9), so that run shows fragility rather than a clean effect. A larger connector
+   Ten times longer alignment at the default learning rate diverged (caption loss 2.0 → 7.9); repeated at a lower
+   learning rate it aligns stably and the gate still stays shut (see item 11). A larger connector
    learning rate moves the gate further and closes the gap (dose-response). The learned gate is not fully shut:
    it still injects visual signal, but 15–35× less than the fixed gate. Group DRO shrinks the gap but does not
    remove it. New in rounds 4–7: a half-open learnable gate (starts at tanh α = 0.5, 5 seeds) matches the fixed
@@ -80,6 +80,26 @@ Deep Feature Reweighting (DFR) · Waterbirds · CelebA · QLoRA · Qwen3.5 · Ph
    (mean |tanh α| 0.027). On **VQA-CP v2** the fixed gate is *worse*, not better: 42.6 vs 47.6 test-ID VQA accuracy
    (p = 0.010) and 27.6 vs 29.1 on shifted priors (p = 0.054), so the binary-task result does not generalise to this
    setting ([18](#18-open-ended-answers-on-natural-images-vqa-cp-v2)).
+9. **It holds with a larger LLM (Qwen3.5-9B, 5 paired seeds, exploratory).** Watermark: 12.8 vs 63.2 (+50.3,
+   p = 0.005, all 5 zero-start seeds collapse). Waterbirds: 60.9 vs 70.7 (+9.9, p = 0.040; 95% CI −1.8 to 21.6). A
+   gate started at 0.1 matches the fixed gate on both tasks (69.7 and 70.6).
+10. **How much the start value matters (Qwen3.5-4B, 5 seeds, Waterbirds / Watermark).** Open start (0.995): 71.8 /
+    66.8 against 72.9 / 72.1 fixed. Starts of 0.1 or 0.5 match the fixed gate on Waterbirds but recover only a third
+    to two thirds of the Watermark gap (0.1 with default W_o: 57.6, p = 0.017 against fixed). A start of 0.01 falls
+    back to the zero-start range. Capping the injection at the text norm helps free-form VQA-CP answers but loses all
+    of the Watermark gain at 4B (50.6), though not at 9B (63.9).
+11. **The gap survives the obvious objections (Watermark, 3 to 5 seeds, exploratory).** Lower alignment learning
+    rate: +9.8. 3,000 and 6,000 alignment steps: +14.4 and +24.7. LoRA rank 4 and 64: +18.1 and +17.7 (rank 16 on
+    the same seeds: +19.3). Half and quarter of the training set: +9.5 and +29.5; with a quarter, every zero-start
+    run collapses. On Waterbirds the lower alignment learning rate shrinks the gap to 3–9 points.
+12. **A toy model explains why weak injection favours the shortcut.** A logistic readout behind a gain g: with
+    g = 1 it learns the core feature (99.8% worst-group accuracy after 3,000 Adam steps); with g ≤ 0.1 it stays on
+    the larger-scale shortcut (below 17%). Code in `study/toy/`.
+13. **CelebA (third task) points the same way but is not yet significant:** +12.9 over 7 paired seeds (p = 0.14);
+    seeds 7–14 are running.
+
+Every control number is recomputed from the saved runs by `python study/check_numbers.py`, which fails if a value
+in the paper is missing or stale.
 
 
 ![Main result: worst-group accuracy per connector, every seed shown](docs/figures/final/main_connectors.png)

@@ -1,0 +1,293 @@
+\documentclass[10pt]{article}
+\usepackage[a4paper,margin=2cm]{geometry}
+\usepackage{booktabs,longtable,amsmath,helvet}
+\renewcommand{\familydefault}{\sfdefault}
+\setlength{\LTcapwidth}{\textwidth}
+\title{Supplementary material: A Zero-Initialised Injection Gate Makes Shortcut Learning More Likely in
+Vision-Language Models}
+\date{}
+\begin{document}
+\maketitle
+\noindent All tables in this document are generated from the saved per-run results by
+\texttt{paper/springer/make\_supplement.py}; the comparisons in the paper are recomputed by
+\texttt{study/check\_numbers.py}. Worst-group accuracy is the test accuracy of the worst label--attribute group,
+with the checkpoint chosen by validation worst-group accuracy. "Zero start" is the learnable $\tanh$ gate started
+at $\alpha_0 = 0$; "fixed" is the gate fixed at 1 with the output layer started at zero. Seeds are random
+replicates: GPU kernels are not deterministic, so a seed does not replay a run exactly. Runs below 50\% count as
+collapsed. Every finished run is shown.
+
+\section{Gate comparison per seed}
+\begin{longtable}{lrrr}
+\caption{Qwen3.5-4B, Waterbirds: test worst-group accuracy (\%) per seed (gate comparison, H1).}\label{tab:s-h1-water}\\
+\toprule
+Seed & Zero start & Fixed & Fixed $-$ zero \\ \midrule
+\endhead
+0 & 45.1 & 73.2 & 28.1 \\
+1 & 68.6 & 73.8 & 5.2 \\
+2 & 72.7 & 73.5 & 0.8 \\
+3 & 50.9 & 70.8 & 19.9 \\
+4 & 72.1 & 73.3 & 1.2 \\
+5 & 72.8 & 82.7 & 9.8 \\
+6 & 66.5 & 75.2 & 8.7 \\
+7 & 63.6 & 73.2 & 9.6 \\
+8 & 70.7 & 74.5 & 3.8 \\
+9 & 67.9 & 76.5 & 8.6 \\
+10 & 64.8 & 73.4 & 8.6 \\
+11 & 65.1 & 77.7 & 12.7 \\
+12 & 69.8 & 75.6 & 5.8 \\
+13 & 64.0 & 66.9 & 2.9 \\
+14 & 38.7 & 72.9 & 34.2 \\
+\textit{mean, paired} & 63.6 & 74.2 & 10.6 \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{lrrr}
+\caption{Qwen3.5-4B, Watermark: test worst-group accuracy (\%) per seed (gate comparison, H1).}\label{tab:s-h1-water}\\
+\toprule
+Seed & Zero start & Fixed & Fixed $-$ zero \\ \midrule
+\endhead
+0 & 32.2 & 74.2 & 42.0 \\
+1 & 63.0 & 75.4 & 12.4 \\
+2 & 55.8 & 59.3 & 3.6 \\
+3 & 66.9 & 77.8 & 10.8 \\
+4 & 30.4 & 74.1 & 43.6 \\
+5 & 30.3 & 50.7 & 20.4 \\
+6 & 26.2 & 56.6 & 30.3 \\
+7 & 65.8 & 64.5 & -1.3 \\
+8 & 26.9 & 77.9 & 50.9 \\
+9 & 31.9 & 63.6 & 31.7 \\
+10 & 39.4 & 82.4 & 43.0 \\
+11 & 45.1 & 52.0 & 6.9 \\
+12 & 0.7 & 58.1 & 57.4 \\
+13 & 51.1 & 59.7 & 8.6 \\
+14 & 41.3 & 59.4 & 18.1 \\
+\textit{mean, paired} & 40.5 & 65.7 & 25.2 \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{lrrr}
+\caption{Phi-4-mini, Waterbirds: test worst-group accuracy (\%) per seed.}\label{tab:s-phi-water}\\
+\toprule
+Seed & Zero start & Fixed & Fixed $-$ zero \\ \midrule
+\endhead
+0 & 69.0 & 71.6 & 2.6 \\
+1 & 54.7 & 64.1 & 9.3 \\
+2 & 59.3 & 73.7 & 14.3 \\
+3 & 56.1 & 70.2 & 14.1 \\
+4 & 62.7 & 70.9 & 8.3 \\
+\textit{mean, paired} & 60.4 & 70.1 & 9.7 \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{lrrr}
+\caption{Phi-4-mini, Watermark: test worst-group accuracy (\%) per seed.}\label{tab:s-phi-water}\\
+\toprule
+Seed & Zero start & Fixed & Fixed $-$ zero \\ \midrule
+\endhead
+0 & 46.4 & 48.9 & 2.6 \\
+1 & 53.1 & 65.3 & 12.3 \\
+2 & 27.4 & 43.3 & 15.8 \\
+3 & 3.6 & 81.9 & 78.3 \\
+4 & 12.0 & 61.1 & 49.1 \\
+5 & 36.4 & 37.4 & 1.0 \\
+6 & 7.1 & 49.9 & 42.8 \\
+7 & 56.3 & 71.7 & 15.4 \\
+8 & 21.1 & 41.5 & 20.4 \\
+9 & 31.2 & 48.4 & 17.2 \\
+\textit{mean, paired} & 29.4 & 54.9 & 25.5 \\
+\bottomrule
+\end{longtable}
+
+\section{Larger language model}
+\begin{longtable}{lrrr}
+\caption{Qwen3.5-9B (exploratory), Waterbirds: test worst-group accuracy (\%) per seed. Seeds 3 and 4 were run in a later session (both arms together); an earlier, unpaired zero-start run of seed 3 (19.3) is not shown.}\label{tab:s-9b-water}\\
+\toprule
+Seed & Zero start & Fixed & Start 0.1 \\ \midrule
+\endhead
+0 & 62.3 & 74.9 & 76.1 \\
+1 & 47.1 & 72.3 & 73.8 \\
+2 & 70.9 & 74.1 & 75.0 \\
+3 & 60.1 & 63.7 & 60.8 \\
+4 & 64.1 & 68.7 & 67.2 \\
+\textit{mean} & 60.9 & 70.7 & 70.6 \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{lrrrr}
+\caption{Qwen3.5-9B (exploratory), Watermark: test worst-group accuracy (\%) per seed.}\label{tab:s-9b-water}\\
+\toprule
+Seed & Zero start & Fixed & Start 0.1 & Capped \\ \midrule
+\endhead
+0 & 0.9 & 75.9 & 60.7 & 49.8 \\
+1 & 5.6 & 77.1 & 79.7 & 64.2 \\
+2 & 0.8 & 51.2 & 56.4 & 50.8 \\
+3 & 37.2 & 51.3 & 78.9 & 86.7 \\
+4 & 19.7 & 60.5 & 72.8 & 68.0 \\
+\textit{mean} & 12.8 & 63.2 & 69.7 & 63.9 \\
+\bottomrule
+\end{longtable}
+
+\section{Controls per seed}
+\begin{longtable}{llrrrr}
+\caption{Controls on Qwen3.5-4B compared with the reference arms of the same seed (test worst-group accuracy, \%). The reference arms come from the 15-seed gate comparison.}\label{tab:s-controls}\\
+\toprule
+Control & Task & Seed & Variant & Zero start & Fixed \\ \midrule
+\endhead
+capped injection & Waterbirds & 0 & 72.5 & 45.1 & 73.2 \\
+capped injection & Waterbirds & 1 & 67.0 & 68.6 & 73.8 \\
+capped injection & Waterbirds & 2 & 73.5 & 72.7 & 73.5 \\
+capped injection & Waterbirds & 3 & 68.8 & 50.9 & 70.8 \\
+capped injection & Waterbirds & 4 & 67.7 & 72.1 & 73.3 \\
+capped injection & Watermark & 0 & 60.5 & 32.2 & 74.2 \\
+capped injection & Watermark & 1 & 54.9 & 63.0 & 75.4 \\
+capped injection & Watermark & 2 & 41.4 & 55.8 & 59.3 \\
+capped injection & Watermark & 3 & 44.9 & 66.9 & 77.8 \\
+capped injection & Watermark & 4 & 51.3 & 30.4 & 74.1 \\
+start 0.01 ($W_o$ = 0) & Waterbirds & 0 & 72.3 & 45.1 & 73.2 \\
+start 0.01 ($W_o$ = 0) & Waterbirds & 1 & 65.5 & 68.6 & 73.8 \\
+start 0.01 ($W_o$ = 0) & Waterbirds & 2 & 68.9 & 72.7 & 73.5 \\
+start 0.01 ($W_o$ = 0) & Waterbirds & 3 & 70.1 & 50.9 & 70.8 \\
+start 0.01 ($W_o$ = 0) & Waterbirds & 4 & 68.9 & 72.1 & 73.3 \\
+start 0.01 ($W_o$ = 0) & Watermark & 0 & 24.4 & 32.2 & 74.2 \\
+start 0.01 ($W_o$ = 0) & Watermark & 1 & 31.1 & 63.0 & 75.4 \\
+start 0.01 ($W_o$ = 0) & Watermark & 2 & 29.4 & 55.8 & 59.3 \\
+start 0.01 ($W_o$ = 0) & Watermark & 3 & 23.6 & 66.9 & 77.8 \\
+start 0.01 ($W_o$ = 0) & Watermark & 4 & 4.1 & 30.4 & 74.1 \\
+start 0.1 ($W_o$ = 0) & Waterbirds & 0 & 74.1 & 45.1 & 73.2 \\
+start 0.1 ($W_o$ = 0) & Waterbirds & 1 & 76.3 & 68.6 & 73.8 \\
+start 0.1 ($W_o$ = 0) & Waterbirds & 2 & 70.5 & 72.7 & 73.5 \\
+start 0.1 ($W_o$ = 0) & Waterbirds & 3 & 67.4 & 50.9 & 70.8 \\
+start 0.1 ($W_o$ = 0) & Waterbirds & 4 & 77.1 & 72.1 & 73.3 \\
+start 0.1 ($W_o$ = 0) & Watermark & 0 & 60.8 & 32.2 & 74.2 \\
+start 0.1 ($W_o$ = 0) & Watermark & 1 & 49.9 & 63.0 & 75.4 \\
+start 0.1 ($W_o$ = 0) & Watermark & 2 & 82.3 & 55.8 & 59.3 \\
+start 0.1 ($W_o$ = 0) & Watermark & 3 & 81.2 & 66.9 & 77.8 \\
+start 0.1 ($W_o$ = 0) & Watermark & 4 & 52.2 & 30.4 & 74.1 \\
+start 0.01, default $W_o$ & Waterbirds & 0 & 74.5 & 45.1 & 73.2 \\
+start 0.01, default $W_o$ & Waterbirds & 1 & 55.9 & 68.6 & 73.8 \\
+start 0.01, default $W_o$ & Waterbirds & 2 & 69.4 & 72.7 & 73.5 \\
+start 0.01, default $W_o$ & Waterbirds & 3 & 66.7 & 50.9 & 70.8 \\
+start 0.01, default $W_o$ & Waterbirds & 4 & 77.9 & 72.1 & 73.3 \\
+start 0.01, default $W_o$ & Watermark & 0 & 55.5 & 32.2 & 74.2 \\
+start 0.01, default $W_o$ & Watermark & 1 & 43.2 & 63.0 & 75.4 \\
+start 0.01, default $W_o$ & Watermark & 2 & 64.0 & 55.8 & 59.3 \\
+start 0.01, default $W_o$ & Watermark & 3 & 21.9 & 66.9 & 77.8 \\
+start 0.01, default $W_o$ & Watermark & 4 & 75.7 & 30.4 & 74.1 \\
+start 0.1, default $W_o$ & Waterbirds & 0 & 72.7 & 45.1 & 73.2 \\
+start 0.1, default $W_o$ & Waterbirds & 1 & 73.1 & 68.6 & 73.8 \\
+start 0.1, default $W_o$ & Waterbirds & 2 & 73.8 & 72.7 & 73.5 \\
+start 0.1, default $W_o$ & Waterbirds & 3 & 76.5 & 50.9 & 70.8 \\
+start 0.1, default $W_o$ & Waterbirds & 4 & 73.2 & 72.1 & 73.3 \\
+start 0.1, default $W_o$ & Watermark & 0 & 63.2 & 32.2 & 74.2 \\
+start 0.1, default $W_o$ & Watermark & 1 & 67.8 & 63.0 & 75.4 \\
+start 0.1, default $W_o$ & Watermark & 2 & 51.8 & 55.8 & 59.3 \\
+start 0.1, default $W_o$ & Watermark & 3 & 52.7 & 66.9 & 77.8 \\
+start 0.1, default $W_o$ & Watermark & 4 & 52.4 & 30.4 & 74.1 \\
+start 0.5 (half open) & Waterbirds & 0 & 73.7 & 45.1 & 73.2 \\
+start 0.5 (half open) & Waterbirds & 1 & 74.7 & 68.6 & 73.8 \\
+start 0.5 (half open) & Waterbirds & 2 & 76.6 & 72.7 & 73.5 \\
+start 0.5 (half open) & Waterbirds & 3 & 74.8 & 50.9 & 70.8 \\
+start 0.5 (half open) & Waterbirds & 4 & 63.2 & 72.1 & 73.3 \\
+start 0.5 (half open) & Watermark & 0 & 55.4 & 32.2 & 74.2 \\
+start 0.5 (half open) & Watermark & 1 & 79.4 & 63.0 & 75.4 \\
+start 0.5 (half open) & Watermark & 2 & 50.6 & 55.8 & 59.3 \\
+start 0.5 (half open) & Watermark & 3 & 64.8 & 66.9 & 77.8 \\
+start 0.5 (half open) & Watermark & 4 & 63.1 & 30.4 & 74.1 \\
+gate out of clipping & Waterbirds & 0 & 59.0 & 45.1 & 73.2 \\
+gate out of clipping & Waterbirds & 1 & 67.9 & 68.6 & 73.8 \\
+gate out of clipping & Waterbirds & 2 & 74.9 & 72.7 & 73.5 \\
+gate out of clipping & Watermark & 0 & 62.5 & 32.2 & 74.2 \\
+gate out of clipping & Watermark & 1 & 43.9 & 63.0 & 75.4 \\
+gate out of clipping & Watermark & 2 & 52.1 & 55.8 & 59.3 \\
+no weight decay on gate & Waterbirds & 0 & 45.0 & 45.1 & 73.2 \\
+no weight decay on gate & Waterbirds & 1 & 59.3 & 68.6 & 73.8 \\
+no weight decay on gate & Watermark & 0 & 34.0 & 32.2 & 74.2 \\
+no weight decay on gate & Watermark & 1 & 22.1 & 63.0 & 75.4 \\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{llrrrr}
+\caption{Controls whose two arms ran in the same job (Qwen3.5-4B, test worst-group accuracy, \%).}\label{tab:s-own}\\
+\toprule
+Control & Task & Seed & Zero start & Fixed & Fixed $-$ zero \\ \midrule
+\endhead
+Alignment lr $3\times10^{-4}$ & Waterbirds & 0 & 69.9 & 76.0 & 6.1 \\
+Alignment lr $3\times10^{-4}$ & Waterbirds & 1 & 71.2 & 72.4 & 1.2 \\
+Alignment lr $3\times10^{-4}$ & Waterbirds & 2 & 74.6 & 76.1 & 1.5 \\
+Alignment lr $3\times10^{-4}$ & Waterbirds & 3 & 78.3 & 78.7 & 0.4 \\
+Alignment lr $3\times10^{-4}$ & Waterbirds & 4 & 64.0 & 76.6 & 12.6 \\
+Alignment lr $3\times10^{-4}$ & Waterbirds & \textit{mean, paired} & 71.6 & 76.0 & 4.4 \\
+Alignment lr $3\times10^{-4}$ & Watermark & 0 & 63.4 & 64.9 & 1.5 \\
+Alignment lr $3\times10^{-4}$ & Watermark & 1 & 52.4 & 57.8 & 5.4 \\
+Alignment lr $3\times10^{-4}$ & Watermark & 2 & 30.9 & 58.3 & 27.4 \\
+Alignment lr $3\times10^{-4}$ & Watermark & 3 & 30.6 & 54.1 & 23.4 \\
+Alignment lr $3\times10^{-4}$ & Watermark & 4 & 75.4 & 66.4 & -8.9 \\
+Alignment lr $3\times10^{-4}$ & Watermark & \textit{mean, paired} & 50.5 & 60.3 & 9.8 \\
+LoRA rank 4 & Watermark & 0 & 51.7 & 64.9 & 13.2 \\
+LoRA rank 4 & Watermark & 1 & 58.1 & 72.9 & 14.8 \\
+LoRA rank 4 & Watermark & 2 & 51.6 & 77.7 & 26.1 \\
+LoRA rank 4 & Watermark & \textit{mean, paired} & 53.8 & 71.9 & 18.1 \\
+LoRA rank 64 & Watermark & 0 & 53.8 & 73.2 & 19.4 \\
+LoRA rank 64 & Watermark & 1 & 58.7 & 84.8 & 26.1 \\
+LoRA rank 64 & Watermark & 2 & 46.3 & 53.9 & 7.6 \\
+LoRA rank 64 & Watermark & \textit{mean, paired} & 53.0 & 70.7 & 17.7 \\
+Quarter training set & Watermark & 0 & 39.7 & 78.4 & 38.7 \\
+Quarter training set & Watermark & 1 & 48.8 & 69.5 & 20.7 \\
+Quarter training set & Watermark & 2 & 19.4 & 48.5 & 29.1 \\
+Quarter training set & Watermark & \textit{mean, paired} & 35.9 & 65.5 & 29.5 \\
+Half training set & Watermark & 0 & 54.4 & 51.1 & -3.3 \\
+Half training set & Watermark & 1 & 41.9 & 61.2 & 19.2 \\
+Half training set & Watermark & 2 & 42.9 & 55.6 & 12.7 \\
+Half training set & Watermark & \textit{mean, paired} & 46.4 & 55.9 & 9.5 \\
+\bottomrule
+\end{longtable}
+
+\section{CelebA per seed}
+\begin{longtable}{lrrr}
+\caption{CelebA (Qwen3.5-4B): test worst-group accuracy (\%) per seed.}\label{tab:s-celeba}\\
+\toprule
+Seed & Zero start & Fixed & Fixed $-$ zero \\ \midrule
+\endhead
+0 & 61.2 & 46.1 & -15.1 \\
+1 & 33.0 & 43.5 & 10.6 \\
+2 & 35.4 & 52.4 & 17.0 \\
+3 & 15.7 & 53.5 & 37.8 \\
+4 & 72.2 & 60.2 & -12.0 \\
+5 & 21.1 & 50.4 & 29.3 \\
+6 & 40.6 & 63.1 & 22.6 \\
+\textit{mean, paired} & 39.9 & 52.8 & 12.9 \\
+\bottomrule
+\end{longtable}
+
+\section{Toy model}
+Settings as in the paper: core feature $\pm 0.5$ (noise s.d.\ 0.1), shortcut $\pm 2$ (s.d.\ 1) agreeing with the label in 95\% of training examples; Adam learning rate 0.01, SGD 0.5; worst group on a balanced test set.
+\begin{longtable}{lrrrrrrr}
+\caption{Toy model, full grid: worst-group accuracy (\%), mean (s.d.) over 20 seeds.}\label{tab:s-toy}\\
+\toprule
+Optimiser & Steps & $g$=0.003 & $g$=0.01 & $g$=0.03 & $g$=0.1 & $g$=0.3 & $g$=1 \\ \midrule
+\endhead
+Adam & 100 & 46.9 (137.0) & 106.8 (200.9) & 198.0 (246.6) & 367.0 (217.8) & 551.1 (107.9) & 715.2 (62.7) \\
+Adam & 300 & 60.0 (143.4) & 150.4 (210.6) & 320.1 (224.2) & 540.5 (120.2) & 702.7 (69.0) & 1421.8 (170.0) \\
+Adam & 1000 & 145.3 (183.9) & 371.5 (194.6) & 582.0 (116.8) & 750.9 (67.5) & 1481.5 (159.0) & 8462.6 (509.2) \\
+Adam & 3000 & 336.9 (197.2) & 558.2 (89.3) & 708.8 (57.7) & 1608.2 (214.3) & 8550.0 (469.4) & 9979.5 (14.7) \\
+SGD & 100 & 0.0 (0.0) & 0.6 (1.9) & 55.4 (63.8) & 272.6 (42.2) & 370.0 (38.7) & 3117.0 (726.2) \\
+SGD & 300 & 0.0 (0.0) & 17.6 (38.5) & 137.0 (101.0) & 283.3 (34.3) & 587.6 (71.2) & 8988.2 (434.5) \\
+SGD & 1000 & 0.2 (0.6) & 49.7 (78.5) & 231.5 (52.7) & 374.9 (37.1) & 2707.1 (538.8) & 9945.9 (43.0) \\
+SGD & 3000 & 21.6 (49.9) & 156.4 (87.6) & 295.5 (35.3) & 636.7 (80.9) & 8695.2 (484.0) & 9992.5 (6.1) \\
+\bottomrule
+\end{longtable}
+
+\section{Compute}
+\begin{longtable}{lrrrrrr}
+\caption{Compute cost per connector (one T4, batch 16).}\label{tab:s-compute}\\
+\toprule
+connector & params M & train minutes mean & epochs mean & sec per step T4 & peak memory GB & image tokens \\ \midrule
+\endhead
+bottleneck & 8.93 & 40.26 & 4.00 & 1.73 & 6.24 & 0 \\
+bottleneck\_fixed & 8.93 & 36.89 & 3.67 & 1.73 & 6.24 & 0 \\
+mlp & 8.53 & 83.54 & 4.00 & 4.04 & 12.11 & 49 \\
+qformer & 11.45 & 55.44 & 3.83 & 2.48 & 10.11 & 32 \\
+\bottomrule
+\end{longtable}
+
+\end{document}
